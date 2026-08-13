@@ -1,0 +1,74 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="EzvizLocalMonitor.MainWindow"
+        Title="EZVIZ Local Monitor" Width="1220" Height="810" MinWidth="980" MinHeight="650"
+        Background="#F5F7FA" Closing="Window_Closing">
+  <Grid Margin="16" RowDefinitions="Auto,*,Auto">
+    <Border Grid.Row="0" Background="#093B5A" CornerRadius="8" Padding="18" Margin="0,0,0,12">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel>
+          <TextBlock Text="EZVIZ Local Monitor" Foreground="White" FontSize="24" FontWeight="SemiBold" />
+          <TextBlock Text="Nhận diện người cục bộ · C6N &amp; H8C · Telegram &amp; Zalo Bot" Foreground="#D8EDF8" Margin="0,5,0,0" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+          <TextBlock x:Name="GlobalStatusText" Text="Chưa khởi động giám sát" Foreground="White" HorizontalAlignment="Right" FontWeight="SemiBold" />
+          <TextBlock Text="Video và suy luận giữ trong LAN" Foreground="#D8EDF8" Margin="0,5,0,0" HorizontalAlignment="Right" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <TabControl Grid.Row="1">
+      <TabItem Header="Tổng quan">
+        <Grid Margin="12" RowDefinitions="*,Auto" ColumnDefinitions="*,*">
+          <Border Grid.Row="0" Grid.Column="0" Background="#19232D" CornerRadius="5" Margin="0,0,8,0">
+            <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewOne" Stretch="Uniform" /><TextBlock x:Name="CameraOneStatus" Grid.Row="1" Text="Camera 1 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+          </Border>
+          <Border Grid.Row="0" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="8,0,0,0">
+            <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewTwo" Stretch="Uniform" /><TextBlock x:Name="CameraTwoStatus" Grid.Row="1" Text="Camera 2 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+          </Border>
+          <Border Grid.Row="1" Grid.ColumnSpan="2" Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,14,0,0">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*"><Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" /><Button Grid.Column="1" Content="Dừng" Click="StopMonitoring_Click" Margin="8,0,0,0" /><Button Grid.Column="2" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="8,0,0,0" /><TextBlock x:Name="RuntimeInfoText" Grid.Column="3" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#52606D" /></Grid>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Camera">
+        <Grid Margin="12" ColumnDefinitions="300,*">
+          <Border Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,12,0">
+            <Grid RowDefinitions="*,Auto"><ListBox x:Name="CameraList" SelectionChanged="CameraList_SelectionChanged" /><StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0"><Button Content="Thêm" Click="AddCamera_Click" /><Button Content="Xóa" Click="RemoveCamera_Click" Margin="8,0,0,0" /></StackPanel></Grid>
+          </Border>
+          <Border Grid.Column="1" Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="16">
+            <Grid RowDefinitions="Auto,Auto,Auto,*">
+              <Grid ColumnDefinitions="Auto,*"><Button Content="Tìm camera trong LAN" Click="FindCameras_Click" /><TextBlock x:Name="DiscoveryStatusText" Grid.Column="1" Text="Chưa quét mạng." VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#52606D" /></Grid>
+              <ListBox x:Name="DiscoveryList" Grid.Row="1" Height="120" Margin="0,10,0,0" />
+              <Grid Grid.Row="2" Margin="0,10,0,12" ColumnDefinitions="170,*,Auto"><TextBlock Text="Mã xác thực thiết bị" VerticalAlignment="Center" /><TextBox x:Name="VerificationCodeText" Grid.Column="1" PasswordChar="●" Watermark="6 ký tự trên nhãn camera" /><Button Grid.Column="2" Content="Thêm camera đã chọn" Click="AddSelectedDiscovery_Click" Margin="8,0,0,0" /></Grid>
+              <Border Grid.Row="3" BorderBrush="#D9E1E8" BorderThickness="0,1,0,0" Padding="0,14,0,0"><Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" ColumnDefinitions="170,*">
+                <TextBlock Text="Tên hiển thị" VerticalAlignment="Center" /><TextBox x:Name="CameraNameText" Grid.Column="1" />
+                <TextBlock Grid.Row="1" Text="RTSP URL" VerticalAlignment="Center" /><TextBox x:Name="CameraRtspText" Grid.Row="1" Grid.Column="1" Watermark="Tự tạo sau khi chọn camera, hoặc nhập thủ công" />
+                <TextBlock Grid.Row="2" Text="Ngưỡng nhận diện" VerticalAlignment="Center" /><Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto"><Slider x:Name="ConfidenceSlider" Minimum="0.30" Maximum="0.90" Value="0.55" TickFrequency="0.05" IsSnapToTickEnabled="True" /><TextBlock x:Name="ConfidenceText" Grid.Column="1" Width="60" VerticalAlignment="Center" /></Grid>
+                <TextBlock Grid.Row="3" Text="Khoảng im lặng (giây)" VerticalAlignment="Center" /><TextBox x:Name="CooldownText" Grid.Row="3" Grid.Column="1" Width="100" HorizontalAlignment="Left" />
+                <TextBlock Grid.Row="4" Text="Bật giám sát" VerticalAlignment="Center" /><CheckBox x:Name="CameraEnabledCheck" Grid.Row="4" Grid.Column="1" IsChecked="True" VerticalAlignment="Center" />
+                <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"><Button Content="Lưu camera" Click="SaveCamera_Click" /><Button Content="Kiểm tra RTSP" Click="TestRtsp_Click" Margin="8,0,0,0" /></StackPanel>
+              </Grid></Border>
+            </Grid>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Cảnh báo">
+        <ScrollViewer><StackPanel Margin="16" Spacing="12">
+          <TextBlock Text="Token và địa chỉ camera được mã hóa theo tài khoản Windows; không được đưa vào nhật ký." Foreground="#093B5A" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <Border Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="14"><Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="150,*,Auto"><CheckBox x:Name="TelegramEnabledCheck" Content="Bật Telegram" /><TextBlock Grid.Row="1" Text="Bot Token" VerticalAlignment="Center" /><TextBox x:Name="TelegramTokenText" Grid.Row="1" Grid.Column="1" PasswordChar="●" /><TextBlock Grid.Row="2" Text="Chat ID" VerticalAlignment="Center" /><TextBox x:Name="TelegramChatText" Grid.Row="2" Grid.Column="1" /><Button Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Content="Gửi thử" Click="TestTelegram_Click" Margin="10,0,0,0" /></Grid></Border>
+          <Border Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="14"><Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="150,*,Auto"><CheckBox x:Name="ZaloEnabledCheck" Content="Bật Zalo Bot" /><TextBlock Grid.Row="1" Text="Bot Token" VerticalAlignment="Center" /><TextBox x:Name="ZaloTokenText" Grid.Row="1" Grid.Column="1" PasswordChar="●" /><TextBlock Grid.Row="2" Text="Chat ID" VerticalAlignment="Center" /><TextBox x:Name="ZaloChatText" Grid.Row="2" Grid.Column="1" /><Button Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Content="Gửi thử" Click="TestZalo_Click" Margin="10,0,0,0" /></Grid></Border>
+          <Button Content="Lưu cấu hình cảnh báo" HorizontalAlignment="Right" Click="SaveAlerts_Click" />
+        </StackPanel></ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Nhật ký sự kiện">
+        <Grid Margin="12" RowDefinitions="Auto,*"><Button Content="Làm mới" HorizontalAlignment="Left" Click="RefreshEvents_Click" /><ListBox x:Name="EventsList" Grid.Row="1" Margin="0,10,0,0" /></Grid>
+      </TabItem>
+    </TabControl>
+
+    <TextBlock Grid.Row="2" Text="Bản mẫu v0.1 · Nhận diện người cục bộ · Ảnh sự kiện chỉ rời LAN khi Telegram/Zalo được bật." Foreground="#52606D" Margin="4,10,4,0" />
+  </Grid>
+</Window>

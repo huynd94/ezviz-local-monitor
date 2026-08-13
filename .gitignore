@@ -1,0 +1,32 @@
+# .NET build output
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+
+# Distribution packages and platform binaries
+dist/
+artifacts/
+*.zip
+*.sha256
+*.exe
+*.dll
+*.pdb
+
+# Local application data and credentials
+*.protected
+*.db
+*.db-shm
+*.db-wal
+settings.json
+appsettings.Local.json
+.env
+.env.*
+
+# Downloaded model binaries (retrieve via scripts/Get-YoloModel.ps1)
+assets/Models/*.onnx
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
