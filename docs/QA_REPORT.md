@@ -51,3 +51,15 @@ Bản 0.2.1 khắc phục lỗi thông báo tiếng Việt bị sai dấu trong 
 | Setup.cmd | Có `chcp 65001 >nul` trước khi gọi PowerShell |
 | Biên dịch Release x64 | Thành công, không có lỗi biên dịch |
 
+
+## Bản cập nhật AI 0.3.0
+
+| Hạng mục | Kết quả | Ghi chú |
+|---|---|---|
+| Biên dịch endpoint AI | Đạt | Dịch vụ Chat Completions tương thích OpenAI, màn hình cấu hình và migration SQLite biên dịch thành công. |
+| Dữ liệu gửi AI | Đạt theo mã nguồn | Tối đa hai ảnh JPEG (trước/sau sự kiện), không gửi RTSP/video liên tục. |
+| Bảo vệ API key | Đạt theo kiến trúc | API key là một phần của `AppSettings` được mã hóa bằng Windows DPAPI. |
+| Endpoint thật | Chưa gọi trong môi trường dựng | Không có Base URL/API key của người dùng; cần kiểm tra với endpoint vision tương thích OpenAI thực tế. |
+| Hành vi dự phòng | Đạt theo mã nguồn | Nếu AI lỗi/timeout, cảnh báo cục bộ vẫn được gửi; nếu AI không xác nhận, chỉ chặn khi người dùng bật chế độ yêu cầu AI xác nhận. |
+
+Khi nghiệm thu, cấu hình endpoint trong tab **Cảnh báo**, tạo một sự kiện có người, rồi kiểm tra nhật ký có trạng thái `AI hoàn tất`, mô tả ngắn và caption Telegram/Zalo có phần `AI:`. Sau đó thử sai API key hoặc tắt endpoint để xác nhận cảnh báo cục bộ vẫn không bị ngừng.

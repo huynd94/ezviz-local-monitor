@@ -26,10 +26,21 @@ public sealed class AlertChannelSettings
     public string ZaloChatId { get; set; } = string.Empty;
 }
 
+public sealed class AiSettings
+{
+    public bool Enabled { get; set; }
+    public string BaseUrl { get; set; } = "https://api.openai.com/v1";
+    public string Model { get; set; } = "gpt-4o-mini";
+    public string ApiKey { get; set; } = string.Empty;
+    public int TimeoutSeconds { get; set; } = 25;
+    public bool RequireConfirmationBeforeAlert { get; set; }
+}
+
 public sealed class AppSettings
 {
     public List<CameraDefinition> Cameras { get; set; } = new();
     public AlertChannelSettings Alerts { get; set; } = new();
+    public AiSettings Ai { get; set; } = new();
     public int RetentionDays { get; set; } = 14;
     public int InferenceFpsPerCamera { get; set; } = 1;
     public int ConfirmationsRequired { get; set; } = 2;
@@ -59,6 +70,11 @@ public sealed class DiscoveredCamera
     }
 }
 
+public sealed record AiMovementAnalysis(bool MotionDetected, bool PersonPresent, double Confidence, string Summary, string Status)
+{
+    public bool ShouldSendAlert => MotionDetected || PersonPresent;
+}
+
 public sealed class DetectionEvent
 {
     public long Id { get; set; }
@@ -68,4 +84,9 @@ public sealed class DetectionEvent
     public double Confidence { get; set; }
     public string ImagePath { get; set; } = string.Empty;
     public string DeliveryStatus { get; set; } = "Chưa gửi";
+    public string AiStatus { get; set; } = "AI tắt";
+    public bool? AiMotionDetected { get; set; }
+    public bool? AiPersonPresent { get; set; }
+    public double? AiConfidence { get; set; }
+    public string AiSummary { get; set; } = string.Empty;
 }

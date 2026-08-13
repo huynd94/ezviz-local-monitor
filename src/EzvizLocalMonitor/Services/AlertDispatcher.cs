@@ -12,7 +12,8 @@ public sealed class AlertDispatcher
     public async Task<string> SendAsync(AlertChannelSettings settings, DetectionEvent item, CancellationToken cancellationToken = default)
     {
         var results = new List<string>();
-        var caption = $"PHÁT HIỆN NGƯỜI | {item.CameraName} | {item.DetectedAt:yyyy-MM-dd HH:mm:ss} | Tin cậy: {item.Confidence:P0}";
+        var aiCaption = string.IsNullOrWhiteSpace(item.AiSummary) ? string.Empty : $"\nAI: {item.AiSummary}";
+        var caption = $"PHÁT HIỆN NGƯỜI | {item.CameraName} | {item.DetectedAt:yyyy-MM-dd HH:mm:ss} | Tin cậy: {item.Confidence:P0}{aiCaption}";
 
         if (settings.TelegramEnabled)
             results.Add(await SendTelegramPhotoAsync(settings.TelegramBotToken, settings.TelegramChatId, item.ImagePath, caption, cancellationToken));

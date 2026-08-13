@@ -14,8 +14,9 @@ public sealed class CameraMonitor : IAsyncDisposable
     private readonly Queue<bool> _recentHits = new();
     private DateTimeOffset _lastAlert = DateTimeOffset.MinValue;
     private Task? _runTask;
+    private Mat? _previousInferenceFrame;
 
-    public event Action<CameraDefinition, Mat, PersonDetection>? PersonConfirmed;
+    public event Action<CameraDefinition, Mat, Mat?, PersonDetection>? PersonConfirmed;
     public event Action<CameraDefinition, string>? StatusChanged;
     public event Action<CameraDefinition, Mat>? PreviewReady;
 
@@ -49,6 +50,7 @@ public sealed class CameraMonitor : IAsyncDisposable
                     var preview = frame.Clone();
                     PreviewReady?.Invoke(_camera, preview);
 
+                    using var priorFrame = _previousInferenceFrame?.Clone();
                     var detections = _detector.Detect(frame, _camera.ConfidenceThreshold);
                     var person = detections.FirstOrDefault(x => IsInsideRoi(x, frame.Width, frame.Height));
                     var found = person is not null;
@@ -61,10 +63,12 @@ public sealed class CameraMonitor : IAsyncDisposable
                         _lastAlert = DateTimeOffset.Now;
                         var snapshot = frame.Clone();
                         DrawDetection(snapshot, person!);
-                        PersonConfirmed?.Invoke(_camera, snapshot, person!);
+                        PersonConfirmed?.Invoke(_camera, snapshot, priorFrame?.Clone(), person!);
                         _recentHits.Clear();
                     }
 
+                    _previousInferenceFrame?.Dispose();
+                    _previousInferenceFrame = frame.Clone();
                     await Task.Delay(TimeSpan.FromSeconds(1d / _fps), _stop.Token);
                 }
 
@@ -115,6 +119,7 @@ public sealed class CameraMonitor : IAsyncDisposable
         {
             try { await _runTask; } catch (OperationCanceledException) { }
         }
+        _previousInferenceFrame?.Dispose();
         _stop.Dispose();
     }
 }

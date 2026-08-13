@@ -47,6 +47,12 @@ public partial class MainWindow : Avalonia.Controls.Window
         ZaloEnabledCheck.IsChecked = _settings.Alerts.ZaloEnabled;
         ZaloTokenText.Text = _settings.Alerts.ZaloBotToken;
         ZaloChatText.Text = _settings.Alerts.ZaloChatId;
+        AiEnabledCheck.IsChecked = _settings.Ai.Enabled;
+        AiBaseUrlText.Text = _settings.Ai.BaseUrl;
+        AiModelText.Text = _settings.Ai.Model;
+        AiApiKeyText.Text = _settings.Ai.ApiKey;
+        AiTimeoutText.Text = _settings.Ai.TimeoutSeconds.ToString();
+        AiRequireConfirmationCheck.IsChecked = _settings.Ai.RequireConfirmationBeforeAlert;
         RuntimeInfoText.Text = $"Chế độ: {_settings.InferenceFpsPerCamera} lần suy luận/giây/camera · xác nhận {_settings.ConfirmationsRequired}/{_settings.ConfirmationWindow} khung";
 
         if (_settings.Cameras.Count > 0) CameraList.SelectedIndex = 0;
@@ -204,6 +210,12 @@ public partial class MainWindow : Avalonia.Controls.Window
         _settings.Alerts.ZaloEnabled = ZaloEnabledCheck.IsChecked == true;
         _settings.Alerts.ZaloBotToken = ZaloTokenText.Text?.Trim() ?? string.Empty;
         _settings.Alerts.ZaloChatId = ZaloChatText.Text?.Trim() ?? string.Empty;
+        _settings.Ai.Enabled = AiEnabledCheck.IsChecked == true;
+        _settings.Ai.BaseUrl = AiBaseUrlText.Text?.Trim() ?? string.Empty;
+        _settings.Ai.Model = AiModelText.Text?.Trim() ?? string.Empty;
+        _settings.Ai.ApiKey = AiApiKeyText.Text?.Trim() ?? string.Empty;
+        _settings.Ai.TimeoutSeconds = int.TryParse(AiTimeoutText.Text, out var timeout) ? Math.Clamp(timeout, 5, 90) : 25;
+        _settings.Ai.RequireConfirmationBeforeAlert = AiRequireConfirmationCheck.IsChecked == true;
         SaveSettings();
     }
 
@@ -294,7 +306,7 @@ public partial class MainWindow : Avalonia.Controls.Window
     private void RefreshEvents()
     {
         EventsList.ItemsSource = _eventStore.Recent().Select(x =>
-            $"{x.DetectedAt:yyyy-MM-dd HH:mm:ss}  |  {x.CameraName}  |  {x.Confidence:P0}  |  {x.DeliveryStatus}").ToList();
+            $"{x.DetectedAt:yyyy-MM-dd HH:mm:ss}  |  {x.CameraName}  |  {x.Confidence:P0}  |  {x.DeliveryStatus}  |  {x.AiStatus}{(string.IsNullOrWhiteSpace(x.AiSummary) ? string.Empty : $": {x.AiSummary}")}").ToList();
     }
 
     private void OpenEventsFolder_Click(object? sender, RoutedEventArgs e)

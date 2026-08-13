@@ -21,11 +21,29 @@ public sealed class EventStore
                 detected_at TEXT NOT NULL,
                 confidence REAL NOT NULL,
                 image_path TEXT NOT NULL,
-                delivery_status TEXT NOT NULL
+                delivery_status TEXT NOT NULL,
+                ai_status TEXT NOT NULL DEFAULT 'AI tắt',
+                ai_motion_detected INTEGER NULL,
+                ai_person_present INTEGER NULL,
+                ai_confidence REAL NULL,
+                ai_summary TEXT NOT NULL DEFAULT ''
             );
             CREATE INDEX IF NOT EXISTS idx_detection_events_detected_at ON detection_events(detected_at DESC);
             """;
         command.ExecuteNonQuery();
+        EnsureColumn(connection, "ai_status", "TEXT NOT NULL DEFAULT 'AI tắt'");
+        EnsureColumn(connection, "ai_motion_detected", "INTEGER NULL");
+        EnsureColumn(connection, "ai_person_present", "INTEGER NULL");
+        EnsureColumn(connection, "ai_confidence", "REAL NULL");
+        EnsureColumn(connection, "ai_summary", "TEXT NOT NULL DEFAULT ''");
+    }
+
+    private static void EnsureColumn(SqliteConnection connection, string column, string definition)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = $"ALTER TABLE detection_events ADD COLUMN {column} {definition}";
+        try { command.ExecuteNonQuery(); }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("duplicate column name", StringComparison.OrdinalIgnoreCase)) { }
     }
 
     public long Add(DetectionEvent item)
@@ -34,8 +52,8 @@ public sealed class EventStore
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            INSERT INTO detection_events(camera_id, camera_name, detected_at, confidence, image_path, delivery_status)
-            VALUES ($cameraId, $cameraName, $detectedAt, $confidence, $imagePath, $deliveryStatus);
+            INSERT INTO detection_events(camera_id, camera_name, detected_at, confidence, image_path, delivery_status, ai_status, ai_motion_detected, ai_person_present, ai_confidence, ai_summary)
+            VALUES ($cameraId, $cameraName, $detectedAt, $confidence, $imagePath, $deliveryStatus, $aiStatus, $aiMotionDetected, $aiPersonPresent, $aiConfidence, $aiSummary);
             SELECT last_insert_rowid();
             """;
         command.Parameters.AddWithValue("$cameraId", item.CameraId.ToString());
@@ -44,7 +62,38 @@ public sealed class EventStore
         command.Parameters.AddWithValue("$confidence", item.Confidence);
         command.Parameters.AddWithValue("$imagePath", item.ImagePath);
         command.Parameters.AddWithValue("$deliveryStatus", item.DeliveryStatus);
+        command.Parameters.AddWithValue("$aiStatus", item.AiStatus);
+        command.Parameters.AddWithValue("$aiMotionDetected", item.AiMotionDetected is null ? DBNull.Value : item.AiMotionDetected.Value ? 1 : 0);
+        command.Parameters.AddWithValue("$aiPersonPresent", item.AiPersonPresent is null ? DBNull.Value : item.AiPersonPresent.Value ? 1 : 0);
+        command.Parameters.AddWithValue("$aiConfidence", item.AiConfidence is null ? DBNull.Value : item.AiConfidence.Value);
+        command.Parameters.AddWithValue("$aiSummary", item.AiSummary);
         return (long)(command.ExecuteScalar() ?? 0L);
+    }
+
+    public void UpdateAiAnalysis(long id, AiMovementAnalysis analysis)
+    {
+        using var connection = new SqliteConnection(_connectionString);
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE detection_events SET ai_status = $status, ai_motion_detected = $motion, ai_person_present = $person, ai_confidence = $confidence, ai_summary = $summary WHERE id = $id";
+        command.Parameters.AddWithValue("$status", analysis.Status);
+        command.Parameters.AddWithValue("$motion", analysis.MotionDetected ? 1 : 0);
+        command.Parameters.AddWithValue("$person", analysis.PersonPresent ? 1 : 0);
+        command.Parameters.AddWithValue("$confidence", analysis.Confidence);
+        command.Parameters.AddWithValue("$summary", analysis.Summary);
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
+    public void UpdateAiStatus(long id, string status)
+    {
+        using var connection = new SqliteConnection(_connectionString);
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE detection_events SET ai_status = $status WHERE id = $id";
+        command.Parameters.AddWithValue("$status", status);
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
     }
 
     public void UpdateDeliveryStatus(long id, string status)
@@ -64,7 +113,7 @@ public sealed class EventStore
         using var connection = new SqliteConnection(_connectionString);
         connection.Open();
         using var command = connection.CreateCommand();
-        command.CommandText = "SELECT id, camera_id, camera_name, detected_at, confidence, image_path, delivery_status FROM detection_events ORDER BY detected_at DESC LIMIT $take";
+        command.CommandText = "SELECT id, camera_id, camera_name, detected_at, confidence, image_path, delivery_status, ai_status, ai_motion_detected, ai_person_present, ai_confidence, ai_summary FROM detection_events ORDER BY detected_at DESC LIMIT $take";
         command.Parameters.AddWithValue("$take", take);
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -77,7 +126,12 @@ public sealed class EventStore
                 DetectedAt = DateTimeOffset.Parse(reader.GetString(3)),
                 Confidence = reader.GetDouble(4),
                 ImagePath = reader.GetString(5),
-                DeliveryStatus = reader.GetString(6)
+                DeliveryStatus = reader.GetString(6),
+                AiStatus = reader.IsDBNull(7) ? "AI tắt" : reader.GetString(7),
+                AiMotionDetected = reader.IsDBNull(8) ? null : reader.GetInt64(8) != 0,
+                AiPersonPresent = reader.IsDBNull(9) ? null : reader.GetInt64(9) != 0,
+                AiConfidence = reader.IsDBNull(10) ? null : reader.GetDouble(10),
+                AiSummary = reader.IsDBNull(11) ? string.Empty : reader.GetString(11)
             });
         }
         return results;

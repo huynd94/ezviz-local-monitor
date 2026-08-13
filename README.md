@@ -1,7 +1,11 @@
 # EZVIZ Local Monitor for Windows
 
-**Phiên bản:** 0.2.1  
+**Phiên bản:** 0.3.0  
 **Mục đích:** Giám sát cục bộ tối đa hai camera EZVIZ C6N/H8C, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform.
+
+## Bản cập nhật AI 0.3.0
+
+Bản 0.3.0 bổ sung endpoint **OpenAI-compatible Chat Completions** để đánh giá ảnh sự kiện. AI nhận tối đa hai ảnh JPEG (khung ngay trước sự kiện và khung sự kiện), trả về `motion_detected`, `person_present`, độ tin cậy và mô tả ngắn. Phát hiện RTSP/người cục bộ tiếp tục chạy trong LAN; AI tắt theo mặc định.
 
 ## Bản vá 0.2.1
 
@@ -66,6 +70,9 @@ Nếu camera không xuất hiện, điều đó không khẳng định camera h�
 |---|---|---|
 | Telegram | Bot token và `chat_id` | Bấm **Gửi thử**. Bot/nhóm phải cho phép bot gửi tin. |
 | Zalo Bot Platform | `BOT_TOKEN` và `chat_id` của Bot ZApps | Bấm **Gửi thử**. API dùng Bot Token và hỗ trợ `sendMessage`/`sendPhoto`. [2] [3] |
+| AI OpenAI-compatible | Base URL, model vision, API key và timeout | Bật AI sau khi xác nhận endpoint chấp nhận ảnh qua Chat Completions. |
+
+Khi AI được bật, endpoint nhận tối đa **hai ảnh JPEG của mỗi sự kiện**; video RTSP không được gửi. Chế độ mặc định chỉ thêm mô tả AI vào caption. Nếu bật **Chỉ gửi cảnh báo khi AI xác nhận**, Telegram/Zalo chỉ được gọi khi AI trả `motion_detected=true` hoặc `person_present=true`. Nếu endpoint lỗi hoặc hết timeout, ứng dụng vẫn gửi cảnh báo cục bộ theo quy tắc ban đầu và ghi lỗi AI vào nhật ký.
 
 Telegram có API HTTPS với các phương thức gửi ảnh và văn bản. [4] Bot ZApps công bố endpoint `sendPhoto` theo dạng `https://bot-api.zaloplatforms.com/bot<BOT_TOKEN>/sendPhoto`, yêu cầu `chat_id` và `photo`, với `caption` tùy chọn. [3] Ứng dụng gửi ảnh JPEG sự kiện và caption gồm tên camera, thời điểm, độ tin cậy.
 
