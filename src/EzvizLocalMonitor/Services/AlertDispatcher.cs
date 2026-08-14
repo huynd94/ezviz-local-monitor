@@ -60,7 +60,7 @@ public sealed class AlertDispatcher
         using var payload = new StringContent(JsonSerializer.Serialize(new { chat_id = chatId, text }), Encoding.UTF8, "application/json");
         using var response = await Client.PostAsync($"https://api.telegram.org/bot{token}/sendMessage", payload, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
-        return response.IsSuccessStatusCode && IsOk(body) ? "Telegram: đã gửi" : $"Telegram: lỗi HTTP {(int)response.StatusCode}";
+        return FormatApiResult("Telegram", response, body);
     }
 
     private static async Task<string> SendTelegramPhotoAsync(string token, string chatId, string imagePath, string caption, CancellationToken ct)
@@ -73,7 +73,7 @@ public sealed class AlertDispatcher
         form.Add(CreateImageContent(imagePath), "photo", Path.GetFileName(imagePath));
         using var response = await Client.PostAsync($"https://api.telegram.org/bot{token}/sendPhoto", form, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
-        return response.IsSuccessStatusCode && IsOk(body) ? "Telegram: đã gửi" : $"Telegram: lỗi HTTP {(int)response.StatusCode}";
+        return FormatApiResult("Telegram", response, body);
     }
 
     private static async Task<string> SendZaloTextAsync(string token, string chatId, string text, CancellationToken ct)
@@ -83,7 +83,7 @@ public sealed class AlertDispatcher
         using var payload = new StringContent(JsonSerializer.Serialize(new { chat_id = chatId, text }), Encoding.UTF8, "application/json");
         using var response = await Client.PostAsync($"https://bot-api.zaloplatforms.com/bot{token}/sendMessage", payload, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
-        return response.IsSuccessStatusCode && IsOk(body) ? "Zalo: đã gửi" : $"Zalo: lỗi HTTP {(int)response.StatusCode}";
+        return FormatApiResult("Zalo", response, body);
     }
 
     private static async Task<string> SendZaloPhotoAsync(string token, string chatId, string imagePath, string caption, CancellationToken ct)
@@ -96,7 +96,7 @@ public sealed class AlertDispatcher
         form.Add(CreateImageContent(imagePath), "photo", Path.GetFileName(imagePath));
         using var response = await Client.PostAsync($"https://bot-api.zaloplatforms.com/bot{token}/sendPhoto", form, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
-        return response.IsSuccessStatusCode && IsOk(body) ? "Zalo: đã gửi" : $"Zalo: lỗi HTTP {(int)response.StatusCode}";
+        return FormatApiResult("Zalo", response, body);
     }
 
     private static StreamContent CreateImageContent(string imagePath)
@@ -108,10 +108,54 @@ public sealed class AlertDispatcher
         return content;
     }
 
+    private static string FormatApiResult(string channel, HttpResponseMessage response, string body)
+    {
+        if (response.IsSuccessStatusCode && IsOk(body)) return $"{channel}: đã gửi";
+
+        var detail = ReadApiError(body);
+        var status = $"HTTP {(int)response.StatusCode}";
+        return string.IsNullOrWhiteSpace(detail)
+            ? $"{channel}: lỗi {status}; response không xác nhận thành công"
+            : $"{channel}: lỗi {status}; {detail}";
+    }
+
     private static bool IsOk(string body)
     {
-        try { return JsonDocument.Parse(body).RootElement.TryGetProperty("ok", out var ok) && ok.GetBoolean(); }
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            return document.RootElement.TryGetProperty("ok", out var ok) && ok.ValueKind == JsonValueKind.True;
+        }
         catch (JsonException) { return false; }
+    }
+
+    private static string ReadApiError(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return "response rỗng";
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            var root = document.RootElement;
+            var parts = new List<string>();
+            foreach (var name in new[] { "error_code", "code" })
+            {
+                if (root.TryGetProperty(name, out var code) && code.ValueKind is JsonValueKind.Number or JsonValueKind.String)
+                    parts.Add($"{name}={code}");
+            }
+            foreach (var name in new[] { "description", "message", "error" })
+            {
+                if (root.TryGetProperty(name, out var message) && message.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(message.GetString()))
+                {
+                    parts.Add(message.GetString()!);
+                    break;
+                }
+            }
+            return parts.Count == 0 ? "response JSON không có thông tin lỗi" : string.Join("; ", parts);
+        }
+        catch (JsonException)
+        {
+            return "response không phải JSON hợp lệ";
+        }
     }
 
     private static string SafeException(Exception ex) => ex.Message.Length > 100 ? ex.Message[..100] : ex.Message;
