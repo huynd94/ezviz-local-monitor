@@ -157,3 +157,7 @@ Repository public phát hành: `huyavm/ezviz-local-monitor-releases`. Repository
 ## Bố cục Tổng quan và tự động giám sát — v0.6.7
 
 Logic lưới đã được điều chỉnh: chế độ 1 dùng một cột duy nhất để camera chiếm toàn bộ vùng hiển thị; chế độ 2 dùng hai cột chia đều; chế độ 4 dùng hai hàng và hai cột. Sau khi cửa sổ mở, ứng dụng tự động gọi cùng pipeline giám sát của nút **Bắt đầu giám sát** nếu có camera bật và RTSP URL hợp lệ. Nút **Dừng** vẫn hủy coordinator và nút **Bắt đầu giám sát** có thể khởi động lại pipeline.
+
+## Sửa sendPhoto Zalo — v0.6.8
+
+Kiểm thử nút **Gửi thử** thành công xác nhận Bot Token và Chat ID hợp lệ, nhưng cảnh báo thực tế trả `HTTP 200; error_code=400; The photo must not be empty`. Nguyên nhân nằm ở đường gửi ảnh `sendPhoto`, không phải `sendMessage`. Bản vá đổi nội dung ảnh từ stream file sang `ByteArrayContent` có độ dài xác định, kiểm tra file JPEG tồn tại và không rỗng trước khi tạo multipart request; đồng thời `Cv2.ImWrite` cũng phải trả thành công và tạo ra tệp có kích thước lớn hơn 0.

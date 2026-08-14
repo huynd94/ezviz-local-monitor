@@ -99,12 +99,15 @@ public sealed class AlertDispatcher
         return FormatApiResult("Zalo", response, body);
     }
 
-    private static StreamContent CreateImageContent(string imagePath)
+    private static ByteArrayContent CreateImageContent(string imagePath)
     {
         if (!File.Exists(imagePath)) throw new FileNotFoundException("Không tìm thấy ảnh sự kiện để gửi.", imagePath);
-        var stream = File.OpenRead(imagePath);
-        var content = new StreamContent(stream);
+        var bytes = File.ReadAllBytes(imagePath);
+        if (bytes.Length == 0) throw new InvalidDataException("Ảnh sự kiện rỗng, không thể gửi Zalo.");
+
+        var content = new ByteArrayContent(bytes);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+        content.Headers.ContentLength = bytes.Length;
         return content;
     }
 

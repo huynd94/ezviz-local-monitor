@@ -166,7 +166,8 @@ public sealed class MonitorCoordinator : IAsyncDisposable
             Cv2.Resize(source, resized, new OpenCvSharp.Size((int)(source.Width * scale), (int)(source.Height * scale)), 0, 0, InterpolationFlags.Area);
         else
             source.CopyTo(resized);
-        Cv2.ImWrite(path, resized);
+        if (!Cv2.ImWrite(path, resized) || !File.Exists(path) || new FileInfo(path).Length == 0)
+            throw new InvalidDataException("Không tạo được ảnh JPEG sự kiện hoặc tệp ảnh bị rỗng.");
     }
 
     private async Task<AiMovementAnalysis?> AnalyzeAndUpdateAsync(DetectionEvent item, string? previousImagePath)
