@@ -161,35 +161,36 @@ $closeButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
 $form.Controls.Add($closeButton)
 $form.CancelButton = $closeButton
 
-$state = [hashtable]::Synchronized(@{ Release = $null; Installed = $null; Latest = $null; Busy = $false; CheckOnly = [bool]$CheckOnly })
-$worker = New-Object System.ComponentModel.BackgroundWorker
-$worker.WorkerReportsProgress = $true
+$state = [hashtable]::Synchronized(@{ Busy = $false; CheckOnly = [bool]$CheckOnly; Process = $null; TempRoot = $null; ProgressFile = $null; ResultFile = $null })
+$updateTimer = New-Object System.Windows.Forms.Timer
+$updateTimer.Interval = 250
 
-$worker.add_ProgressChanged({
-    param($sender, $event)
-    $progress.Value = [Math]::Max(0, [Math]::Min(100, $event.ProgressPercentage))
-    $statusLabel.Text = [string]$event.UserState
-})
+function Clear-WorkerFiles {
+    if ($state.TempRoot -and (Test-Path -LiteralPath $state.TempRoot)) { Remove-Item -LiteralPath $state.TempRoot -Recurse -Force -ErrorAction SilentlyContinue }
+}
 
-$worker.add_RunWorkerCompleted({
-    param($sender, $event)
+function Finish-Worker {
+    $updateTimer.Stop()
     $state.Busy = $false
     $checkButton.Enabled = $true
     $closeButton.Enabled = $true
-    if ($event.Error) {
+    $result = $null
+    if (Test-Path -LiteralPath $state.ResultFile) {
+        try { $result = Get-Content -LiteralPath $state.ResultFile -Raw | ConvertFrom-Json } catch { }
+    }
+    if ($state.Process.ExitCode -ne 0 -or $null -eq $result -or $result.status -eq "error") {
+        $message = if ($null -ne $result -and $result.message) { [string]$result.message } else { "Tiến trình updater kết thúc với mã $($state.Process.ExitCode)." }
         $progress.Value = 0
-        $statusLabel.Text = "Lỗi: " + $event.Error.Message
+        $statusLabel.Text = "Lỗi: $message"
         $versionLabel.Text = "Không hoàn tất. Kiểm tra quyền GitHub và thư mục cài đặt."
-        [System.Windows.Forms.MessageBox]::Show($form, $event.Error.Message, "Cập nhật không thành công", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        Clear-WorkerFiles
+        [System.Windows.Forms.MessageBox]::Show($form, $message, "Cập nhật không thành công", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
         return
     }
-    $result = $event.Result
-    if ($result.Action -eq "check") {
-        $state.Release = $result.Release
-        $state.Installed = $result.Installed
-        $state.Latest = $result.Latest
-        $versionLabel.Text = "Đang cài: " + ($(if ($null -eq $result.Installed) { "không tìm thấy" } else { $result.Installed.ToString() })) + "    |    Mới nhất: " + $result.Latest.ToString()
-        if ($result.IsNewer) {
+    if ($result.action -eq "check") {
+        $installedText = if ([string]::IsNullOrWhiteSpace([string]$result.installed)) { "không tìm thấy" } else { [string]$result.installed }
+        $versionLabel.Text = "Đang cài: $installedText    |    Mới nhất: $($result.latest)"
+        if ([bool]$result.isNewer) {
             $updateButton.Enabled = -not $state.CheckOnly
             $statusLabel.Text = "Có bản mới. Nhấn Cập nhật ngay để bắt đầu."
             $progress.Value = 0
@@ -197,73 +198,26 @@ $worker.add_RunWorkerCompleted({
             $statusLabel.Text = "Bạn đang dùng phiên bản mới nhất."
             $progress.Value = 100
         }
-        return
+    } else {
+        $progress.Value = 100
+        $versionLabel.Text = "Đã cập nhật: $($result.updated)"
+        $statusLabel.Text = "Cập nhật thành công."
+        $updateButton.Enabled = $false
+        [System.Windows.Forms.MessageBox]::Show($form, "Đã cập nhật lên phiên bản $($result.updated).", "Hoàn tất", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
     }
-    $progress.Value = 100
-    $state.Installed = $result.Updated
-    $state.Latest = $result.Latest
-    $versionLabel.Text = "Đã cập nhật: " + $result.Updated.ToString()
-    $statusLabel.Text = "Cập nhật thành công."
-    $updateButton.Enabled = $false
-    [System.Windows.Forms.MessageBox]::Show($form, "Đã cập nhật lên phiên bản $($result.Updated).", "Hoàn tất", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
-})
+    Clear-WorkerFiles
+}
 
-$worker.add_DoWork({
-    param($sender, $event)
-    $args = $event.Argument
-    $sender.ReportProgress(5, "Đang kiểm tra file thực thi hiện tại...")
-    $install = $args.InstallDir
-    $repo = $args.Repository
-    $token = $args.Token
-    $installedExe = Join-Path $install "EzvizLocalMonitor.exe"
-    $installed = $null
-    if (Test-Path -LiteralPath $installedExe) { $installed = Convert-ToVersion $((Get-Item -LiteralPath $installedExe).VersionInfo.ProductVersion) }
-    $sender.ReportProgress(15, "Đang kết nối GitHub Releases...")
-    $oldRepository = $script:Repository
-    $script:Repository = $repo
-    try { $release = Get-LatestRelease $token } finally { $script:Repository = $oldRepository }
-    $latest = Convert-ToVersion $release.tag_name
-    $isNewer = ($null -eq $installed -or $latest -gt $installed -or $Force)
-    if (-not $isNewer -or $args.CheckOnly) {
-        $event.Result = @{ Action = "check"; Release = $release; Installed = $installed; Latest = $latest; IsNewer = $isNewer }
-        return
+$updateTimer.Add_Tick({
+    if (Test-Path -LiteralPath $state.ProgressFile) {
+        $parts = (Get-Content -LiteralPath $state.ProgressFile -Raw).Trim() -split '\|', 2
+        if ($parts.Count -eq 2) {
+            $number = 0
+            if ([int]::TryParse($parts[0], [ref]$number)) { $progress.Value = [Math]::Max(0, [Math]::Min(100, $number)) }
+            $statusLabel.Text = $parts[1]
+        }
     }
-    $zipName = "EZVIZ-Local-Monitor-Windows-x64-v$latest.zip"
-    $hashName = "$zipName.sha256"
-    $zipAsset = $release.assets | Where-Object { $_.name -eq $zipName } | Select-Object -First 1
-    $hashAsset = $release.assets | Where-Object { $_.name -eq $hashName } | Select-Object -First 1
-    if ($null -eq $zipAsset -or $null -eq $hashAsset) { throw "Release $($release.tag_name) thiếu ZIP hoặc SHA-256: $zipName" }
-    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("EZVIZ-Update-" + [guid]::NewGuid().ToString("N"))
-    New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
-    try {
-        $zipPath = Join-Path $tempRoot $zipName
-        $hashPath = Join-Path $tempRoot $hashName
-        $sender.ReportProgress(25, "Đang tải gói $zipName...")
-        Download-Asset $zipAsset $zipPath $token
-        $sender.ReportProgress(55, "Đang tải file kiểm tra SHA-256...")
-        Download-Asset $hashAsset $hashPath $token
-        $sender.ReportProgress(65, "Đang xác minh checksum, chưa chạy bộ cài...")
-        $expected = Get-HashFromFile $hashPath
-        $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $zipPath).Hash.ToLowerInvariant()
-        if ($actual -ne $expected) { throw "Checksum không khớp; bộ cài bị từ chối." }
-        $sender.ReportProgress(72, "Checksum hợp lệ. Đang giải nén bộ cài...")
-        $extractRoot = Join-Path $tempRoot "package"
-        Expand-Archive -LiteralPath $zipPath -DestinationPath $extractRoot -Force
-        $installer = Get-ChildItem -Path $extractRoot -Filter "Install-EzvizLocalMonitor.ps1" -Recurse | Select-Object -First 1
-        if ($null -eq $installer) { throw "Không tìm thấy bộ cài trong ZIP." }
-        $sender.ReportProgress(80, "Đang đóng ứng dụng cũ và cập nhật file...")
-        Get-Process -Name "EzvizLocalMonitor" -ErrorAction SilentlyContinue | Stop-Process -Force
-        $installerArgs = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$($installer.FullName)`" -InstallDir `"$install`" -NoShortcut -NoLaunch -ForceUpdate"
-        $process = Start-Process -FilePath "powershell.exe" -ArgumentList $installerArgs -Wait -PassThru -WindowStyle Hidden
-        if ($process.ExitCode -ne 0) { throw "Bộ cài trả mã lỗi $($process.ExitCode)." }
-        $sender.ReportProgress(95, "Đang xác minh phiên bản sau cập nhật...")
-        $updated = Convert-ToVersion $((Get-Item -LiteralPath $installedExe).VersionInfo.ProductVersion)
-        if ($updated -lt $latest) { throw "Phiên bản sau cập nhật là $updated, chưa đạt $latest." }
-        if ($args.StartAfter) { Start-Process $installedExe }
-        $event.Result = @{ Action = "update"; Updated = $updated; Latest = $latest }
-    } finally {
-        if (Test-Path -LiteralPath $tempRoot) { Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue }
-    }
+    if ($state.Process.HasExited) { Finish-Worker }
 })
 
 function Start-Check([bool]$doUpdate) {
@@ -273,13 +227,18 @@ function Start-Check([bool]$doUpdate) {
     $updateButton.Enabled = $false
     $closeButton.Enabled = $false
     $progress.Value = 0
-    $worker.RunWorkerAsync(@{
-        InstallDir = $installBox.Text.Trim()
-        Repository = $repoBox.Text.Trim()
-        Token = $tokenBox.Text.Trim()
-        CheckOnly = (-not $doUpdate)
-        StartAfter = $startCheck.Checked
-    })
+    $temp = Join-Path ([System.IO.Path]::GetTempPath()) ("EZVIZ-GUI-" + [guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $temp -Force | Out-Null
+    $state.TempRoot = $temp
+    $state.ProgressFile = Join-Path $temp "progress.txt"
+    $state.ResultFile = Join-Path $temp "result.json"
+    $workerScript = Join-Path $PSScriptRoot "Update-EzvizLocalMonitor-Worker.ps1"
+    $mode = if ($doUpdate) { "Update" } else { "Check" }
+    $workerArgs = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$workerScript`" -InstallDir `"$($installBox.Text.Trim())`" -Repository `"$($repoBox.Text.Trim())`" -Mode $mode -ProgressFile `"$($state.ProgressFile)`" -ResultFile `"$($state.ResultFile)`""
+    if (-not [string]::IsNullOrWhiteSpace($tokenBox.Text)) { $env:EZVIZ_GITHUB_TOKEN = $tokenBox.Text.Trim() }
+    if ($startCheck.Checked -and $doUpdate) { $workerArgs += " -StartAfter" }
+    $state.Process = Start-Process -FilePath "powershell.exe" -ArgumentList $workerArgs -WindowStyle Hidden -PassThru
+    $updateTimer.Start()
 }
 
 $checkButton.Add_Click({ Start-Check $false })

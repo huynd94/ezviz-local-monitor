@@ -133,3 +133,15 @@ Bản dựng đã biên dịch thành công trong môi trường dựng. Cần x
 | Chạy nhanh | Có `Update-EzvizLocalMonitor.cmd` để mở giao diện bằng double-click. |
 
 Bản GUI cần được kiểm tra trực tiếp trên Windows 10 vì môi trường dựng không có Windows PowerShell/WinForms để chạy giao diện thật.
+
+## Bản vá Runspace updater 0.6.2
+
+Lỗi `There is no Runspace available to run scripts in this thread` phát sinh do `BackgroundWorker` thực thi scriptblock PowerShell trên thread phụ không có Runspace mặc định trong Windows PowerShell 5.1. Bản 0.6.2 loại bỏ `BackgroundWorker`; giao diện WinForms khởi chạy `Update-EzvizLocalMonitor-Worker.ps1` bằng một process PowerShell riêng, đọc tiến trình qua file trạng thái và cập nhật giao diện bằng Timer trên UI thread.
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Không còn `BackgroundWorker`/`RunWorkerAsync` trong GUI updater | Đã kiểm tra tĩnh |
+| Worker riêng có trạng thái progress/result | Đã triển khai |
+| Repository private và SHA-256 | Giữ nguyên |
+| ForceUpdate và hậu kiểm phiên bản | Giữ nguyên |
+| Chạy GUI thực tế trên Windows PowerShell 5.1 | Cần xác minh trên máy Windows của người dùng |

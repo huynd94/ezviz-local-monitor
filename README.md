@@ -1,13 +1,13 @@
 # EZVIZ Local Monitor for Windows
 
-Bản 0.6.1 có icon ứng dụng riêng, updater GUI và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
+Bản 0.6.2 có icon ứng dụng riêng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
 
-**Phiên bản:** 0.6.1  
+**Phiên bản:** 0.6.2  
 **Mục đích:** Giám sát cục bộ tối đa bốn camera EZVIZ, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform. Với i7-7500U/RAM 8 GB, nên bắt đầu với hai camera rồi đo CPU trước khi bật bốn luồng YOLO đồng thời.
 
 ## Script cập nhật nhanh từ GitHub
 
-Gói 0.6.1 có updater dạng cửa sổ tại `scripts\Update-EzvizLocalMonitor.ps1` và file chạy nhanh `scripts\Update-EzvizLocalMonitor.cmd`. Double-click file `.cmd` để mở giao diện. Cửa sổ hiển thị phiên bản hiện tại, phiên bản mới nhất, trạng thái kết nối GitHub, tiến trình tải, xác minh SHA-256, giải nén và cài đặt.
+Gói 0.6.2 có updater dạng cửa sổ tại `scripts\Update-EzvizLocalMonitor.ps1` và file chạy nhanh `scripts\Update-EzvizLocalMonitor.cmd`. Double-click file `.cmd` để mở giao diện. Cửa sổ hiển thị phiên bản hiện tại, phiên bản mới nhất, trạng thái kết nối GitHub, tiến trình tải, xác minh SHA-256, giải nén và cài đặt.
 
 Vì repository là **private**, nhập GitHub token có quyền `Contents: ReadOnly` vào ô token hoặc cài GitHub CLI rồi chạy `gh auth login` một lần. Token chỉ được dùng trong phiên cập nhật và không được lưu vào cấu hình ứng dụng.
 
