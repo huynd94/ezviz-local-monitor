@@ -120,3 +120,16 @@ Môi trường dựng đã kiểm tra mã nguồn và build. Việc gọi GitHub
 | Camera 3–4 | Có thể thêm trong danh sách; cần đo CPU thực tế trước khi chạy bốn luồng YOLO trên i7-7500U |
 
 Bản dựng đã biên dịch thành công trong môi trường dựng. Cần xác minh trực quan trên Windows 10 rằng icon xuất hiện trong shortcut/title bar và chuyển đổi bố cục không làm mất preview camera đang chạy.
+
+## Updater GUI 0.6.1
+
+| Hạng mục | Kết quả thiết kế |
+|---|---|
+| Cửa sổ tiến trình WinForms | Hiển thị trạng thái và phần trăm cho kiểm tra, tải ZIP, tải SHA-256, xác minh, giải nén, cài đặt và hậu kiểm. |
+| Repository private | Hỗ trợ GitHub CLI đã đăng nhập, `EZVIZ_GITHUB_TOKEN` hoặc token nhập trực tiếp trong giao diện. |
+| Cập nhật đè | Dùng `ForceUpdate`, không dừng ở hộp thoại thư mục đã tồn tại. |
+| Không chạy nhầm package | Chỉ chạy installer sau khi ZIP và SHA-256 hợp lệ. |
+| Hậu kiểm phiên bản | Đọc lại `D:\EZVIZ-Local-Monitor\EzvizLocalMonitor.exe` và báo lỗi nếu chưa đạt release. |
+| Chạy nhanh | Có `Update-EzvizLocalMonitor.cmd` để mở giao diện bằng double-click. |
+
+Bản GUI cần được kiểm tra trực tiếp trên Windows 10 vì môi trường dựng không có Windows PowerShell/WinForms để chạy giao diện thật.

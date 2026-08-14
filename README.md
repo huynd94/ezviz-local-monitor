@@ -1,27 +1,23 @@
 # EZVIZ Local Monitor for Windows
 
-Bản 0.6.0 có icon ứng dụng riêng và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
+Bản 0.6.1 có icon ứng dụng riêng, updater GUI và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
 
-**Phiên bản:** 0.6.0  
+**Phiên bản:** 0.6.1  
 **Mục đích:** Giám sát cục bộ tối đa bốn camera EZVIZ, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform. Với i7-7500U/RAM 8 GB, nên bắt đầu với hai camera rồi đo CPU trước khi bật bốn luồng YOLO đồng thời.
 
 ## Script cập nhật nhanh từ GitHub
 
-Gói 0.6.0 có `scripts\Update-EzvizLocalMonitor.ps1`. Script đọc phiên bản đang chạy, gọi GitHub Releases, kiểm tra SHA-256 trước khi chạy bộ cài và xác minh lại phiên bản sau cập nhật. Vì repository là **private**, máy Windows cần GitHub CLI đã đăng nhập hoặc biến môi trường `EZVIZ_GITHUB_TOKEN` chỉ có quyền đọc nội dung repository.
+Gói 0.6.1 có updater dạng cửa sổ tại `scripts\Update-EzvizLocalMonitor.ps1` và file chạy nhanh `scripts\Update-EzvizLocalMonitor.cmd`. Double-click file `.cmd` để mở giao diện. Cửa sổ hiển thị phiên bản hiện tại, phiên bản mới nhất, trạng thái kết nối GitHub, tiến trình tải, xác minh SHA-256, giải nén và cài đặt.
 
-Chỉ kiểm tra phiên bản:
+Vì repository là **private**, nhập GitHub token có quyền `Contents: ReadOnly` vào ô token hoặc cài GitHub CLI rồi chạy `gh auth login` một lần. Token chỉ được dùng trong phiên cập nhật và không được lưu vào cấu hình ứng dụng.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\Update-EzvizLocalMonitor.ps1 -CheckOnly
-```
+Trong giao diện, bấm **Kiểm tra bản mới** để chỉ kiểm tra. Khi có bản mới, bấm **Cập nhật ngay**, xác nhận hộp thoại, rồi chờ đến trạng thái **Cập nhật thành công**. Có thể bỏ chọn **Mở ứng dụng sau khi cập nhật** nếu cần.
 
-Cập nhật tự động vào thư mục mặc định:
+Có thể chạy bằng PowerShell nếu cần:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\Update-EzvizLocalMonitor.ps1
 ```
-
-Script sẽ hỏi xác nhận trước khi dừng ứng dụng và cập nhật. Dùng `-NoLaunch` nếu không muốn mở ứng dụng sau khi cập nhật. Không đặt token trực tiếp trong script; dùng `gh auth login` hoặc `$env:EZVIZ_GITHUB_TOKEN` trong phiên PowerShell hiện tại.
 
 ## Bản vá xác minh phiên bản 0.5.1
 

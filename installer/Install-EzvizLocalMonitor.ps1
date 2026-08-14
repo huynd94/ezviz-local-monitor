@@ -3,7 +3,8 @@ param(
     [string]$InstallDir = "D:\EZVIZ-Local-Monitor",
     [switch]$ChooseLocation,
     [switch]$NoShortcut,
-    [switch]$NoLaunch
+    [switch]$NoLaunch,
+    [switch]$ForceUpdate
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,9 +35,10 @@ if ($ChooseLocation) {
     $InstallDir = $dialog.SelectedPath
 }
 
-if (Test-Path $InstallDir) {
-    $existing = Get-ChildItem -LiteralPath $InstallDir -Force -ErrorAction SilentlyContinue
-    if ($existing.Count -gt 0) {
+if ((Test-Path -LiteralPath $InstallDir) -and -not $ForceUpdate) {
+        $existing = Get-ChildItem -LiteralPath $InstallDir -Force -ErrorAction SilentlyContinue
+        if ($existing.Count -gt 0) {
+
         $answer = [System.Windows.Forms.MessageBox]::Show(
             "Thư mục đã có dữ liệu. Cập nhật nội dung ứng dụng trong thư mục này? Dữ liệu cảnh báo tại LocalAppData sẽ không bị xóa.",
             $ApplicationName,
