@@ -8,6 +8,7 @@ namespace EzvizLocalMonitor.Services;
 public sealed class AlertDispatcher
 {
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(10) };
+    private static readonly TimeSpan ZaloOperationTimeout = TimeSpan.FromSeconds(12);
 
     public async Task<string> SendAsync(AlertChannelSettings settings, DetectionEvent item, CancellationToken cancellationToken = default)
     {
@@ -15,15 +16,31 @@ public sealed class AlertDispatcher
         var label = item.IsHumanDetection ? "PHÁT HIỆN NGƯỜI" : "PHÁT HIỆN CHUYỂN ĐỘNG";
         var caption = $"{label} | {item.CameraName} | {item.DetectedAt:yyyy-MM-dd HH:mm:ss} | Tin cậy: {item.Confidence:P0} | Nguồn: {item.DetectionSource}{aiCaption}";
         if (settings.ZaloEnabled)
-            ZaloDiagnostics.Info($"alert dispatch; tokenPresent={!string.IsNullOrWhiteSpace(settings.ZaloBotToken)}; chatId={ZaloDiagnostics.Mask(settings.ZaloChatId)}; chatIdLength={settings.ZaloChatId?.Trim().Length ?? 0}; imagePath={Path.GetFileName(item.ImagePath)}; imageExists={File.Exists(item.ImagePath)}; imageBytes={(File.Exists(item.ImagePath) ? new FileInfo(item.ImagePath).Length : 0)}");
+        {
+            var imageMetadata = ReadImageMetadata(item.ImagePath);
+            ZaloDiagnostics.Info($"alert dispatch; tokenPresent={!string.IsNullOrWhiteSpace(settings.ZaloBotToken)}; chatId={ZaloDiagnostics.Mask(settings.ZaloChatId)}; chatIdLength={settings.ZaloChatId?.Trim().Length ?? 0}; imagePath={SafeFileName(item.ImagePath)}; imageExists={imageMetadata.Exists}; imageBytes={imageMetadata.Bytes}");
+        }
         var tasks = new List<Task<string>>();
         if (settings.TelegramEnabled)
             tasks.Add(SafeSendAsync("Telegram", () => SendTelegramFastAlertAsync(settings.TelegramBotToken, settings.TelegramChatId, item.ImagePath, caption, cancellationToken)));
         if (settings.ZaloEnabled)
             tasks.Add(SafeSendAsync("Zalo", () => SendZaloFastAlertAsync(settings.ZaloBotToken ?? string.Empty, settings.ZaloChatId ?? string.Empty, item.ImagePath, caption, cancellationToken)));
         if (tasks.Count == 0) return "Không có kênh nào được bật";
-        var results = await Task.WhenAll(tasks);
-        return string.Join(" | ", results);
+        try
+        {
+            var results = await Task.WhenAll(tasks);
+            return string.Join(" | ", results);
+        }
+        catch (OperationCanceledException)
+        {
+            if (settings.ZaloEnabled) ZaloDiagnostics.Error("alert dispatch cancelled safely");
+            return "Cảnh báo: thao tác đã hủy hoặc quá thời gian";
+        }
+        catch (Exception ex)
+        {
+            if (settings.ZaloEnabled) ZaloDiagnostics.Error("alert dispatch aggregate exception isolated", ex);
+            return "Cảnh báo: lỗi đã được cô lập; xem log Zalo nếu kênh Zalo đang bật";
+        }
     }
 
     public async Task<string> TestAsync(AlertChannelSettings settings, string channel, CancellationToken cancellationToken = default)
@@ -32,7 +49,7 @@ public sealed class AlertDispatcher
         return channel switch
         {
             "telegram" => await SendTelegramTextAsync(settings.TelegramBotToken, settings.TelegramChatId, message, cancellationToken),
-            "zalo" => await SendZaloTextAsync(settings.ZaloBotToken, settings.ZaloChatId, message, cancellationToken),
+            "zalo" => await SafeTestZaloAsync(settings.ZaloBotToken, settings.ZaloChatId, message, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(channel))
         };
     }
@@ -52,7 +69,35 @@ public sealed class AlertDispatcher
     private static async Task<string> SafeSendAsync(string channel, Func<Task<string>> operation)
     {
         try { return await operation(); }
-        catch (Exception ex) { return $"{channel}: lỗi {SafeException(ex)}"; }
+        catch (OperationCanceledException)
+        {
+            if (channel == "Zalo") ZaloDiagnostics.Error("alert operation cancelled safely");
+            return $"{channel}: thao tác đã hủy hoặc quá thời gian";
+        }
+        catch (Exception ex)
+        {
+            if (channel == "Zalo") ZaloDiagnostics.Error("alert operation isolated safely", ex);
+            return $"{channel}: lỗi {SafeException(ex)}";
+        }
+    }
+
+    private static async Task<string> SafeTestZaloAsync(string token, string chatId, string message, CancellationToken ct)
+    {
+        try
+        {
+            using var timeout = CreateZaloTimeout(ct);
+            return await SendZaloTextAsync(token ?? string.Empty, chatId ?? string.Empty, message, timeout.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            ZaloDiagnostics.Error("test sendMessage cancelled safely");
+            return "Zalo: thao tác kiểm tra đã hủy hoặc quá thời gian";
+        }
+        catch (Exception ex)
+        {
+            ZaloDiagnostics.Error($"test sendMessage exception; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}", ex);
+            return "Zalo: lỗi " + SafeException(ex);
+        }
     }
 
     private static async Task<string> SendTelegramTextAsync(string token, string chatId, string text, CancellationToken ct)
@@ -80,22 +125,49 @@ public sealed class AlertDispatcher
 
     private static async Task<string> SendZaloFastAlertAsync(string token, string chatId, string imagePath, string caption, CancellationToken ct)
     {
+        token ??= string.Empty;
+        chatId ??= string.Empty;
         string textResult;
-        try { textResult = await SendZaloTextAsync(token, chatId, caption, ct); }
+        try
+        {
+            using var textTimeout = CreateZaloTimeout(ct);
+            textResult = await SendZaloTextAsync(token, chatId, caption, textTimeout.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            ZaloDiagnostics.Error($"sendMessage cancelled/timeout; chatId={ZaloDiagnostics.Mask(chatId)}");
+            textResult = "Zalo text: đã hủy hoặc quá thời gian";
+        }
         catch (Exception ex)
         {
-            ZaloDiagnostics.Error($"sendMessage exception; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}", ex);
+            ZaloDiagnostics.Error($"sendMessage exception isolated; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}", ex);
             textResult = "Zalo text: lỗi " + SafeException(ex);
         }
 
         string photoResult;
-        try { photoResult = await SendZaloPhotoAsync(token, chatId, imagePath, caption, ct); }
+        try
+        {
+            using var photoTimeout = CreateZaloTimeout(ct);
+            photoResult = await SendZaloPhotoAsync(token, chatId, imagePath, caption, photoTimeout.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            ZaloDiagnostics.Error($"sendPhoto cancelled/timeout; chatId={ZaloDiagnostics.Mask(chatId)}; imageFile={SafeFileName(imagePath)}");
+            photoResult = "Zalo ảnh: đã hủy hoặc quá thời gian";
+        }
         catch (Exception ex)
         {
-            ZaloDiagnostics.Error($"sendPhoto exception; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}; imagePath={Path.GetFileName(imagePath)}", ex);
+            ZaloDiagnostics.Error($"sendPhoto exception isolated; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}; imagePath={SafeFileName(imagePath)}", ex);
             photoResult = "Zalo ảnh: lỗi " + SafeException(ex);
         }
         return $"{textResult} + {photoResult}";
+    }
+
+    private static CancellationTokenSource CreateZaloTimeout(CancellationToken parent)
+    {
+        var source = CancellationTokenSource.CreateLinkedTokenSource(parent);
+        source.CancelAfter(ZaloOperationTimeout);
+        return source;
     }
 
     private static async Task<string> SendZaloTextAsync(string token, string chatId, string text, CancellationToken ct)
@@ -115,15 +187,14 @@ public sealed class AlertDispatcher
     {
         Require(token, "Zalo Bot Token");
         Require(chatId, "Zalo Chat ID");
-        var fileExists = File.Exists(imagePath);
-        var imageBytes = fileExists ? new FileInfo(imagePath).Length : 0;
+        var imageMetadata = ReadImageMetadata(imagePath);
         var isHttpsUrl = Uri.TryCreate(imagePath, UriKind.Absolute, out var photoUri) && photoUri.Scheme == Uri.UriSchemeHttps;
-        ZaloDiagnostics.Info($"sendPhoto start; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}; chatIdLength={chatId.Trim().Length}; imageFile={Path.GetFileName(imagePath)}; imageExists={fileExists}; imageBytes={imageBytes}; photoIsHttpsUrl={isHttpsUrl}");
+        ZaloDiagnostics.Info($"sendPhoto start; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}; chatIdLength={chatId.Trim().Length}; imageFile={SafeFileName(imagePath)}; imageExists={imageMetadata.Exists}; imageBytes={imageMetadata.Bytes}; photoIsHttpsUrl={isHttpsUrl}");
 
         if (!isHttpsUrl)
         {
             const string reason = "Zalo Bot sendPhoto yêu cầu photo là URL HTTPS công khai; ảnh sự kiện hiện chỉ có đường dẫn local trong máy.";
-            ZaloDiagnostics.Error($"sendPhoto skipped; reason={reason}; chatId={ZaloDiagnostics.Mask(chatId)}; imageExists={fileExists}; imageBytes={imageBytes}");
+            ZaloDiagnostics.Error($"sendPhoto skipped; reason={reason}; chatId={ZaloDiagnostics.Mask(chatId)}; imageExists={imageMetadata.Exists}; imageBytes={imageMetadata.Bytes}");
             return "Zalo ảnh: chưa gửi; API yêu cầu URL HTTPS công khai cho photo";
         }
 
@@ -145,9 +216,27 @@ public sealed class AlertDispatcher
 
     private static void LogApiResult(string operation, string chatId, string? imagePath, HttpResponseMessage response, string body, string result)
     {
-        var fileExists = !string.IsNullOrWhiteSpace(imagePath) && File.Exists(imagePath);
-        var imageBytes = fileExists ? new FileInfo(imagePath!).Length : 0;
-        ZaloDiagnostics.Info($"{operation} result; status={(int)response.StatusCode}; chatId={ZaloDiagnostics.Mask(chatId)}; chatIdLength={chatId.Trim().Length}; imageExists={fileExists}; imageBytes={imageBytes}; contentType={response.Content.Headers.ContentType?.MediaType ?? "<none>"}; result={result}; response={ZaloDiagnostics.SanitizeResponse(body)}");
+        var imageMetadata = ReadImageMetadata(imagePath);
+        ZaloDiagnostics.Info($"{operation} result; status={(int)response.StatusCode}; chatId={ZaloDiagnostics.Mask(chatId)}; chatIdLength={chatId?.Trim().Length ?? 0}; imageExists={imageMetadata.Exists}; imageBytes={imageMetadata.Bytes}; contentType={response.Content.Headers.ContentType?.MediaType ?? "<none>"}; result={ZaloDiagnostics.SanitizeResponse(result)}; response={ZaloDiagnostics.SanitizeResponse(body)}");
+    }
+
+    private static (bool Exists, long Bytes) ReadImageMetadata(string? imagePath)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath)) return (false, 0);
+            return (true, new FileInfo(imagePath).Length);
+        }
+        catch
+        {
+            return (false, 0);
+        }
+    }
+
+    private static string SafeFileName(string? path)
+    {
+        try { return string.IsNullOrWhiteSpace(path) ? "<empty>" : Path.GetFileName(path); }
+        catch { return "<invalid>"; }
     }
 
     private static ByteArrayContent CreateImageContent(string imagePath)
@@ -212,7 +301,11 @@ public sealed class AlertDispatcher
         }
     }
 
-    private static string SafeException(Exception ex) => ex.Message.Length > 100 ? ex.Message[..100] : ex.Message;
+    private static string SafeException(Exception ex)
+    {
+        var message = string.IsNullOrWhiteSpace(ex.Message) ? ex.GetType().Name : ex.Message;
+        return message.Length > 100 ? message[..100] : message;
+    }
 
     private static void Require(string value, string name)
     {

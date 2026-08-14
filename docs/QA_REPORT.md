@@ -173,3 +173,11 @@ RTSP snapshot được warm ở task nền thay vì chặn lúc khởi động. 
 Ảnh nhật ký người dùng cho thấy `sendMessage` kiểm thử có thể thành công, trong khi cảnh báo thực tế trước đây chỉ gọi `sendPhoto` bằng multipart file local. Zalo Bot API mô tả `photo` là một chuỗi đường dẫn ảnh; một file path trong máy LAN không phải URL HTTPS mà máy chủ Zalo có thể truy cập. Điều này giải thích các response `error_code=400` với `chat_id/photo must not be empty` khi endpoint không phân tích multipart như một file upload.
 
 Bản v0.7.0 gửi `sendMessage` trước để cảnh báo chữ không bị mất, chỉ gọi `sendPhoto` khi giá trị ảnh là URL HTTPS hợp lệ, và ghi log khi ảnh local bị bỏ qua. Log tại `%LOCALAPPDATA%\EZVIZ Local Monitor\zalo-send.log` ghi thao tác, HTTP status, Chat ID đã che, độ dài Chat ID, trạng thái file/kích thước ảnh, cờ `photoIsHttpsUrl` và response rút gọn; không ghi Bot Token đầy đủ.
+
+## Gia cố exception và logging Zalo — v0.7.1
+
+AlertDispatcher tạo timeout riêng tối đa 12 giây cho từng thao tác Zalo và liên kết với CancellationToken của tiến trình. `sendMessage` và `sendPhoto` được xử lý độc lập; lỗi của ảnh không làm mất tin chữ, lỗi của Zalo không làm hỏng Telegram, và lỗi tổng hợp của `Task.WhenAll` được bắt trước khi trả trạng thái.
+
+Các nhóm lỗi được cô lập gồm thiếu token/Chat ID, hủy hoặc timeout, lỗi DNS/HTTP, response JSON không hợp lệ, file ảnh bị xóa/không thể đọc, URL ảnh không hợp lệ, lỗi metadata và lỗi ghi log. Logger sử dụng worker nền, giới hạn 128 bản ghi chờ, tự xoay ở 2 MB và nuốt mọi lỗi I/O. Log chỉ ghi Chat ID đã che, không ghi Bot Token đầy đủ.
+
+Build Release đã thành công với 0 lỗi biên dịch. Các cảnh báo CA1416 hiện hữu liên quan Windows DPAPI không thuộc thay đổi Zalo.

@@ -5,16 +5,20 @@ namespace EzvizLocalMonitor.Services;
 public static class ZaloDiagnostics
 {
     private static readonly object Sync = new();
+    private static int PendingWrites;
+    private const int MaxPendingWrites = 128;
     private const long MaxLogBytes = 2 * 1024 * 1024;
 
     public static string LogFilePath => DataPaths.ZaloLogFile;
 
-    public static void Info(string message) => Write("INFO", message);
+    public static void Info(string message) => Write("INFO", SanitizeResponse(message));
 
     public static void Error(string message, Exception? exception = null)
     {
-        var detail = exception is null ? message : $"{message}; exception={exception.GetType().Name}: {exception.Message}";
-        Write("ERROR", detail);
+        var detail = exception is null
+            ? message
+            : $"{message}; exception={exception.GetType().Name}: {SanitizeResponse(exception.Message)}";
+        Write("ERROR", SanitizeResponse(detail));
     }
 
     public static string SanitizeResponse(string? response)
@@ -34,20 +38,33 @@ public static class ZaloDiagnostics
 
     private static void Write(string level, string message)
     {
-        try
+        if (Interlocked.Increment(ref PendingWrites) > MaxPendingWrites)
         {
-            DataPaths.EnsureCreated();
-            lock (Sync)
+            Interlocked.Decrement(ref PendingWrites);
+            return;
+        }
+
+        var line = $"{DateTimeOffset.Now:O}\t{level}\t{SanitizeResponse(message)}{Environment.NewLine}";
+        _ = Task.Run(() =>
+        {
+            try
             {
-                RotateIfNeeded();
-                var line = $"{DateTimeOffset.Now:O}\t{level}\t{message}{Environment.NewLine}";
-                File.AppendAllText(LogFilePath, line, Encoding.UTF8);
+                DataPaths.EnsureCreated();
+                lock (Sync)
+                {
+                    RotateIfNeeded();
+                    File.AppendAllText(LogFilePath, line, Encoding.UTF8);
+                }
             }
-        }
-        catch
-        {
-            // Logging must never interrupt camera monitoring or alert delivery.
-        }
+            catch
+            {
+                // Logging must never interrupt camera monitoring, alert delivery or UI.
+            }
+            finally
+            {
+                Interlocked.Decrement(ref PendingWrites);
+            }
+        });
     }
 
     private static void RotateIfNeeded()
