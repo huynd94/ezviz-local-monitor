@@ -1,7 +1,25 @@
 # EZVIZ Local Monitor for Windows
 
-**Phiên bản:** 0.5.1  
+**Phiên bản:** 0.5.2  
 **Mục đích:** Giám sát cục bộ tối đa hai camera EZVIZ C6N/H8C, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform.
+
+## Script cập nhật nhanh từ GitHub
+
+Gói 0.5.2 có `scripts\Update-EzvizLocalMonitor.ps1`. Script đọc phiên bản đang chạy, gọi GitHub Releases, kiểm tra SHA-256 trước khi chạy bộ cài và xác minh lại phiên bản sau cập nhật. Vì repository là **private**, máy Windows cần GitHub CLI đã đăng nhập hoặc biến môi trường `EZVIZ_GITHUB_TOKEN` chỉ có quyền đọc nội dung repository.
+
+Chỉ kiểm tra phiên bản:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Update-EzvizLocalMonitor.ps1 -CheckOnly
+```
+
+Cập nhật tự động vào thư mục mặc định:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Update-EzvizLocalMonitor.ps1
+```
+
+Script sẽ hỏi xác nhận trước khi dừng ứng dụng và cập nhật. Dùng `-NoLaunch` nếu không muốn mở ứng dụng sau khi cập nhật. Không đặt token trực tiếp trong script; dùng `gh auth login` hoặc `$env:EZVIZ_GITHUB_TOKEN` trong phiên PowerShell hiện tại.
 
 ## Bản vá xác minh phiên bản 0.5.1
 

@@ -2,7 +2,8 @@
 param(
     [string]$InstallDir = "D:\EZVIZ-Local-Monitor",
     [switch]$ChooseLocation,
-    [switch]$NoShortcut
+    [switch]$NoShortcut,
+    [switch]$NoLaunch
 )
 
 $ErrorActionPreference = "Stop"
@@ -68,4 +69,4 @@ if (-not $NoShortcut) {
 
 Write-Host "Đã cài $ApplicationName vào: $InstallDir" -ForegroundColor Green
 Write-Host "Dữ liệu và token được lưu mã hóa theo tài khoản Windows tại: %LOCALAPPDATA%\EZVIZ Local Monitor" -ForegroundColor Cyan
-Start-Process (Join-Path $InstallDir $ExecutableName)
+if (-not $NoLaunch) { Start-Process (Join-Path $InstallDir $ExecutableName) }

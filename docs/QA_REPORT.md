@@ -93,3 +93,16 @@ Môi trường dựng đã biên dịch thành công. Độ trễ end-to-end Tel
 ## Bản vá 0.5.1 — Xác minh cài đặt
 
 Bản 0.5.1 thay nhãn `Bản mẫu v0.1` bằng phiên bản đọc động từ assembly. Theo script cài đặt, nội dung của thư mục `app` trong gói được chép trực tiếp vào thư mục đích, nên file thực thi đúng là `D:\EZVIZ-Local-Monitor\EzvizLocalMonitor.exe` khi dùng thư mục mặc định. Lệnh PowerShell xác minh phải trỏ tới file này, không phải `D:\EZVIZ-Local-Monitor\app\EzvizLocalMonitor.exe`.
+
+## Script cập nhật GitHub 0.5.2
+
+| Kiểm tra | Thiết kế |
+|---|---|
+| Phát hiện phiên bản hiện tại | Đọc `D:\EZVIZ-Local-Monitor\EzvizLocalMonitor.exe` và `ProductVersion`. |
+| Kiểm tra bản mới | Gọi GitHub Releases API của repository private `huyavm/ezviz-local-monitor`. |
+| Xác thực nguồn tải | Tải ZIP và SHA-256, so sánh trước khi giải nén/chạy installer. |
+| Cập nhật | Dừng process, chạy installer với đúng InstallDir và không mở ứng dụng hai lần. |
+| Hậu kiểm | Đọc lại ProductVersion; nếu chưa đạt phiên bản release thì báo lỗi. |
+| Không có quyền GitHub | Báo hướng dùng GitHub CLI đã đăng nhập hoặc `EZVIZ_GITHUB_TOKEN` quyền đọc. |
+
+Môi trường dựng đã kiểm tra mã nguồn và build. Việc gọi GitHub private release và cập nhật trực tiếp cần thực hiện trên máy Windows của người dùng, nơi có quyền truy cập repository.
