@@ -220,3 +220,9 @@ Bản v0.8.3 khôi phục `avares://Avalonia.Controls.DataGrid/Themes/Fluent.xam
 Ảnh người dùng cho thấy cùng một caption và ảnh sự kiện xuất hiện hai lần trong cùng một phút. `CameraMonitor` đã có cooldown cục bộ, nhưng lớp điều phối chưa có khóa chung; nếu callback ONVIF/YOLO hoặc hai monitor đến gần như đồng thời, cả hai có thể cùng được đưa vào pipeline gửi.
 
 Bản v0.8.4 thêm `ConcurrentDictionary<Guid, DateTimeOffset>` tại `MonitorCoordinator` và thao tác chấp nhận nguyên tử theo `CameraId`/`CooldownSeconds`. Chỉ callback đầu tiên được xử lý; callback trùng bị bỏ qua và dispose snapshot. Cơ chế áp dụng chung cho ONVIF và YOLO, không thay đổi nội dung cảnh báo hoặc sự kiện mới sau khi hết cooldown.
+
+## Safe exit while monitoring — v0.8.5
+
+Lỗi được truy vết tại `Window_Closing`: khi `_exitRequested` là true, code cũ gọi `DisposeAsync().AsTask().GetAwaiter().GetResult()` trên UI thread. `OnvifEventListener`, `CameraMonitor` hoặc `RtspSnapshotReader` có thể đang chờ I/O/lock, làm UI bị khóa vô thời hạn.
+
+Bản v0.8.5 chuyển `ExitFromTray` sang async, ẩn cửa sổ ngay, gọi `StopMonitoringAsync` qua `Interlocked.Exchange`, chờ tối đa 8 giây và ghi timeout vào `startup-crash.log`. `Window_Closing` không còn chờ đồng bộ; chỉ dọn bitmap UI. Nếu một capture không dừng kịp, ứng dụng vẫn không khóa giao diện và desktop lifetime được shutdown sau timeout.

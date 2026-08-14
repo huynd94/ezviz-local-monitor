@@ -41,6 +41,7 @@ public partial class MainWindow : Avalonia.Controls.Window
     private Bitmap? _eventDetailBitmap;
     private bool _updateCheckStarted;
     private bool _exitRequested;
+    private bool _shutdownStarted;
 
     public event Action<string>? TrayStatusChanged;
 
@@ -394,13 +395,33 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private async void StopMonitoring_Click(object? sender, RoutedEventArgs e) => await StopMonitoringAsync();
 
-    private async Task StopMonitoringAsync()
+    private async Task StopMonitoringAsync(TimeSpan? timeout = null)
     {
-        if (_coordinator is null) return;
-        await _coordinator.DisposeAsync();
-        _coordinator = null;
-        SetStatus("Đã dừng giám sát");
-        foreach (var status in _cameraStatuses) status.Text = "Đã dừng";
+        var coordinator = Interlocked.Exchange(ref _coordinator, null);
+        if (coordinator is null) return;
+
+        try
+        {
+            var disposeTask = coordinator.DisposeAsync().AsTask();
+            await disposeTask.WaitAsync(timeout ?? TimeSpan.FromSeconds(8));
+        }
+        catch (TimeoutException ex)
+        {
+            StartupDiagnostics.Write("StopMonitoringAsync timeout; process will continue cleanup in background", ex);
+        }
+        catch (OperationCanceledException)
+        {
+            // Normal when camera/ONVIF loops observe cancellation.
+        }
+        catch (Exception ex)
+        {
+            StartupDiagnostics.Write("StopMonitoringAsync", ex);
+        }
+        finally
+        {
+            SetStatus("Đã dừng giám sát");
+            foreach (var status in _cameraStatuses) status.Text = "Đã dừng";
+        }
     }
 
     private void FocusSelectedCamera_Click(object? sender, RoutedEventArgs e)
@@ -769,9 +790,16 @@ public partial class MainWindow : Avalonia.Controls.Window
         }
     }
 
-    public void ExitFromTray()
+    public async void ExitFromTray()
     {
+        if (_shutdownStarted) return;
+        _shutdownStarted = true;
         _exitRequested = true;
+        Hide();
+        SetStatus("Đang dừng camera và thoát an toàn...");
+
+        await StopMonitoringAsync(TimeSpan.FromSeconds(8));
+
         if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
             desktop.Shutdown();
         else
@@ -793,7 +821,8 @@ public partial class MainWindow : Avalonia.Controls.Window
             _pendingPreviewBitmaps.Clear();
             _previewDispatchScheduled.Clear();
         }
-        if (_coordinator is not null) _coordinator.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        // Không dispose đồng bộ trên UI thread. ExitFromTray/LaunchUpdaterAsync đã dừng
+        // coordinator theo đường async có timeout; Window_Closing chỉ giải phóng bitmap UI.
     }
 
     private void SetStatus(string text)
