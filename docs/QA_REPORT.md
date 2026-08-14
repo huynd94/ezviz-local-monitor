@@ -214,3 +214,9 @@ Bản v0.8.2 thêm cờ `_uiInitialized`, bỏ qua các event chạy sớm và �
 Cảnh báo Telegram/Zalo thành công chứng minh `MonitorCoordinator.QueueDetection` đã đi qua bước `_eventStore.Add(item)`. Nguyên nhân hiển thị trống ở v0.8.1/v0.8.2 là DataGrid style Fluent bị loại bỏ để xử lý startup crash, khiến DataGrid không có template/style đầy đủ để render.
 
 Bản v0.8.3 khôi phục `avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml` theo tài liệu DataGrid Avalonia, đồng thời thêm summary `đã tải N sự kiện` và `hiển thị M/N sự kiện`. Refresh bắt exception đọc SQLite/DataGrid, đưa lỗi lên giao diện và ghi vào startup-crash.log.
+
+## Duplicate Telegram alert fix — v0.8.4
+
+Ảnh người dùng cho thấy cùng một caption và ảnh sự kiện xuất hiện hai lần trong cùng một phút. `CameraMonitor` đã có cooldown cục bộ, nhưng lớp điều phối chưa có khóa chung; nếu callback ONVIF/YOLO hoặc hai monitor đến gần như đồng thời, cả hai có thể cùng được đưa vào pipeline gửi.
+
+Bản v0.8.4 thêm `ConcurrentDictionary<Guid, DateTimeOffset>` tại `MonitorCoordinator` và thao tác chấp nhận nguyên tử theo `CameraId`/`CooldownSeconds`. Chỉ callback đầu tiên được xử lý; callback trùng bị bỏ qua và dispose snapshot. Cơ chế áp dụng chung cho ONVIF và YOLO, không thay đổi nội dung cảnh báo hoặc sự kiện mới sau khi hết cooldown.

@@ -13,6 +13,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
     private readonly List<OnvifEventListener> _onvifListeners = new();
     private readonly RtspSnapshotReader _snapshotReader = new();
     private readonly ConcurrentDictionary<Guid, DateTimeOffset> _lastOnvifEvents = new();
+    private readonly ConcurrentDictionary<Guid, DateTimeOffset> _lastAcceptedDetections = new();
     private YoloPersonDetector? _detector;
     private AppSettings? _settings;
     private bool _started;
@@ -105,6 +106,14 @@ public sealed class MonitorCoordinator : IAsyncDisposable
     private void QueueDetection(CameraDefinition camera, Mat snapshot, Mat? previousSnapshot, PersonDetection detection,
         string detectionSource, bool isHumanDetection)
     {
+        if (!TryAcceptDetection(camera))
+        {
+            previousSnapshot?.Dispose();
+            snapshot.Dispose();
+            CameraStatusChanged?.Invoke(camera.Id, "Bỏ qua cảnh báo trùng trong khoảng im lặng");
+            return;
+        }
+
         _ = Task.Run(async () =>
         {
             string? previousImagePath = null;
@@ -156,6 +165,19 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                 snapshot.Dispose();
             }
         });
+    }
+
+    private bool TryAcceptDetection(CameraDefinition camera)
+    {
+        var now = DateTimeOffset.Now;
+        var cooldown = TimeSpan.FromSeconds(Math.Max(1, camera.CooldownSeconds));
+        while (true)
+        {
+            if (_lastAcceptedDetections.TryGetValue(camera.Id, out var previous) && now - previous < cooldown)
+                return false;
+            if (_lastAcceptedDetections.TryUpdate(camera.Id, now, previous)) return true;
+            if (_lastAcceptedDetections.TryAdd(camera.Id, now)) return true;
+        }
     }
 
     private static void SaveAlertJpeg(string path, Mat source)
@@ -216,6 +238,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
         _detector = null;
         _snapshotReader.Dispose();
         _lastOnvifEvents.Clear();
+        _lastAcceptedDetections.Clear();
         _started = false;
     }
 }
