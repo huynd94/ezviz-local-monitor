@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
@@ -21,7 +22,11 @@ public partial class MainWindow : Avalonia.Controls.Window
     private TextBlock[] _cameraStatuses = Array.Empty<TextBlock>();
     private Border[] _cameraTiles = Array.Empty<Border>();
     private readonly AppUpdateService _updateService = new();
+    private readonly object _previewSync = new();
+    private readonly Dictionary<Guid, Bitmap> _pendingPreviewBitmaps = new();
+    private readonly HashSet<Guid> _previewDispatchScheduled = new();
     private bool _updateCheckStarted;
+    private bool _exitRequested;
 
     public MainWindow()
     {
@@ -335,16 +340,48 @@ public partial class MainWindow : Avalonia.Controls.Window
         Bitmap? bitmap = null;
         try { bitmap = ToBitmap(image); }
         finally { image.Dispose(); }
-        Dispatcher.UIThread.Post(() =>
+        if (bitmap is null) return;
+
+        lock (_previewSync)
         {
-            var index = _settings.Cameras.FindIndex(x => x.Id == id);
-            if (index >= 0 && index < _previews.Length)
+            if (_pendingPreviewBitmaps.TryGetValue(id, out var oldPending)) oldPending.Dispose();
+            _pendingPreviewBitmaps[id] = bitmap;
+            if (!_previewDispatchScheduled.Add(id)) return;
+        }
+        Dispatcher.UIThread.Post(() => ApplyPendingPreview(id));
+    }
+
+    private void ApplyPendingPreview(Guid id)
+    {
+        Bitmap? bitmap;
+        lock (_previewSync)
+        {
+            if (!_pendingPreviewBitmaps.Remove(id, out bitmap))
             {
-                var old = _previews[index].Source as IDisposable;
-                _previews[index].Source = bitmap;
-                old?.Dispose();
+                _previewDispatchScheduled.Remove(id);
+                return;
             }
-        });
+            _previewDispatchScheduled.Remove(id);
+        }
+
+        var index = _settings.Cameras.FindIndex(x => x.Id == id);
+        if (bitmap is null) return;
+        if (index >= 0 && index < _previews.Length)
+        {
+            var old = _previews[index].Source as IDisposable;
+            _previews[index].Source = bitmap;
+            old?.Dispose();
+        }
+        else
+        {
+            bitmap.Dispose();
+        }
+
+        lock (_previewSync)
+        {
+            if (_pendingPreviewBitmaps.ContainsKey(id) && _previewDispatchScheduled.Add(id))
+                Dispatcher.UIThread.Post(() => ApplyPendingPreview(id));
+        }
     }
 
     private static Bitmap ToBitmap(Mat image)
@@ -372,6 +409,7 @@ public partial class MainWindow : Avalonia.Controls.Window
     {
         if (_updateCheckStarted) return;
         _updateCheckStarted = true;
+        var monitoringTask = StartMonitoringAsync(false);
 
         try
         {
@@ -400,7 +438,7 @@ public partial class MainWindow : Avalonia.Controls.Window
             SetStatus("Không kiểm tra được bản cập nhật tự động; ứng dụng vẫn hoạt động bình thường.");
         }
 
-        await StartMonitoringAsync(false);
+        await monitoringTask;
     }
 
     private async Task LaunchUpdaterAsync(AppUpdateInfo update)
@@ -441,11 +479,47 @@ public partial class MainWindow : Avalonia.Controls.Window
         process.ArgumentList.Add(AppUpdateService.Repository);
         process.ArgumentList.Add("-Force");
         Process.Start(process);
+        _exitRequested = true;
         Close();
+    }
+
+    public void HideToTray()
+    {
+        Hide();
+        SetStatus("Đang chạy nền và tiếp tục giám sát — mở lại từ biểu tượng khay thông báo.");
+    }
+
+    public void ShowFromTray()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    public void ExitFromTray()
+    {
+        _exitRequested = true;
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.Shutdown();
+        else
+            Close();
     }
 
     private void Window_Closing(object? sender, WindowClosingEventArgs e)
     {
+        if (!_exitRequested)
+        {
+            e.Cancel = true;
+            HideToTray();
+            return;
+        }
+
+        lock (_previewSync)
+        {
+            foreach (var pending in _pendingPreviewBitmaps.Values) pending.Dispose();
+            _pendingPreviewBitmaps.Clear();
+            _previewDispatchScheduled.Clear();
+        }
         if (_coordinator is not null) _coordinator.DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 

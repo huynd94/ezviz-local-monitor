@@ -10,7 +10,17 @@ public sealed class RtspSnapshotReader : IDisposable
 
     public void Warm(CameraDefinition camera)
     {
-        lock (_sync) _ = GetOrOpen(camera);
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                lock (_sync) _ = GetOrOpen(camera);
+            }
+            catch
+            {
+                // TryRead sẽ thực hiện mở lại và báo trạng thái nếu camera chưa sẵn sàng.
+            }
+        });
     }
 
     public bool TryRead(CameraDefinition camera, Mat destination)

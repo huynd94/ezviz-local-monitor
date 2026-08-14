@@ -42,6 +42,7 @@ public sealed class CameraMonitor : IAsyncDisposable
             {
                 StatusChanged?.Invoke(_camera, "Đang kết nối...");
                 using var capture = new VideoCapture(_camera.RtspUrl, VideoCaptureAPIs.FFMPEG);
+                capture.Set(VideoCaptureProperties.BufferSize, 1);
                 if (!capture.IsOpened()) throw new InvalidOperationException("Không mở được luồng RTSP.");
 
                 reconnectDelay = TimeSpan.FromSeconds(2);

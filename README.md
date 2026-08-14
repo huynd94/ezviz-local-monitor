@@ -1,8 +1,8 @@
 # EZVIZ Local Monitor for Windows
 
-Bản 0.6.8 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
+Bản 0.6.9 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
 
-**Phiên bản:** 0.6.8  
+**Phiên bản:** 0.6.9  
 **Mục đích:** Giám sát cục bộ tối đa bốn camera EZVIZ, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform. Với i7-7500U/RAM 8 GB, nên bắt đầu với hai camera rồi đo CPU trước khi bật bốn luồng YOLO đồng thời.
 
 ## Script cập nhật nhanh từ GitHub
@@ -20,6 +20,12 @@ Có thể chạy bằng PowerShell nếu cần:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\Update-EzvizLocalMonitor.ps1
 ```
+
+## Khay thông báo và chạy nền
+
+Khi bấm nút đóng cửa sổ, ứng dụng sẽ **ẩn vào khay thông báo** thay vì thoát. Các luồng camera, nhận diện người và cảnh báo vẫn tiếp tục hoạt động. Bấm biểu tượng EZVIZ Local Monitor trong khay để mở lại cửa sổ; chọn **Thoát hoàn toàn** trong menu khay nếu muốn dừng giám sát và kết thúc ứng dụng.
+
+Bản 0.6.9 cũng giảm giật lag lúc mở ứng dụng bằng cách mở trước RTSP ở nền, giới hạn buffer khung hình để ưu tiên dữ liệu mới và gộp các preview đang chờ để không làm nghẽn hàng đợi giao diện.
 
 ## Bố cục Tổng quan và tự động giám sát
 

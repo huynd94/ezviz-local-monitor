@@ -161,3 +161,9 @@ Logic lưới đã được điều chỉnh: chế độ 1 dùng một cột duy
 ## Sửa sendPhoto Zalo — v0.6.8
 
 Kiểm thử nút **Gửi thử** thành công xác nhận Bot Token và Chat ID hợp lệ, nhưng cảnh báo thực tế trả `HTTP 200; error_code=400; The photo must not be empty`. Nguyên nhân nằm ở đường gửi ảnh `sendPhoto`, không phải `sendMessage`. Bản vá đổi nội dung ảnh từ stream file sang `ByteArrayContent` có độ dài xác định, kiểm tra file JPEG tồn tại và không rỗng trước khi tạo multipart request; đồng thời `Cv2.ImWrite` cũng phải trả thành công và tạo ra tệp có kích thước lớn hơn 0.
+
+## Tray icon và tối ưu preview — v0.6.9
+
+Khi người dùng đóng cửa sổ, `Window_Closing` hủy thao tác đóng mặc định và ẩn cửa sổ; coordinator vẫn chạy, vì vậy camera, YOLO/ONVIF và cảnh báo tiếp tục hoạt động. Tray menu có các lệnh mở lại, ẩn và thoát hoàn toàn. Lệnh thoát đặt cờ shutdown rồi kết thúc desktop lifetime để coordinator được dispose đúng cách.
+
+RTSP snapshot được warm ở task nền thay vì chặn lúc khởi động. Luồng preview được gộp theo camera: mỗi camera chỉ có một lần cập nhật UI đang chờ, frame mới thay thế frame cũ chưa hiển thị và bitmap cũ được giải phóng. Điều này tránh tích tụ hàng đợi Dispatcher khi camera phát nhiều frame và giảm giật lag khi mở ứng dụng.
