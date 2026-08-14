@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="EzvizLocalMonitor.MainWindow"
-        Title="EZVIZ Local Monitor" Width="1220" Height="810" MinWidth="980" MinHeight="650"
+        Title="EZVIZ Local Monitor" Icon="/Assets/ezviz-local-monitor.ico" Width="1220" Height="810" MinWidth="980" MinHeight="650"
         Background="#F5F7FA" Closing="Window_Closing">
   <Grid Margin="16" RowDefinitions="Auto,*,Auto">
     <Border Grid.Row="0" Background="#093B5A" CornerRadius="8" Padding="18" Margin="0,0,0,12">
@@ -19,14 +19,29 @@
 
     <TabControl Grid.Row="1">
       <TabItem Header="Tổng quan">
-        <Grid Margin="12" RowDefinitions="*,Auto" ColumnDefinitions="*,*">
-          <Border Grid.Row="0" Grid.Column="0" Background="#19232D" CornerRadius="5" Margin="0,0,8,0">
-            <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewOne" Stretch="Uniform" /><TextBlock x:Name="CameraOneStatus" Grid.Row="1" Text="Camera 1 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
-          </Border>
-          <Border Grid.Row="0" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="8,0,0,0">
-            <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewTwo" Stretch="Uniform" /><TextBlock x:Name="CameraTwoStatus" Grid.Row="1" Text="Camera 2 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
-          </Border>
-          <Border Grid.Row="1" Grid.ColumnSpan="2" Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,14,0,0">
+        <Grid Margin="12" RowDefinitions="Auto,*,Auto">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+            <TextBlock Text="Bố cục giám sát:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#093B5A" />
+            <Button x:Name="LayoutOneButton" Tag="1" Content="1 màn hình" Click="LayoutMode_Click" />
+            <Button x:Name="LayoutTwoButton" Tag="2" Content="2 màn hình" Click="LayoutMode_Click" />
+            <Button x:Name="LayoutFourButton" Tag="4" Content="4 màn hình" Click="LayoutMode_Click" />
+            <TextBlock Text="Có thể quản lý tối đa 4 camera; ô chưa cấu hình sẽ hiển thị trạng thái chờ." VerticalAlignment="Center" Foreground="#52606D" Margin="8,0,0,0" />
+          </StackPanel>
+          <Grid x:Name="CameraGrid" Grid.Row="1" Background="#19232D" RowDefinitions="*" ColumnDefinitions="*,*">
+            <Border x:Name="CameraTileOne" Background="#19232D" CornerRadius="5" Margin="4">
+              <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewOne" Stretch="Uniform" /><TextBlock x:Name="CameraOneStatus" Grid.Row="1" Text="Camera 1 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+            </Border>
+            <Border x:Name="CameraTileTwo" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="4">
+              <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewTwo" Stretch="Uniform" /><TextBlock x:Name="CameraTwoStatus" Grid.Row="1" Text="Camera 2 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+            </Border>
+            <Border x:Name="CameraTileThree" Background="#19232D" CornerRadius="5" Margin="4" IsVisible="False">
+              <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewThree" Stretch="Uniform" /><TextBlock x:Name="CameraThreeStatus" Grid.Row="1" Text="Camera 3 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+            </Border>
+            <Border x:Name="CameraTileFour" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="4" IsVisible="False">
+              <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewFour" Stretch="Uniform" /><TextBlock x:Name="CameraFourStatus" Grid.Row="1" Text="Camera 4 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+            </Border>
+          </Grid>
+          <Border Grid.Row="2" Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,14,0,0">
             <Grid ColumnDefinitions="Auto,Auto,Auto,*"><Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" /><Button Grid.Column="1" Content="Dừng" Click="StopMonitoring_Click" Margin="8,0,0,0" /><Button Grid.Column="2" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="8,0,0,0" /><TextBlock x:Name="RuntimeInfoText" Grid.Column="3" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#52606D" /></Grid>
           </Border>
         </Grid>

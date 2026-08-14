@@ -47,6 +47,7 @@ public sealed class AppSettings
     public int ConfirmationsRequired { get; set; } = 2;
     public int ConfirmationWindow { get; set; } = 3;
     public bool StartWithWindows { get; set; }
+    public int DashboardLayoutMode { get; set; } = 2;
 }
 
 public sealed record PersonDetection(double Confidence, int Left, int Top, int Right, int Bottom)

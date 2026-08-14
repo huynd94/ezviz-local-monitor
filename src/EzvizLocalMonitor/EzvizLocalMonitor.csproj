@@ -6,7 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>EzvizLocalMonitor</AssemblyName>
     <RootNamespace>EzvizLocalMonitor</RootNamespace>
-    <Version>0.5.2</Version>
+    <ApplicationIcon>Assets\ezviz-local-monitor.ico</ApplicationIcon>
+    <Version>0.6.0</Version>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
@@ -25,5 +26,6 @@
 
   <ItemGroup>
     <Content Include="..\..\assets\Models\yolov8n.onnx" Link="Models\yolov8n.onnx" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\assets\Models\yolov8n.onnx')" />
+    <AvaloniaResource Include="Assets\ezviz-local-monitor.ico" />
   </ItemGroup>
 </Project>

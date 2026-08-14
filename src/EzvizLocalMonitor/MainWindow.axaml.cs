@@ -17,15 +17,22 @@ public partial class MainWindow : Avalonia.Controls.Window
     private readonly LanCameraDiscovery _lanDiscovery = new();
     private AppSettings _settings = new();
     private MonitorCoordinator? _coordinator;
+    private Image[] _previews = Array.Empty<Image>();
+    private TextBlock[] _cameraStatuses = Array.Empty<TextBlock>();
+    private Border[] _cameraTiles = Array.Empty<Border>();
 
     public MainWindow()
     {
         InitializeComponent();
+        _previews = new[] { PreviewOne, PreviewTwo, PreviewThree, PreviewFour };
+        _cameraStatuses = new[] { CameraOneStatus, CameraTwoStatus, CameraThreeStatus, CameraFourStatus };
+        _cameraTiles = new[] { CameraTileOne, CameraTileTwo, CameraTileThree, CameraTileFour };
         var version = typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "không xác định";
         VersionText.Text = $"Bản {version} · Nhận diện người cục bộ · Ảnh sự kiện chỉ rời LAN khi Telegram/Zalo được bật.";
         DataPaths.EnsureCreated();
         _eventStore.Initialize();
         LoadSettings();
+        ApplyLayoutMode(_settings.DashboardLayoutMode, false);
         RefreshEvents();
         ConfidenceSlider.PropertyChanged += (_, args) =>
         {
@@ -64,6 +71,7 @@ public partial class MainWindow : Avalonia.Controls.Window
     {
         CameraList.ItemsSource = null;
         CameraList.ItemsSource = _settings.Cameras;
+        if (_cameraStatuses.Length > 0) RefreshOverviewStatuses();
     }
 
     private void SaveSettings()
@@ -88,9 +96,9 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private void AddCamera_Click(object? sender, RoutedEventArgs e)
     {
-        if (_settings.Cameras.Count >= 2)
+        if (_settings.Cameras.Count >= 4)
         {
-            SetStatus("Bản đầu tiên được tối ưu cho tối đa hai camera trên i7-7500U.");
+            SetStatus("Tối đa 4 camera cho bố cục 4 màn hình.");
             return;
         }
         var camera = new CameraDefinition { Name = _settings.Cameras.Count == 0 ? "C6N" : "H8C" };
@@ -131,7 +139,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         var verificationCode = VerificationCodeText.Text?.Trim() ?? string.Empty;
         if (found is null) { DiscoveryStatusText.Text = "Hãy chọn một camera đã tìm thấy trước."; return; }
         if (verificationCode.Length < 6) { DiscoveryStatusText.Text = "Nhập mã xác thực trên nhãn camera (thường gồm 6 ký tự)."; return; }
-        if (_settings.Cameras.Count >= 2) { DiscoveryStatusText.Text = "Bản đầu tiên chỉ hỗ trợ tối đa hai camera."; return; }
+        if (_settings.Cameras.Count >= 4) { DiscoveryStatusText.Text = "Đã đủ 4 camera trong danh sách."; return; }
         if (_settings.Cameras.Any(x => x.RtspUrl.Contains(found.IpAddress, StringComparison.OrdinalIgnoreCase)))
         {
             DiscoveryStatusText.Text = "Camera này đã có trong danh sách.";
@@ -270,8 +278,42 @@ public partial class MainWindow : Avalonia.Controls.Window
         await _coordinator.DisposeAsync();
         _coordinator = null;
         SetStatus("Đã dừng giám sát");
-        CameraOneStatus.Text = "Đã dừng";
-        CameraTwoStatus.Text = "Đã dừng";
+        foreach (var status in _cameraStatuses) status.Text = "Đã dừng";
+    }
+
+    private void LayoutMode_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && int.TryParse(button.Tag?.ToString(), out var mode))
+            ApplyLayoutMode(mode, true);
+    }
+
+    private void ApplyLayoutMode(int mode, bool persist)
+    {
+        mode = mode is 1 or 2 or 4 ? mode : 2;
+        _settings.DashboardLayoutMode = mode;
+        var four = mode == 4;
+        CameraGrid.RowDefinitions = new RowDefinitions(four ? "*,*" : "*");
+        CameraGrid.ColumnDefinitions = new ColumnDefinitions("*,*");
+        for (var i = 0; i < _cameraTiles.Length; i++)
+        {
+            var visible = mode == 4 || i < mode;
+            _cameraTiles[i].IsVisible = visible;
+            Grid.SetRow(_cameraTiles[i], four && i >= 2 ? 1 : 0);
+            Grid.SetColumn(_cameraTiles[i], four ? i % 2 : i);
+        }
+        LayoutOneButton.Content = mode == 1 ? "✓ 1 màn hình" : "1 màn hình";
+        LayoutTwoButton.Content = mode == 2 ? "✓ 2 màn hình" : "2 màn hình";
+        LayoutFourButton.Content = mode == 4 ? "✓ 4 màn hình" : "4 màn hình";
+        RefreshOverviewStatuses();
+        if (persist) SaveSettings();
+    }
+
+    private void RefreshOverviewStatuses()
+    {
+        for (var i = 0; i < _cameraStatuses.Length; i++)
+            _cameraStatuses[i].Text = i < _settings.Cameras.Count
+                ? $"{_settings.Cameras[i].Name} · Đang chờ giám sát"
+                : $"Camera {i + 1} chưa cấu hình";
     }
 
     private void UpdateCameraStatus(Guid id, string status)
@@ -279,8 +321,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         Dispatcher.UIThread.Post(() =>
         {
             var index = _settings.Cameras.FindIndex(x => x.Id == id);
-            if (index == 0) CameraOneStatus.Text = status;
-            if (index == 1) CameraTwoStatus.Text = status;
+            if (index >= 0 && index < _cameraStatuses.Length) _cameraStatuses[index].Text = status;
         });
     }
 
@@ -292,8 +333,12 @@ public partial class MainWindow : Avalonia.Controls.Window
         Dispatcher.UIThread.Post(() =>
         {
             var index = _settings.Cameras.FindIndex(x => x.Id == id);
-            if (index == 0) { var old = PreviewOne.Source as IDisposable; PreviewOne.Source = bitmap; old?.Dispose(); }
-            if (index == 1) { var old = PreviewTwo.Source as IDisposable; PreviewTwo.Source = bitmap; old?.Dispose(); }
+            if (index >= 0 && index < _previews.Length)
+            {
+                var old = _previews[index].Source as IDisposable;
+                _previews[index].Source = bitmap;
+                old?.Dispose();
+            }
         });
     }
 

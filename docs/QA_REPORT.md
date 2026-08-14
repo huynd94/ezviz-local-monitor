@@ -106,3 +106,17 @@ Bản 0.5.1 thay nhãn `Bản mẫu v0.1` bằng phiên bản đọc động t�
 | Không có quyền GitHub | Báo hướng dùng GitHub CLI đã đăng nhập hoặc `EZVIZ_GITHUB_TOKEN` quyền đọc. |
 
 Môi trường dựng đã kiểm tra mã nguồn và build. Việc gọi GitHub private release và cập nhật trực tiếp cần thực hiện trên máy Windows của người dùng, nơi có quyền truy cập repository.
+
+## Bản cập nhật giao diện 0.6.0
+
+| Hạng mục | Kết quả |
+|---|---|
+| Icon ICO đa kích thước 16–256 px | Đã tạo và tích hợp vào executable/shortcut/title bar |
+| Bố cục 1 màn hình | Đã triển khai; hiển thị camera đầu tiên |
+| Bố cục 2 màn hình | Đã triển khai; hiển thị hai camera đầu tiên |
+| Bố cục 4 màn hình | Đã triển khai; hiển thị tối đa bốn camera |
+| Camera chưa cấu hình | Hiển thị ô chờ, không gây lỗi preview |
+| Lưu lựa chọn bố cục | Đã lưu trong `DashboardLayoutMode` của cấu hình DPAPI |
+| Camera 3–4 | Có thể thêm trong danh sách; cần đo CPU thực tế trước khi chạy bốn luồng YOLO trên i7-7500U |
+
+Bản dựng đã biên dịch thành công trong môi trường dựng. Cần xác minh trực quan trên Windows 10 rằng icon xuất hiện trong shortcut/title bar và chuyển đổi bố cục không làm mất preview camera đang chạy.
