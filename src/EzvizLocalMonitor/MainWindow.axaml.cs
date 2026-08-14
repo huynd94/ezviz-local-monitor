@@ -20,6 +20,8 @@ public partial class MainWindow : Avalonia.Controls.Window
     private Image[] _previews = Array.Empty<Image>();
     private TextBlock[] _cameraStatuses = Array.Empty<TextBlock>();
     private Border[] _cameraTiles = Array.Empty<Border>();
+    private readonly AppUpdateService _updateService = new();
+    private bool _updateCheckStarted;
 
     public MainWindow()
     {
@@ -38,6 +40,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         {
             if (args.Property.Name == "Value") ConfidenceText.Text = $"{ConfidenceSlider.Value:P0}";
         };
+        Opened += MainWindow_Opened;
     }
 
     private void LoadSettings()
@@ -361,6 +364,71 @@ public partial class MainWindow : Avalonia.Controls.Window
     {
         DataPaths.EnsureCreated();
         Process.Start(new ProcessStartInfo { FileName = DataPaths.EventImages, UseShellExecute = true });
+    }
+
+    private async void MainWindow_Opened(object? sender, EventArgs e)
+    {
+        if (_updateCheckStarted) return;
+        _updateCheckStarted = true;
+
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var update = await _updateService.CheckAsync(timeout.Token);
+            if (update?.IsNewer != true || string.IsNullOrWhiteSpace(update.PackageUrl)) return;
+
+            var prompt = new UpdatePromptWindow(update);
+            var choice = await prompt.ShowDialog<UpdatePromptChoice>(this);
+            if (choice == UpdatePromptChoice.OpenRelease && Uri.TryCreate(update.ReleaseUrl, UriKind.Absolute, out var releaseUri))
+            {
+                Process.Start(new ProcessStartInfo { FileName = releaseUri.ToString(), UseShellExecute = true });
+            }
+            else if (choice == UpdatePromptChoice.Update)
+            {
+                await LaunchUpdaterAsync();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            SetStatus("Bỏ qua kiểm tra cập nhật do kết nối quá chậm.");
+        }
+        catch
+        {
+            SetStatus("Không kiểm tra được bản cập nhật tự động; ứng dụng vẫn hoạt động bình thường.");
+        }
+    }
+
+    private async Task LaunchUpdaterAsync()
+    {
+        var script = AppUpdateService.UpdaterScriptPath;
+        if (!OperatingSystem.IsWindows() || !File.Exists(script))
+        {
+            SetStatus("Không tìm thấy updater trong gói cài đặt. Hãy chạy scripts\\Update-EzvizLocalMonitor.cmd thủ công.");
+            return;
+        }
+
+        SetStatus("Đang mở trình cập nhật...");
+        await StopMonitoringAsync();
+        var process = new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = AppUpdateService.InstalledDirectory
+        };
+        process.ArgumentList.Add("-NoLogo");
+        process.ArgumentList.Add("-NoProfile");
+        process.ArgumentList.Add("-ExecutionPolicy");
+        process.ArgumentList.Add("Bypass");
+        process.ArgumentList.Add("-File");
+        process.ArgumentList.Add(script);
+        process.ArgumentList.Add("-InstallDir");
+        process.ArgumentList.Add(AppUpdateService.InstalledDirectory);
+        process.ArgumentList.Add("-Repository");
+        process.ArgumentList.Add(AppUpdateService.Repository);
+        process.ArgumentList.Add("-Force");
+        Process.Start(process);
+        Close();
     }
 
     private void Window_Closing(object? sender, WindowClosingEventArgs e)

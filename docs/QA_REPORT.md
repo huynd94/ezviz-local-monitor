@@ -149,3 +149,7 @@ Lỗi `There is no Runspace available to run scripts in this thread` phát sinh 
 ## Kênh phát hành public 0.6.3
 
 Repository public phát hành: `huyavm/ezviz-local-monitor-releases`. Repository này chỉ chứa ZIP tự chứa Windows và SHA-256 của release; mã nguồn, model phát triển, cấu hình camera, token và dữ liệu sự kiện vẫn nằm ngoài repository public. Updater mặc định trỏ tới kênh public nên không yêu cầu GitHub token.
+
+## Auto-updater khi khởi động — v0.6.4
+
+Ứng dụng kiểm tra release public `huyavm/ezviz-local-monitor-releases` sau khi cửa sổ chính đã mở, dùng HTTP timeout ngắn và không yêu cầu token. Nếu không có mạng, GitHub không phản hồi hoặc release không hợp lệ, lỗi được bỏ qua để không ngăn ứng dụng giám sát cục bộ khởi động. Khi phát hiện phiên bản mới, người dùng có thể chọn cập nhật ngay, để sau hoặc mở trang release. Lựa chọn cập nhật dừng coordinator, mở updater GUI bằng tham số xác nhận tự động, rồi updater tiếp tục xác minh SHA-256 và khởi động lại ứng dụng sau khi cài.

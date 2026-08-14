@@ -47,7 +47,7 @@ function Get-LatestRelease([string]$uiToken) {
         $code = $null
         try { $code = $_.Exception.Response.StatusCode.value__ } catch { }
         if ($code -eq 401 -or $code -eq 403 -or $code -eq 404) {
-            throw "Không truy cập được repository private. Hãy chạy 'gh auth login' hoặc nhập GitHub token có quyền Contents: ReadOnly vào ô Token."
+            throw "Không truy cập được kênh phát hành public. Kiểm tra kết nối Internet hoặc thử lại sau; GitHub token chỉ cần khi bạn dùng repository riêng."
         }
         throw "Không thể kiểm tra GitHub Release: $($_.Exception.Message)"
     }
@@ -246,5 +246,12 @@ $updateButton.Add_Click({
     $answer = [System.Windows.Forms.MessageBox]::Show($form, "Cập nhật phần mềm trong thư mục:`n$($installBox.Text)`n`nTiếp tục?", "Xác nhận cập nhật", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
     if ($answer -eq [System.Windows.Forms.DialogResult]::Yes) { Start-Check $true }
 })
-$form.Add_Shown({ Start-Check $false })
+$form.Add_Shown({
+    if ($Force) {
+        $statusLabel.Text = "Đã xác nhận từ ứng dụng. Bắt đầu cập nhật..."
+        Start-Check $true
+    } else {
+        Start-Check $false
+    }
+})
 [void]$form.ShowDialog()
