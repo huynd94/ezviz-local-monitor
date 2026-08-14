@@ -21,6 +21,16 @@
     <SolidColorBrush x:Key="BodyTextBrush" Color="#14202B" />
     <SolidColorBrush x:Key="ControlForegroundBrush" Color="#14202B" />
     <SolidColorBrush x:Key="TabForegroundBrush" Color="#17324D" />
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#0B4F71" />
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#083B55" />
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#126D96" />
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#06364D" />
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="InputForegroundBrush" Color="#14202B" />
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#5A6B78" />
+    <SolidColorBrush x:Key="InputFocusBrush" Color="#0078B8" />
+    <SolidColorBrush x:Key="InputWatermarkBrush" Color="#52606D" />
   </Window.Resources>
   <Window.Styles>
     <Style Selector="TabItem">
@@ -32,17 +42,55 @@
       <Setter Property="Foreground" Value="{DynamicResource BodyTextBrush}" />
     </Style>
     <Style Selector="Button">
-      <Setter Property="Foreground" Value="{DynamicResource ControlForegroundBrush}" />
-      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ButtonForegroundBrush}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button:pressed">
+      <Setter Property="Background" Value="{DynamicResource ButtonPressedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button:disabled">
+      <Setter Property="Background" Value="{DynamicResource PanelBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+      <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="TextBox">
-      <Setter Property="Foreground" Value="{DynamicResource ControlForegroundBrush}" />
+      <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="TextBox:focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource InputFocusBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="ComboBox">
-      <Setter Property="Foreground" Value="{DynamicResource ControlForegroundBrush}" />
+      <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="ComboBox:focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource InputFocusBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
     </Style>
     <Style Selector="CheckBox">
       <Setter Property="Foreground" Value="{DynamicResource ControlForegroundBrush}" />
+      <Setter Property="Opacity" Value="1" />
     </Style>
   </Window.Styles>
   <Grid Margin="16" RowDefinitions="Auto,*,Auto">

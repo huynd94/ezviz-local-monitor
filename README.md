@@ -1,6 +1,11 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.6**
+**Phiên bản phát hành hiện tại: v0.9.7**
+
+## Bản cập nhật v0.9.7 — button và input tương phản cao
+
+Bản v0.9.7 tách riêng màu nền, màu chữ, màu viền, hover và pressed cho button; tách riêng nền/chữ/viền/focus cho input. Button được ép hiển thị chữ trắng trên nền button màu chính, in đậm và không dùng opacity mờ. TextBox và ComboBox có nền, chữ, viền và viền focus rõ ràng theo từng theme. Dark/Light tự đổi giữa bộ màu sáng và tối tương ứng.
+
 
 ## Bản cập nhật v0.9.6 — tăng độ rõ chữ và tiêu đề tab
 
