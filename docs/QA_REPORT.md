@@ -63,3 +63,16 @@ Bản 0.2.1 khắc phục lỗi thông báo tiếng Việt bị sai dấu trong 
 | Hành vi dự phòng | Đạt theo mã nguồn | Nếu AI lỗi/timeout, cảnh báo cục bộ vẫn được gửi; nếu AI không xác nhận, chỉ chặn khi người dùng bật chế độ yêu cầu AI xác nhận. |
 
 Khi nghiệm thu, cấu hình endpoint trong tab **Cảnh báo**, tạo một sự kiện có người, rồi kiểm tra nhật ký có trạng thái `AI hoàn tất`, mô tả ngắn và caption Telegram/Zalo có phần `AI:`. Sau đó thử sai API key hoặc tắt endpoint để xác nhận cảnh báo cục bộ vẫn không bị ngừng.
+
+## Bản cập nhật ONVIF Events 0.4.0
+
+| Hạng mục | Kết quả | Ghi chú |
+|---|---|---|
+| ONVIF GetCapabilities(Events) | Đạt theo mã nguồn | Listener lấy Event XAddr từ dịch vụ Device. |
+| CreatePullPointSubscription/PullMessages | Đạt theo mã nguồn | Dùng WS-Security UsernameToken với `admin` và mã xác thực; PullMessages có timeout dài. |
+| Event phân loại người/chuyển động | Đạt theo mã nguồn | Topic/value có từ khóa human/person được đánh dấu người; motion/field/region được đánh dấu chuyển động. |
+| RTSP xác minh sau event | Đạt theo mã nguồn | Event phải đọc được một khung RTSP trước khi đi vào pipeline cảnh báo. |
+| Fallback YOLO | Đạt theo mã nguồn | ONVIF không hỗ trợ, lỗi xác thực hoặc mất PullPoint sẽ bật CameraMonitor/YOLO. |
+| C6N/H8C thật | Chưa thực hiện trong môi trường dựng | Cần chạy trên Windows cùng LAN, bật Alarm Notification/nhận diện người, sau đó quan sát trạng thái `ONVIF Events đang hoạt động` hoặc `fallback YOLO cục bộ`. |
+
+Cảnh báo: ONVIF Events và topic `Human shape detection` phụ thuộc model/firmware. Bản dựng không coi việc ONVIF không expose event là lỗi nghiêm trọng; fallback YOLO vẫn là đường chạy hợp lệ.

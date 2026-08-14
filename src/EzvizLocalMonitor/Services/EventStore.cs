@@ -22,6 +22,8 @@ public sealed class EventStore
                 confidence REAL NOT NULL,
                 image_path TEXT NOT NULL,
                 delivery_status TEXT NOT NULL,
+                detection_source TEXT NOT NULL DEFAULT 'YOLO cục bộ',
+                is_human_detection INTEGER NOT NULL DEFAULT 1,
                 ai_status TEXT NOT NULL DEFAULT 'AI tắt',
                 ai_motion_detected INTEGER NULL,
                 ai_person_present INTEGER NULL,
@@ -31,6 +33,8 @@ public sealed class EventStore
             CREATE INDEX IF NOT EXISTS idx_detection_events_detected_at ON detection_events(detected_at DESC);
             """;
         command.ExecuteNonQuery();
+        EnsureColumn(connection, "detection_source", "TEXT NOT NULL DEFAULT 'YOLO cục bộ'");
+        EnsureColumn(connection, "is_human_detection", "INTEGER NOT NULL DEFAULT 1");
         EnsureColumn(connection, "ai_status", "TEXT NOT NULL DEFAULT 'AI tắt'");
         EnsureColumn(connection, "ai_motion_detected", "INTEGER NULL");
         EnsureColumn(connection, "ai_person_present", "INTEGER NULL");
@@ -52,8 +56,8 @@ public sealed class EventStore
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            INSERT INTO detection_events(camera_id, camera_name, detected_at, confidence, image_path, delivery_status, ai_status, ai_motion_detected, ai_person_present, ai_confidence, ai_summary)
-            VALUES ($cameraId, $cameraName, $detectedAt, $confidence, $imagePath, $deliveryStatus, $aiStatus, $aiMotionDetected, $aiPersonPresent, $aiConfidence, $aiSummary);
+            INSERT INTO detection_events(camera_id, camera_name, detected_at, confidence, image_path, delivery_status, detection_source, is_human_detection, ai_status, ai_motion_detected, ai_person_present, ai_confidence, ai_summary)
+            VALUES ($cameraId, $cameraName, $detectedAt, $confidence, $imagePath, $deliveryStatus, $detectionSource, $isHumanDetection, $aiStatus, $aiMotionDetected, $aiPersonPresent, $aiConfidence, $aiSummary);
             SELECT last_insert_rowid();
             """;
         command.Parameters.AddWithValue("$cameraId", item.CameraId.ToString());
@@ -62,6 +66,8 @@ public sealed class EventStore
         command.Parameters.AddWithValue("$confidence", item.Confidence);
         command.Parameters.AddWithValue("$imagePath", item.ImagePath);
         command.Parameters.AddWithValue("$deliveryStatus", item.DeliveryStatus);
+        command.Parameters.AddWithValue("$detectionSource", item.DetectionSource);
+        command.Parameters.AddWithValue("$isHumanDetection", item.IsHumanDetection ? 1 : 0);
         command.Parameters.AddWithValue("$aiStatus", item.AiStatus);
         command.Parameters.AddWithValue("$aiMotionDetected", item.AiMotionDetected is null ? DBNull.Value : item.AiMotionDetected.Value ? 1 : 0);
         command.Parameters.AddWithValue("$aiPersonPresent", item.AiPersonPresent is null ? DBNull.Value : item.AiPersonPresent.Value ? 1 : 0);
@@ -113,7 +119,7 @@ public sealed class EventStore
         using var connection = new SqliteConnection(_connectionString);
         connection.Open();
         using var command = connection.CreateCommand();
-        command.CommandText = "SELECT id, camera_id, camera_name, detected_at, confidence, image_path, delivery_status, ai_status, ai_motion_detected, ai_person_present, ai_confidence, ai_summary FROM detection_events ORDER BY detected_at DESC LIMIT $take";
+        command.CommandText = "SELECT id, camera_id, camera_name, detected_at, confidence, image_path, delivery_status, detection_source, is_human_detection, ai_status, ai_motion_detected, ai_person_present, ai_confidence, ai_summary FROM detection_events ORDER BY detected_at DESC LIMIT $take";
         command.Parameters.AddWithValue("$take", take);
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -127,11 +133,13 @@ public sealed class EventStore
                 Confidence = reader.GetDouble(4),
                 ImagePath = reader.GetString(5),
                 DeliveryStatus = reader.GetString(6),
-                AiStatus = reader.IsDBNull(7) ? "AI tắt" : reader.GetString(7),
-                AiMotionDetected = reader.IsDBNull(8) ? null : reader.GetInt64(8) != 0,
-                AiPersonPresent = reader.IsDBNull(9) ? null : reader.GetInt64(9) != 0,
-                AiConfidence = reader.IsDBNull(10) ? null : reader.GetDouble(10),
-                AiSummary = reader.IsDBNull(11) ? string.Empty : reader.GetString(11)
+                DetectionSource = reader.IsDBNull(7) ? "YOLO cục bộ" : reader.GetString(7),
+                IsHumanDetection = reader.IsDBNull(8) || reader.GetInt64(8) != 0,
+                AiStatus = reader.IsDBNull(9) ? "AI tắt" : reader.GetString(9),
+                AiMotionDetected = reader.IsDBNull(10) ? null : reader.GetInt64(10) != 0,
+                AiPersonPresent = reader.IsDBNull(11) ? null : reader.GetInt64(11) != 0,
+                AiConfidence = reader.IsDBNull(12) ? null : reader.GetDouble(12),
+                AiSummary = reader.IsDBNull(13) ? string.Empty : reader.GetString(13)
             });
         }
         return results;

@@ -16,6 +16,8 @@ public sealed class CameraMonitor : IAsyncDisposable
     private Task? _runTask;
     private Mat? _previousInferenceFrame;
 
+    public Guid CameraId => _camera.Id;
+
     public event Action<CameraDefinition, Mat, Mat?, PersonDetection>? PersonConfirmed;
     public event Action<CameraDefinition, string>? StatusChanged;
     public event Action<CameraDefinition, Mat>? PreviewReady;

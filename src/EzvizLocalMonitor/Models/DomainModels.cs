@@ -5,6 +5,7 @@ public sealed class CameraDefinition
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = "Camera mới";
     public string RtspUrl { get; set; } = string.Empty;
+    public string? OnvifServiceUrl { get; set; }
     public bool IsEnabled { get; set; } = true;
     public double ConfidenceThreshold { get; set; } = 0.55;
     public int CooldownSeconds { get; set; } = 30;
@@ -84,6 +85,8 @@ public sealed class DetectionEvent
     public double Confidence { get; set; }
     public string ImagePath { get; set; } = string.Empty;
     public string DeliveryStatus { get; set; } = "Chưa gửi";
+    public string DetectionSource { get; set; } = "YOLO cục bộ";
+    public bool IsHumanDetection { get; set; } = true;
     public string AiStatus { get; set; } = "AI tắt";
     public bool? AiMotionDetected { get; set; }
     public bool? AiPersonPresent { get; set; }

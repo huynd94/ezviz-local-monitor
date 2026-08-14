@@ -149,6 +149,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         {
             Name = $"EZVIZ {found.IpAddress}",
             RtspUrl = rtspUrl,
+            OnvifServiceUrl = found.OnvifServiceUrl,
             IsEnabled = true
         };
         _settings.Cameras.Add(camera);
@@ -249,8 +250,8 @@ public partial class MainWindow : Avalonia.Controls.Window
             _coordinator.CameraStatusChanged += UpdateCameraStatus;
             _coordinator.PreviewReady += UpdatePreview;
             _coordinator.EventRecorded += _ => Dispatcher.UIThread.Post(RefreshEvents);
-            _coordinator.Start(_settings);
-            SetStatus("Đang giám sát cục bộ");
+            await _coordinator.StartAsync(_settings);
+            SetStatus("Đang giám sát cục bộ — ONVIF event hoặc YOLO fallback");
         }
         catch (Exception ex)
         {

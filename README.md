@@ -1,7 +1,11 @@
 # EZVIZ Local Monitor for Windows
 
-**Phiên bản:** 0.3.0  
+**Phiên bản:** 0.4.0  
 **Mục đích:** Giám sát cục bộ tối đa hai camera EZVIZ C6N/H8C, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform.
+
+## Bản cập nhật ONVIF Events 0.4.0
+
+Bản 0.4.0 ưu tiên nhận sự kiện chuyển động/người tích hợp sẵn qua **ONVIF Events/PullPoint** trong LAN. Khi camera có event phù hợp, ứng dụng chỉ lấy một khung RTSP để xác minh và không chạy YOLO liên tục cho camera đó. Nếu ONVIF không hỗ trợ, xác thực thất bại hoặc mất kết nối, ứng dụng tự chuyển sang **YOLO cục bộ**.
 
 ## Bản cập nhật AI 0.3.0
 
@@ -75,6 +79,12 @@ Nếu camera không xuất hiện, điều đó không khẳng định camera h�
 Khi AI được bật, endpoint nhận tối đa **hai ảnh JPEG của mỗi sự kiện**; video RTSP không được gửi. Chế độ mặc định chỉ thêm mô tả AI vào caption. Nếu bật **Chỉ gửi cảnh báo khi AI xác nhận**, Telegram/Zalo chỉ được gọi khi AI trả `motion_detected=true` hoặc `person_present=true`. Nếu endpoint lỗi hoặc hết timeout, ứng dụng vẫn gửi cảnh báo cục bộ theo quy tắc ban đầu và ghi lỗi AI vào nhật ký.
 
 Telegram có API HTTPS với các phương thức gửi ảnh và văn bản. [4] Bot ZApps công bố endpoint `sendPhoto` theo dạng `https://bot-api.zaloplatforms.com/bot<BOT_TOKEN>/sendPhoto`, yêu cầu `chat_id` và `photo`, với `caption` tùy chọn. [3] Ứng dụng gửi ảnh JPEG sự kiện và caption gồm tên camera, thời điểm, độ tin cậy.
+
+## ONVIF Events và fallback
+
+Camera được tự tìm từ LAN cần có `OnvifServiceUrl` và RTSP URL chứa mã xác thực. Khi bấm **Bắt đầu giám sát**, ứng dụng thử ONVIF Events bằng `admin` và mã xác thực đã lưu. Nếu thành công, trạng thái camera sẽ ghi **ONVIF Events đang hoạt động**; nếu không, trạng thái sẽ ghi **fallback YOLO cục bộ**. Event `Human shape detection` được coi là phát hiện người; `Motion alarm` được coi là chuyển động tổng quát và vẫn cần khung RTSP xác minh.
+
+Để kiểm tra, bật Alarm Notification/nhận diện người trên EZVIZ App, đi qua vùng quan sát và xem trạng thái camera cùng nhật ký sự kiện. Không phải mọi firmware C6N/H8C đều expose cùng topic ONVIF; vì vậy trạng thái fallback là hành vi bình thường, không phải lỗi cài đặt.
 
 ## Giới hạn và kiểm thử cần thực hiện
 
