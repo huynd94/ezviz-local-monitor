@@ -1,7 +1,11 @@
 # EZVIZ Local Monitor for Windows
 
-**Phiên bản:** 0.4.0  
+**Phiên bản:** 0.5.0  
 **Mục đích:** Giám sát cục bộ tối đa hai camera EZVIZ C6N/H8C, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform.
+
+## Tối ưu cảnh báo thời gian thực 0.5.0
+
+Bản 0.5.0 ưu tiên cảnh báo Telegram gần thời gian thực: gửi tin chữ nhỏ trước, upload ảnh ngay sau đó, chạy Telegram và Zalo song song, và không chờ AI khi AI chỉ dùng để bổ sung mô tả. Ảnh cảnh báo được thu nhỏ tối đa 1280 px để giảm thời gian upload. Telegram có thể hiển thị hai tin liên tiếp cho cùng một sự kiện: tin chữ đến trước và tin ảnh đến sau.
 
 ## Bản cập nhật ONVIF Events 0.4.0
 
@@ -76,7 +80,7 @@ Nếu camera không xuất hiện, điều đó không khẳng định camera h�
 | Zalo Bot Platform | `BOT_TOKEN` và `chat_id` của Bot ZApps | Bấm **Gửi thử**. API dùng Bot Token và hỗ trợ `sendMessage`/`sendPhoto`. [2] [3] |
 | AI OpenAI-compatible | Base URL, model vision, API key và timeout | Bật AI sau khi xác nhận endpoint chấp nhận ảnh qua Chat Completions. |
 
-Khi AI được bật, endpoint nhận tối đa **hai ảnh JPEG của mỗi sự kiện**; video RTSP không được gửi. Chế độ mặc định chỉ thêm mô tả AI vào caption. Nếu bật **Chỉ gửi cảnh báo khi AI xác nhận**, Telegram/Zalo chỉ được gọi khi AI trả `motion_detected=true` hoặc `person_present=true`. Nếu endpoint lỗi hoặc hết timeout, ứng dụng vẫn gửi cảnh báo cục bộ theo quy tắc ban đầu và ghi lỗi AI vào nhật ký.
+Khi AI được bật, endpoint nhận tối đa **hai ảnh JPEG của mỗi sự kiện**; video RTSP không được gửi. Chế độ mặc định chỉ thêm mô tả AI vào hậu kỳ sau khi cảnh báo đã được gửi. Nếu bật **Chỉ gửi cảnh báo khi AI xác nhận**, cảnh báo sẽ chờ AI và độ trễ có thể tăng đáng kể. Nếu endpoint lỗi hoặc hết timeout, ứng dụng vẫn gửi cảnh báo cục bộ theo quy tắc ban đầu và ghi lỗi AI vào nhật ký.
 
 Telegram có API HTTPS với các phương thức gửi ảnh và văn bản. [4] Bot ZApps công bố endpoint `sendPhoto` theo dạng `https://bot-api.zaloplatforms.com/bot<BOT_TOKEN>/sendPhoto`, yêu cầu `chat_id` và `photo`, với `caption` tùy chọn. [3] Ứng dụng gửi ảnh JPEG sự kiện và caption gồm tên camera, thời điểm, độ tin cậy.
 

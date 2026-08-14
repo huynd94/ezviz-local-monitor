@@ -76,3 +76,16 @@ Khi nghiệm thu, cấu hình endpoint trong tab **Cảnh báo**, tạo một s�
 | C6N/H8C thật | Chưa thực hiện trong môi trường dựng | Cần chạy trên Windows cùng LAN, bật Alarm Notification/nhận diện người, sau đó quan sát trạng thái `ONVIF Events đang hoạt động` hoặc `fallback YOLO cục bộ`. |
 
 Cảnh báo: ONVIF Events và topic `Human shape detection` phụ thuộc model/firmware. Bản dựng không coi việc ONVIF không expose event là lỗi nghiêm trọng; fallback YOLO vẫn là đường chạy hợp lệ.
+
+## Tối ưu độ trễ cảnh báo 0.5.0
+
+| Thay đổi | Mục tiêu |
+|---|---|
+| Gửi Telegram tin chữ nhỏ trước ảnh | Người dùng nhận tín hiệu đầu tiên không phải chờ upload ảnh |
+| Telegram và Zalo chạy song song | Kênh chậm không chặn kênh còn lại |
+| AI chạy hậu kỳ ở chế độ mặc định | Không để endpoint AI làm chậm cảnh báo tức thời |
+| RTSP reader giữ kết nối và buffer size thấp | Không mở lại kết nối từ đầu cho từng ONVIF event |
+| Ảnh cảnh báo tối đa 1280 px | Giảm kích thước payload upload |
+| Lỗi kênh độc lập | Telegram vẫn được thử nếu Zalo lỗi và ngược lại |
+
+Môi trường dựng đã biên dịch thành công. Độ trễ end-to-end Telegram vẫn cần đo trên PC Windows cùng camera và mạng thật, vì còn phụ thuộc firmware camera, router/Wi-Fi, máy chủ Telegram và kích thước ảnh. Khi kiểm tra, ghi thời điểm sự kiện trên nhật ký camera, thời điểm ứng dụng ghi `DetectedAt`, thời điểm Telegram nhận tin chữ và thời điểm nhận ảnh. Chế độ **Chỉ gửi cảnh báo khi AI xác nhận** phải tắt nếu ưu tiên độ trễ thấp nhất.

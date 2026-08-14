@@ -11,6 +11,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
     private readonly OpenAiCompatibleMovementAnalyzer _movementAnalyzer = new();
     private readonly List<CameraMonitor> _monitors = new();
     private readonly List<OnvifEventListener> _onvifListeners = new();
+    private readonly RtspSnapshotReader _snapshotReader = new();
     private readonly ConcurrentDictionary<Guid, DateTimeOffset> _lastOnvifEvents = new();
     private YoloPersonDetector? _detector;
     private AppSettings? _settings;
@@ -44,6 +45,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                 if (await listener.StartAsync())
                 {
                     _onvifListeners.Add(listener);
+                    _snapshotReader.Warm(camera);
                     continue;
                 }
                 await listener.DisposeAsync();
@@ -75,9 +77,8 @@ public sealed class MonitorCoordinator : IAsyncDisposable
         {
             try
             {
-                using var capture = new VideoCapture(camera.RtspUrl, VideoCaptureAPIs.FFMPEG);
                 using var frame = new Mat();
-                if (!capture.IsOpened() || !capture.Read(frame) || frame.Empty())
+                if (!_snapshotReader.TryRead(camera, frame))
                 {
                     CameraStatusChanged?.Invoke(camera.Id, "ONVIF có event nhưng không đọc được RTSP xác minh");
                     return;
@@ -114,8 +115,8 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                 Directory.CreateDirectory(directory);
                 var imagePath = Path.Combine(directory, $"{DateTime.Now:HHmmss}_{camera.Id:N}.jpg");
                 previousImagePath = previousSnapshot is null ? null : Path.Combine(directory, $"{DateTime.Now:HHmmss}_{camera.Id:N}_before.jpg");
-                Cv2.ImWrite(imagePath, snapshot);
-                if (previousSnapshot is not null && previousImagePath is not null) Cv2.ImWrite(previousImagePath, previousSnapshot);
+                SaveAlertJpeg(imagePath, snapshot);
+                if (previousSnapshot is not null && previousImagePath is not null) SaveAlertJpeg(previousImagePath, previousSnapshot);
 
                 var item = new DetectionEvent
                 {
@@ -130,36 +131,19 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                 item.Id = _eventStore.Add(item);
                 EventRecorded?.Invoke(item);
 
-                AiMovementAnalysis? analysis = null;
-                if (_settings?.Ai.Enabled == true)
-                {
-                    try
-                    {
-                        analysis = await _movementAnalyzer.AnalyzeAsync(_settings.Ai, item.ImagePath, previousImagePath);
-                        item.AiStatus = analysis.Status;
-                        item.AiMotionDetected = analysis.MotionDetected;
-                        item.AiPersonPresent = analysis.PersonPresent;
-                        item.AiConfidence = analysis.Confidence;
-                        item.AiSummary = analysis.Summary;
-                        _eventStore.UpdateAiAnalysis(item.Id, analysis);
-                        EventRecorded?.Invoke(item);
-                    }
-                    catch (Exception ex)
-                    {
-                        item.AiStatus = "Lỗi AI: " + ex.Message;
-                        _eventStore.UpdateAiStatus(item.Id, item.AiStatus);
-                        EventRecorded?.Invoke(item);
-                    }
-                }
-
-                var shouldSend = _settings is null || !_settings.Ai.Enabled || !_settings.Ai.RequireConfirmationBeforeAlert ||
-                    analysis is null || analysis.ShouldSendAlert;
+                var requiresAiConfirmation = _settings?.Ai.Enabled == true && _settings.Ai.RequireConfirmationBeforeAlert;
+                AiMovementAnalysis? analysis = requiresAiConfirmation ? await AnalyzeAndUpdateAsync(item, previousImagePath) : null;
+                var shouldSend = !requiresAiConfirmation || analysis?.ShouldSendAlert == true;
                 var status = !shouldSend
                     ? "Không gửi: AI không thấy chuyển động/người"
                     : _settings is null ? "Không có cấu hình cảnh báo" : await _alerts.SendAsync(_settings.Alerts, item);
                 item.DeliveryStatus = status;
                 _eventStore.UpdateDeliveryStatus(item.Id, status);
                 EventRecorded?.Invoke(item);
+
+                // Chế độ AI thông thường không chặn cảnh báo: phân tích bổ sung chạy sau khi Telegram/Zalo đã nhận ảnh.
+                if (_settings?.Ai.Enabled == true && !requiresAiConfirmation)
+                    await AnalyzeAndUpdateAsync(item, previousImagePath);
             }
             catch (Exception ex)
             {
@@ -172,6 +156,41 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                 snapshot.Dispose();
             }
         });
+    }
+
+    private static void SaveAlertJpeg(string path, Mat source)
+    {
+        using var resized = new Mat();
+        var scale = Math.Min(1.0, 1280.0 / Math.Max(source.Width, source.Height));
+        if (scale < 1.0)
+            Cv2.Resize(source, resized, new OpenCvSharp.Size((int)(source.Width * scale), (int)(source.Height * scale)), 0, 0, InterpolationFlags.Area);
+        else
+            source.CopyTo(resized);
+        Cv2.ImWrite(path, resized);
+    }
+
+    private async Task<AiMovementAnalysis?> AnalyzeAndUpdateAsync(DetectionEvent item, string? previousImagePath)
+    {
+        if (_settings?.Ai.Enabled != true) return null;
+        try
+        {
+            var analysis = await _movementAnalyzer.AnalyzeAsync(_settings.Ai, item.ImagePath, previousImagePath);
+            item.AiStatus = analysis.Status;
+            item.AiMotionDetected = analysis.MotionDetected;
+            item.AiPersonPresent = analysis.PersonPresent;
+            item.AiConfidence = analysis.Confidence;
+            item.AiSummary = analysis.Summary;
+            _eventStore.UpdateAiAnalysis(item.Id, analysis);
+            EventRecorded?.Invoke(item);
+            return analysis;
+        }
+        catch (Exception ex)
+        {
+            item.AiStatus = "Lỗi AI: " + SafeMessage(ex);
+            _eventStore.UpdateAiStatus(item.Id, item.AiStatus);
+            EventRecorded?.Invoke(item);
+            return null;
+        }
     }
 
     private static string? ExtractVerificationCode(string rtspUrl)
@@ -194,6 +213,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
         _monitors.Clear();
         _detector?.Dispose();
         _detector = null;
+        _snapshotReader.Dispose();
         _lastOnvifEvents.Clear();
         _started = false;
     }

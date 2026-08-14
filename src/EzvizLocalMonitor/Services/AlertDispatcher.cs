@@ -7,20 +7,21 @@ namespace EzvizLocalMonitor.Services;
 
 public sealed class AlertDispatcher
 {
-    private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(15) };
+    private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(10) };
 
     public async Task<string> SendAsync(AlertChannelSettings settings, DetectionEvent item, CancellationToken cancellationToken = default)
     {
-        var results = new List<string>();
         var aiCaption = string.IsNullOrWhiteSpace(item.AiSummary) ? string.Empty : $"\nAI: {item.AiSummary}";
-        var caption = $"PHÁT HIỆN NGƯỜI | {item.CameraName} | {item.DetectedAt:yyyy-MM-dd HH:mm:ss} | Tin cậy: {item.Confidence:P0}{aiCaption}";
-
+        var label = item.IsHumanDetection ? "PHÁT HIỆN NGƯỜI" : "PHÁT HIỆN CHUYỂN ĐỘNG";
+        var caption = $"{label} | {item.CameraName} | {item.DetectedAt:yyyy-MM-dd HH:mm:ss} | Tin cậy: {item.Confidence:P0} | Nguồn: {item.DetectionSource}{aiCaption}";
+        var tasks = new List<Task<string>>();
         if (settings.TelegramEnabled)
-            results.Add(await SendTelegramPhotoAsync(settings.TelegramBotToken, settings.TelegramChatId, item.ImagePath, caption, cancellationToken));
+            tasks.Add(SafeSendAsync("Telegram", () => SendTelegramFastAlertAsync(settings.TelegramBotToken, settings.TelegramChatId, item.ImagePath, caption, cancellationToken)));
         if (settings.ZaloEnabled)
-            results.Add(await SendZaloPhotoAsync(settings.ZaloBotToken, settings.ZaloChatId, item.ImagePath, caption, cancellationToken));
-
-        return results.Count == 0 ? "Không có kênh nào được bật" : string.Join(" | ", results);
+            tasks.Add(SafeSendAsync("Zalo", () => SendZaloPhotoAsync(settings.ZaloBotToken, settings.ZaloChatId, item.ImagePath, caption, cancellationToken)));
+        if (tasks.Count == 0) return "Không có kênh nào được bật";
+        var results = await Task.WhenAll(tasks);
+        return string.Join(" | ", results);
     }
 
     public async Task<string> TestAsync(AlertChannelSettings settings, string channel, CancellationToken cancellationToken = default)
@@ -32,6 +33,24 @@ public sealed class AlertDispatcher
             "zalo" => await SendZaloTextAsync(settings.ZaloBotToken, settings.ZaloChatId, message, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(channel))
         };
+    }
+
+    private static async Task<string> SendTelegramFastAlertAsync(string token, string chatId, string imagePath, string caption, CancellationToken ct)
+    {
+        // Tin chữ nhỏ đi trước để Telegram hiển thị cảnh báo gần như ngay lập tức; ảnh được upload ngay sau đó.
+        string textResult;
+        try { textResult = await SendTelegramTextAsync(token, chatId, caption, ct); }
+        catch (Exception ex) { textResult = "Telegram text: lỗi " + SafeException(ex); }
+        string photoResult;
+        try { photoResult = await SendTelegramPhotoAsync(token, chatId, imagePath, caption, ct); }
+        catch (Exception ex) { photoResult = "Telegram ảnh: lỗi " + SafeException(ex); }
+        return $"{textResult} + {photoResult}";
+    }
+
+    private static async Task<string> SafeSendAsync(string channel, Func<Task<string>> operation)
+    {
+        try { return await operation(); }
+        catch (Exception ex) { return $"{channel}: lỗi {SafeException(ex)}"; }
     }
 
     private static async Task<string> SendTelegramTextAsync(string token, string chatId, string text, CancellationToken ct)
@@ -94,6 +113,8 @@ public sealed class AlertDispatcher
         try { return JsonDocument.Parse(body).RootElement.TryGetProperty("ok", out var ok) && ok.GetBoolean(); }
         catch (JsonException) { return false; }
     }
+
+    private static string SafeException(Exception ex) => ex.Message.Length > 100 ? ex.Message[..100] : ex.Message;
 
     private static void Require(string value, string name)
     {
