@@ -1,6 +1,11 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.2**
+**Phiên bản phát hành hiện tại: v0.9.3**
+
+## Bản cập nhật v0.9.3 — cải thiện giao diện nhập liệu
+
+Bản v0.9.3 điều chỉnh các cột label/input trong tab Camera và Cảnh báo để label có đủ không gian, TextBox co giãn theo cửa sổ và các trường dài như RTSP URL, Relay URL, Base URL không bị cắt sớm. Các nút, trường nhập liệu, checkbox và slider quan trọng đều có tooltip tiếng Việt giải thích dữ liệu cần điền, phạm vi giá trị, tác động đến cảnh báo và lưu ý bảo mật.
+
 
 ## Bản vá v0.9.2 — sửa installer trả mã lỗi 1
 
