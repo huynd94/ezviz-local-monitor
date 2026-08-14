@@ -15,10 +15,16 @@ $utf8 = New-Object System.Text.UTF8Encoding($false)
 $OutputEncoding = $utf8
 try { chcp 65001 | Out-Null } catch { }
 Add-Type -AssemblyName System.Windows.Forms
-$PackageRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ApplicationSource = Join-Path $PackageRoot "app"
 $ApplicationName = "EZVIZ Local Monitor"
 $ExecutableName = "EzvizLocalMonitor.exe"
+$InstallerDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
+$PackageRoot = Split-Path -Parent $InstallerDirectory
+$ApplicationSource = Join-Path $PackageRoot "app"
+if (-not (Test-Path -LiteralPath (Join-Path $ApplicationSource $ExecutableName))) {
+    # Fallback: hỗ trợ trường hợp script được đặt cùng thư mục app.
+    $PackageRoot = $InstallerDirectory
+    $ApplicationSource = Join-Path $PackageRoot "app"
+}
 
 if (-not (Test-Path (Join-Path $ApplicationSource $ExecutableName))) {
     throw "Không tìm thấy gói ứng dụng. Hãy chạy Install-EzvizLocalMonitor.ps1 từ thư mục bộ cài đầy đủ."

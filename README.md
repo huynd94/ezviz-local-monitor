@@ -1,6 +1,11 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.1**
+**Phiên bản phát hành hiện tại: v0.9.2**
+
+## Bản vá v0.9.2 — sửa installer trả mã lỗi 1
+
+Bản v0.9.2 sửa lỗi updater kết thúc với thông báo chung `Bộ cài trả mã lỗi 1`. Trong cấu trúc ZIP, script cài đặt nằm trong thư mục `installer`, còn executable nằm trong thư mục `app` ở cấp gốc; installer cũ tìm nhầm `installer\\app` nên thất bại. Installer mới tìm đúng thư mục gốc của gói, còn worker updater ghi lại stdout/stderr của installer để hiển thị nguyên nhân cụ thể nếu lỗi tiếp diễn.
+
 
 ## Bản vá v0.9.1 — updater Windows PowerShell 5.1
 

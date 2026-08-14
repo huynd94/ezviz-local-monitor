@@ -62,6 +62,11 @@ function Get-HashFromFile([string]$path) {
     return $match.Value.ToLowerInvariant()
 }
 
+function Get-LogTail([string]$path) {
+    if (-not (Test-Path -LiteralPath $path)) { return "" }
+    try { return ((Get-Content -LiteralPath $path -Tail 25 -ErrorAction Stop) -join "`n") } catch { return "" }
+}
+
 try {
     Write-ProgressState 5 "Đang kiểm tra file thực thi hiện tại..."
     $installedExe = Join-Path $InstallDir "EzvizLocalMonitor.exe"
@@ -103,8 +108,14 @@ try {
         Write-ProgressState 80 "Đang đóng ứng dụng cũ và cập nhật file..."
         Get-Process -Name "EzvizLocalMonitor" -ErrorAction SilentlyContinue | Stop-Process -Force
         $installerArgs = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$($installer.FullName)`" -InstallDir `"$InstallDir`" -NoShortcut -NoLaunch -ForceUpdate"
-        $process = Start-Process -FilePath "powershell.exe" -ArgumentList $installerArgs -Wait -PassThru -WindowStyle Hidden
-        if ($process.ExitCode -ne 0) { throw "Bộ cài trả mã lỗi $($process.ExitCode)." }
+        $installerStdout = Join-Path $tempRoot "installer.stdout.log"
+        $installerStderr = Join-Path $tempRoot "installer.stderr.log"
+        $process = Start-Process -FilePath "powershell.exe" -ArgumentList $installerArgs -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $installerStdout -RedirectStandardError $installerStderr
+        if ($process.ExitCode -ne 0) {
+            $details = ((Get-LogTail $installerStderr) + "`n" + (Get-LogTail $installerStdout)).Trim()
+            if ([string]::IsNullOrWhiteSpace($details)) { $details = "Không có log chi tiết từ bộ cài." }
+            throw "Bộ cài trả mã lỗi $($process.ExitCode): $details"
+        }
         Write-ProgressState 95 "Đang xác minh phiên bản sau cập nhật..."
         $updated = Convert-ToVersion $((Get-Item -LiteralPath $installedExe).VersionInfo.ProductVersion)
         if ($updated -lt $latest) { throw "Phiên bản sau cập nhật là $updated, chưa đạt $latest." }
