@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$InstallDir = "D:\EZVIZ-Local-Monitor",
-    [string]$Repository = "huyavm/ezviz-local-monitor",
+    [string]$Repository = "huyavm/ezviz-local-monitor-releases",
     [ValidateSet("Check","Update")][string]$Mode = "Check",
     [string]$ProgressFile,
     [string]$ResultFile,
