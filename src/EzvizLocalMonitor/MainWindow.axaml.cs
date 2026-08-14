@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Input;
 using Avalonia.Styling;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -97,6 +98,7 @@ public partial class MainWindow : Avalonia.Controls.Window
 
         RefreshCameraList();
         RefreshScheduleGrid();
+        ThemeCombo.SelectedIndex = ThemeIndex(_settings.ThemeName, _settings.DarkTheme);
         TelegramEnabledCheck.IsChecked = _settings.Alerts.TelegramEnabled;
         TelegramTokenText.Text = _settings.Alerts.TelegramBotToken;
         TelegramChatText.Text = _settings.Alerts.TelegramChatId;
@@ -577,17 +579,81 @@ public partial class MainWindow : Avalonia.Controls.Window
         SetStatus(selected is null ? "Đã phóng to camera đầu tiên." : $"Đã phóng to {selected.Name}. Bấm 2/4 màn hình để quay lại.");
     }
 
+    private void Theme_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_uiInitialized || _loadingSettings || ThemeCombo.SelectedIndex < 0) return;
+        _settings.ThemeName = ThemeNames[Math.Clamp(ThemeCombo.SelectedIndex, 0, ThemeNames.Length - 1)];
+        if (string.Equals(_settings.ThemeName, "Dark/Light", StringComparison.OrdinalIgnoreCase))
+            _settings.DarkTheme = false;
+        ApplyTheme();
+        SaveSettings();
+        SetStatus($"Đã chọn theme {_settings.ThemeName}.");
+    }
+
     private void ToggleTheme_Click(object? sender, RoutedEventArgs e)
     {
+        _settings.ThemeName = "Dark/Light";
         _settings.DarkTheme = !_settings.DarkTheme;
+        _loadingSettings = true;
+        ThemeCombo.SelectedIndex = ThemeIndex(_settings.ThemeName, _settings.DarkTheme);
+        _loadingSettings = false;
         ApplyTheme();
         SaveSettings();
     }
 
+    private static readonly string[] ThemeNames = { "Orchid", "Ocean", "Midnight", "Lavender", "Crimson", "Dark/Light" };
+
+    private static int ThemeIndex(string? name, bool darkTheme)
+    {
+        if (string.Equals(name, "Dark/Light", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(name)) return 5;
+        var index = Array.FindIndex(ThemeNames, x => string.Equals(x, name, StringComparison.OrdinalIgnoreCase));
+        return index >= 0 ? index : (darkTheme ? 5 : 5);
+    }
+
     private void ApplyTheme()
     {
+        var theme = string.IsNullOrWhiteSpace(_settings.ThemeName) ? "Dark/Light" : _settings.ThemeName;
+        var dark = string.Equals(theme, "Midnight", StringComparison.OrdinalIgnoreCase) ||
+                   (string.Equals(theme, "Dark/Light", StringComparison.OrdinalIgnoreCase) && _settings.DarkTheme);
         if (Application.Current is not null)
-            Application.Current.RequestedThemeVariant = _settings.DarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
+            Application.Current.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+
+        var palette = theme.ToLowerInvariant() switch
+        {
+            "orchid" => new ThemePalette("#FFF7FD", "#6D2A68", "#FFFFFF", "#FFF0FA", "#4A1942", "#74556F", "#FBE7F5", "#E6B7D8", "#FFF5E8", "#E8B566", "#E8B566", "#805B12", "#F8EEF6"),
+            "ocean" => new ThemePalette("#F1FAFF", "#075985", "#FFFFFF", "#E0F2FE", "#0C4A6E", "#4B6475", "#E6F6FF", "#A8D8EF", "#A8D8EF", "#FFF8E8", "#F0C36D", "#805B12", "#F0F7FA"),
+            "midnight" => new ThemePalette("#111827", "#172554", "#1F2937", "#BFDBFE", "#E0E7FF", "#CBD5E1", "#1E3A5F", "#3B82B6", "#3B82B6", "#3A2D19", "#B88A3B", "#FDE68A", "#1F2937"),
+            "lavender" => new ThemePalette("#FAF8FF", "#5B4B8A", "#FFFFFF", "#EDE9FE", "#44337A", "#665F78", "#F2EEFF", "#C9BDF2", "#C9BDF2", "#FFF8E8", "#E8B566", "#805B12", "#F4F1FB"),
+            "crimson" => new ThemePalette("#FFF8F8", "#8F1D3D", "#FFFFFF", "#FFE4E6", "#7F1D1D", "#735B63", "#FFF0F1", "#F0B7BF", "#F0B7BF", "#FFF4E5", "#E8B566", "#805B12", "#FBF0F1"),
+            _ => new ThemePalette(dark ? "#111827" : "#F5F7FA", dark ? "#093B5A" : "#093B5A", dark ? "#F9FAFB" : "#FFFFFF", dark ? "#1E3A5F" : "#D8EDF8", dark ? "#E5E7EB" : "#093B5A", dark ? "#CBD5E1" : "#52606D", dark ? "#17324D" : "#EAF4F9", dark ? "#315A7D" : "#B8D6E5", dark ? "#3A2D19" : "#FFF8E8", dark ? "#B88A3B" : "#F0C36D", dark ? "#B88A3B" : "#F0C36D", dark ? "#FDE68A" : "#805B12", dark ? "#1F2937" : "#F4F7F9")
+        };
+
+        SetBrush("AppBackgroundBrush", palette.AppBackground);
+        SetBrush("HeaderBrush", palette.Header);
+        SetBrush("HeaderForegroundBrush", palette.HeaderForeground);
+        SetBrush("HeaderMutedBrush", palette.HeaderMuted);
+        SetBrush("PanelBrush", palette.Panel);
+        SetBrush("PanelBorderBrush", palette.PanelBorder);
+        SetBrush("HeadingBrush", palette.Heading);
+        SetBrush("MutedTextBrush", palette.MutedText);
+        SetBrush("InfoBrush", palette.Info);
+        SetBrush("InfoBorderBrush", palette.InfoBorder);
+        SetBrush("WarningBrush", palette.Warning);
+        SetBrush("WarningBorderBrush", palette.WarningBorder);
+        SetBrush("WarningTextBrush", palette.WarningText);
+        SetBrush("SoftPanelBrush", palette.SoftPanel);
+    }
+
+    private void SetBrush(string key, string color)
+    {
+        if (Resources[key] is SolidColorBrush brush && Color.TryParse(color, out var parsed))
+            brush.Color = parsed;
+    }
+
+    private sealed record ThemePalette(string AppBackground, string Header, string HeaderForeground, string HeaderMuted, string Panel, string PanelBorder, string Heading, string MutedText, string Info, string InfoBorder, string WarningBorder, string WarningText, string SoftPanel)
+    {
+        public string Warning => _warning;
+        private const string _warning = "#FFF8E8";
     }
 
     private void Window_KeyDown(object? sender, KeyEventArgs e)

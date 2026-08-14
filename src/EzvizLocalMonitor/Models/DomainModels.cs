@@ -84,6 +84,7 @@ public sealed class AppSettings
     public bool HasCompletedOnboarding { get; set; }
     public int PerformanceProfile { get; set; } = 1;
     public bool DarkTheme { get; set; }
+    public string ThemeName { get; set; } = "Dark/Light";
     public List<MonitorSchedule> MonitorSchedules { get; set; } = new();
     public bool WatchdogEnabled { get; set; }
 }

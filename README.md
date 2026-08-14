@@ -1,6 +1,13 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.4**
+**Phiên bản phát hành hiện tại: v0.9.5**
+
+## Bản cập nhật v0.9.5 — bộ chọn theme
+
+Bản v0.9.5 thêm bộ chọn giao diện gồm **Orchid**, **Ocean**, **Midnight**, **Lavender**, **Crimson** và **Dark/Light** trong thanh Tổng quan. Mỗi theme có palette riêng cho nền ứng dụng, header, panel, tiêu đề, chữ phụ, thông tin và cảnh báo; lựa chọn được lưu trong cấu hình DPAPI và tự áp dụng sau khi mở lại hoặc khôi phục backup.
+
+Nút **Sáng/Tối** cũ vẫn hoạt động như chuyển nhanh trong theme Dark/Light. Các theme Midnight dùng Fluent Dark, các theme còn lại dùng Fluent Light; màu trạng thái cảnh báo được giữ tương phản để dễ theo dõi.
+
 
 ## Bản cập nhật v0.9.4 — tab Hướng dẫn & Tác giả
 
