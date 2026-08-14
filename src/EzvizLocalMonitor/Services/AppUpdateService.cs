@@ -1,5 +1,7 @@
+using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -52,6 +54,50 @@ public sealed class AppUpdateService
         var package = release.Assets?.FirstOrDefault(x => x.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
         var checksum = release.Assets?.FirstOrDefault(x => x.Name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase));
         return new AppUpdateInfo(CurrentVersion, latest, release.TagName, release.HtmlUrl ?? string.Empty, package?.BrowserDownloadUrl, checksum?.BrowserDownloadUrl);
+    }
+
+    public async Task<string?> PrepareUpdaterAsync(AppUpdateInfo update, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(update.PackageUrl) || string.IsNullOrWhiteSpace(update.ChecksumUrl)) return null;
+
+        var root = Path.Combine(Path.GetTempPath(), "EZVIZ-AutoUpdater-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var zipPath = Path.Combine(root, "release.zip");
+        var checksumPath = Path.Combine(root, "release.zip.sha256");
+        var extractPath = Path.Combine(root, "extracted");
+
+        using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("EZVIZ-Local-Monitor", CurrentVersion.ToString(3)));
+        await DownloadAsync(client, update.PackageUrl, zipPath, cancellationToken).ConfigureAwait(false);
+        await DownloadAsync(client, update.ChecksumUrl, checksumPath, cancellationToken).ConfigureAwait(false);
+
+        var expected = ParseSha256(await File.ReadAllTextAsync(checksumPath, cancellationToken).ConfigureAwait(false));
+        if (expected is null) throw new InvalidDataException("Tệp SHA-256 của release không hợp lệ.");
+        await using (var stream = File.OpenRead(zipPath))
+        {
+            var actual = Convert.ToHexString(await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false)).ToLowerInvariant();
+            if (!CryptographicOperations.FixedTimeEquals(Convert.FromHexString(expected), Convert.FromHexString(actual)))
+                throw new InvalidDataException("SHA-256 gói cập nhật không khớp.");
+        }
+
+        ZipFile.ExtractToDirectory(zipPath, extractPath, true);
+        var updater = Directory.GetFiles(extractPath, "Update-EzvizLocalMonitor.ps1", SearchOption.AllDirectories).FirstOrDefault();
+        return updater;
+    }
+
+    private static async Task DownloadAsync(HttpClient client, string url, string destination, CancellationToken cancellationToken)
+    {
+        using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        await using var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        await using var target = File.Create(destination);
+        await source.CopyToAsync(target, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static string? ParseSha256(string text)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(text, "(?i)\\b[0-9a-f]{64}\\b");
+        return match.Success ? match.Value.ToLowerInvariant() : null;
     }
 
     public static Version CurrentVersion => ParseVersion(

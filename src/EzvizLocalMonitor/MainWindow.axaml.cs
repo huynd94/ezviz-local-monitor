@@ -385,7 +385,7 @@ public partial class MainWindow : Avalonia.Controls.Window
             }
             else if (choice == UpdatePromptChoice.Update)
             {
-                await LaunchUpdaterAsync();
+                await LaunchUpdaterAsync(update);
             }
         }
         catch (OperationCanceledException)
@@ -398,13 +398,21 @@ public partial class MainWindow : Avalonia.Controls.Window
         }
     }
 
-    private async Task LaunchUpdaterAsync()
+    private async Task LaunchUpdaterAsync(AppUpdateInfo update)
     {
+        if (!OperatingSystem.IsWindows()) return;
+
         var script = AppUpdateService.UpdaterScriptPath;
-        if (!OperatingSystem.IsWindows() || !File.Exists(script))
+        if (!File.Exists(script))
         {
-            SetStatus("Không tìm thấy updater trong gói cài đặt. Hãy chạy scripts\\Update-EzvizLocalMonitor.cmd thủ công.");
-            return;
+            SetStatus("Đang tải thành phần cập nhật và kiểm tra SHA-256...");
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            script = await _updateService.PrepareUpdaterAsync(update, timeout.Token);
+            if (string.IsNullOrWhiteSpace(script) || !File.Exists(script))
+            {
+                SetStatus("Không tìm thấy thành phần updater. Hãy dùng scripts\\Update-EzvizLocalMonitor.cmd thủ công.");
+                return;
+            }
         }
 
         SetStatus("Đang mở trình cập nhật...");
