@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$InstallDir = "D:\EZVIZ-Local-Monitor",
     [string]$Repository = "huyavm/ezviz-local-monitor-releases",

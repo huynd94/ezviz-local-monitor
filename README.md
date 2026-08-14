@@ -1,6 +1,11 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.0**
+**Phiên bản phát hành hiện tại: v0.9.1**
+
+## Bản vá v0.9.1 — updater Windows PowerShell 5.1
+
+Bản v0.9.1 giữ nguyên 10 nhóm tính năng của v0.9.0 và sửa lỗi updater GUI/worker bị `ParserError` trên Windows PowerShell 5.1. Hai file `.ps1` updater được lưu lại dưới dạng **UTF-8 có BOM**, để PowerShell 5.1 nhận diện đúng tiếng Việt thay vì đọc theo ANSI và biến chuỗi như `Cập nhật` thành ký tự lỗi.
+
 
 ## 10 nhóm cải tiến v0.9.0
 
@@ -16,7 +21,7 @@ Zalo vẫn chỉ nhận `photo` là URL HTTPS. Relay ảnh tùy chọn dùng end
 
 Bản 0.8.5 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
 
-**Phiên bản:** 0.9.0
+**Phiên bản:** 0.9.1
 **Mục đích:** Giám sát cục bộ tối đa bốn camera EZVIZ, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform. Với i7-7500U/RAM 8 GB, nên bắt đầu với hai camera rồi đo CPU trước khi bật bốn luồng YOLO đồng thời.
 
 ## 8 nhóm cải tiến giao diện và vận hành
