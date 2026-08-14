@@ -247,12 +247,14 @@ public partial class MainWindow : Avalonia.Controls.Window
         catch (Exception ex) { SetStatus($"Zalo: {ex.Message}"); }
     }
 
-    private async void StartMonitoring_Click(object? sender, RoutedEventArgs e)
+    private async void StartMonitoring_Click(object? sender, RoutedEventArgs e) => await StartMonitoringAsync(true);
+
+    private async Task StartMonitoringAsync(bool saveSettings)
     {
-        SaveSettings();
+        if (saveSettings) SaveSettings();
         if (!_settings.Cameras.Any(x => x.IsEnabled && !string.IsNullOrWhiteSpace(x.RtspUrl)))
         {
-            SetStatus("Thêm tối thiểu một camera bật với RTSP URL trước khi giám sát.");
+            SetStatus("Chưa có camera bật hợp lệ; thêm camera trong tab Camera để tự động bắt đầu giám sát.");
             return;
         }
         if (_coordinator is not null) await StopMonitoringAsync();
@@ -296,13 +298,13 @@ public partial class MainWindow : Avalonia.Controls.Window
         _settings.DashboardLayoutMode = mode;
         var four = mode == 4;
         CameraGrid.RowDefinitions = new RowDefinitions(four ? "*,*" : "*");
-        CameraGrid.ColumnDefinitions = new ColumnDefinitions("*,*");
+        CameraGrid.ColumnDefinitions = new ColumnDefinitions(mode == 1 ? "*" : "*,*");
         for (var i = 0; i < _cameraTiles.Length; i++)
         {
-            var visible = mode == 4 || i < mode;
+            var visible = i < mode;
             _cameraTiles[i].IsVisible = visible;
             Grid.SetRow(_cameraTiles[i], four && i >= 2 ? 1 : 0);
-            Grid.SetColumn(_cameraTiles[i], four ? i % 2 : i);
+            Grid.SetColumn(_cameraTiles[i], mode == 1 ? 0 : four ? i % 2 : i);
         }
         LayoutOneButton.Content = mode == 1 ? "✓ 1 màn hình" : "1 màn hình";
         LayoutTwoButton.Content = mode == 2 ? "✓ 2 màn hình" : "2 màn hình";
@@ -386,6 +388,7 @@ public partial class MainWindow : Avalonia.Controls.Window
             else if (choice == UpdatePromptChoice.Update)
             {
                 await LaunchUpdaterAsync(update);
+                return;
             }
         }
         catch (OperationCanceledException)
@@ -396,6 +399,8 @@ public partial class MainWindow : Avalonia.Controls.Window
         {
             SetStatus("Không kiểm tra được bản cập nhật tự động; ứng dụng vẫn hoạt động bình thường.");
         }
+
+        await StartMonitoringAsync(false);
     }
 
     private async Task LaunchUpdaterAsync(AppUpdateInfo update)

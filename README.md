@@ -1,8 +1,8 @@
 # EZVIZ Local Monitor for Windows
 
-Bản 0.6.6 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
+Bản 0.6.7 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
 
-**Phiên bản:** 0.6.6  
+**Phiên bản:** 0.6.7  
 **Mục đích:** Giám sát cục bộ tối đa bốn camera EZVIZ, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform. Với i7-7500U/RAM 8 GB, nên bắt đầu với hai camera rồi đo CPU trước khi bật bốn luồng YOLO đồng thời.
 
 ## Script cập nhật nhanh từ GitHub
@@ -20,6 +20,10 @@ Có thể chạy bằng PowerShell nếu cần:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\Update-EzvizLocalMonitor.ps1
 ```
+
+## Bố cục Tổng quan và tự động giám sát
+
+Trong tab **Tổng quan**, bố cục **1 màn hình** dùng toàn bộ vùng lưới cho camera thứ nhất; bố cục **2 màn hình** chia đều thành hai cột; bố cục **4 màn hình** chia thành lưới 2×2. Khi cửa sổ mở, ứng dụng tự động bắt đầu giám sát nếu đã có ít nhất một camera bật và có RTSP URL hợp lệ. Nút **Dừng** tạm dừng giám sát, còn **Bắt đầu giám sát** khởi động lại khi người dùng muốn.
 
 ## Bản vá xác minh phiên bản 0.5.1
 

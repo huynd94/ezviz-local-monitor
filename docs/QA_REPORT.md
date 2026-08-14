@@ -153,3 +153,7 @@ Repository public phát hành: `huyavm/ezviz-local-monitor-releases`. Repository
 ## Auto-updater khi khởi động — v0.6.4
 
 Ứng dụng kiểm tra release public `huyavm/ezviz-local-monitor-releases` sau khi cửa sổ chính đã mở, dùng HTTP timeout ngắn và không yêu cầu token. Nếu không có mạng, GitHub không phản hồi hoặc release không hợp lệ, lỗi được bỏ qua để không ngăn ứng dụng giám sát cục bộ khởi động. Khi phát hiện phiên bản mới, người dùng có thể chọn cập nhật ngay, để sau hoặc mở trang release. Lựa chọn cập nhật dừng coordinator, mở updater GUI bằng tham số xác nhận tự động, rồi updater tiếp tục xác minh SHA-256 và khởi động lại ứng dụng sau khi cài.
+
+## Bố cục Tổng quan và tự động giám sát — v0.6.7
+
+Logic lưới đã được điều chỉnh: chế độ 1 dùng một cột duy nhất để camera chiếm toàn bộ vùng hiển thị; chế độ 2 dùng hai cột chia đều; chế độ 4 dùng hai hàng và hai cột. Sau khi cửa sổ mở, ứng dụng tự động gọi cùng pipeline giám sát của nút **Bắt đầu giám sát** nếu có camera bật và RTSP URL hợp lệ. Nút **Dừng** vẫn hủy coordinator và nút **Bắt đầu giám sát** có thể khởi động lại pipeline.
