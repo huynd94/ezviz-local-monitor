@@ -18,7 +18,33 @@
     <SolidColorBrush x:Key="WarningBorderBrush" Color="#F0C36D" />
     <SolidColorBrush x:Key="WarningTextBrush" Color="#805B12" />
     <SolidColorBrush x:Key="SoftPanelBrush" Color="#F4F7F9" />
+    <SolidColorBrush x:Key="BodyTextBrush" Color="#14202B" />
+    <SolidColorBrush x:Key="ControlForegroundBrush" Color="#14202B" />
+    <SolidColorBrush x:Key="TabForegroundBrush" Color="#17324D" />
   </Window.Resources>
+  <Window.Styles>
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Foreground" Value="{DynamicResource TabForegroundBrush}" />
+    </Style>
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource BodyTextBrush}" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Foreground" Value="{DynamicResource ControlForegroundBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="Foreground" Value="{DynamicResource ControlForegroundBrush}" />
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="Foreground" Value="{DynamicResource ControlForegroundBrush}" />
+    </Style>
+    <Style Selector="CheckBox">
+      <Setter Property="Foreground" Value="{DynamicResource ControlForegroundBrush}" />
+    </Style>
+  </Window.Styles>
   <Grid Margin="16" RowDefinitions="Auto,*,Auto">
     <Border Grid.Row="0" Background="{DynamicResource HeaderBrush}" CornerRadius="8" Padding="18" Margin="0,0,0,12">
       <Grid ColumnDefinitions="*,Auto">

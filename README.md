@@ -1,6 +1,11 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.5**
+**Phiên bản phát hành hiện tại: v0.9.6**
+
+## Bản cập nhật v0.9.6 — tăng độ rõ chữ và tiêu đề tab
+
+Bản v0.9.6 chuẩn hóa màu foreground cho cả sáu theme, tách riêng màu chữ nội dung, chữ control và chữ tiêu đề tab, đồng thời tăng độ tương phản trên panel sáng/tối. Các tiêu đề tab được in đậm và tăng kích thước để dễ nhận biết. Màu chữ trạng thái, label, button, TextBox, ComboBox và CheckBox được áp dụng theo palette tương ứng thay vì dùng màu mặc định có thể bị chìm.
+
 
 ## Bản cập nhật v0.9.5 — bộ chọn theme
 

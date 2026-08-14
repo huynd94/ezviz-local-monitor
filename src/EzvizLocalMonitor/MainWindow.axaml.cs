@@ -620,12 +620,12 @@ public partial class MainWindow : Avalonia.Controls.Window
 
         var palette = theme.ToLowerInvariant() switch
         {
-            "orchid" => new ThemePalette("#FFF7FD", "#6D2A68", "#FFFFFF", "#FFF0FA", "#4A1942", "#74556F", "#FBE7F5", "#E6B7D8", "#FFF5E8", "#E8B566", "#E8B566", "#805B12", "#F8EEF6"),
-            "ocean" => new ThemePalette("#F1FAFF", "#075985", "#FFFFFF", "#E0F2FE", "#0C4A6E", "#4B6475", "#E6F6FF", "#A8D8EF", "#A8D8EF", "#FFF8E8", "#F0C36D", "#805B12", "#F0F7FA"),
-            "midnight" => new ThemePalette("#111827", "#172554", "#1F2937", "#BFDBFE", "#E0E7FF", "#CBD5E1", "#1E3A5F", "#3B82B6", "#3B82B6", "#3A2D19", "#B88A3B", "#FDE68A", "#1F2937"),
-            "lavender" => new ThemePalette("#FAF8FF", "#5B4B8A", "#FFFFFF", "#EDE9FE", "#44337A", "#665F78", "#F2EEFF", "#C9BDF2", "#C9BDF2", "#FFF8E8", "#E8B566", "#805B12", "#F4F1FB"),
-            "crimson" => new ThemePalette("#FFF8F8", "#8F1D3D", "#FFFFFF", "#FFE4E6", "#7F1D1D", "#735B63", "#FFF0F1", "#F0B7BF", "#F0B7BF", "#FFF4E5", "#E8B566", "#805B12", "#FBF0F1"),
-            _ => new ThemePalette(dark ? "#111827" : "#F5F7FA", dark ? "#093B5A" : "#093B5A", dark ? "#F9FAFB" : "#FFFFFF", dark ? "#1E3A5F" : "#D8EDF8", dark ? "#E5E7EB" : "#093B5A", dark ? "#CBD5E1" : "#52606D", dark ? "#17324D" : "#EAF4F9", dark ? "#315A7D" : "#B8D6E5", dark ? "#3A2D19" : "#FFF8E8", dark ? "#B88A3B" : "#F0C36D", dark ? "#B88A3B" : "#F0C36D", dark ? "#FDE68A" : "#805B12", dark ? "#1F2937" : "#F4F7F9")
+            "orchid" => new ThemePalette("#FFF7FD", "#6D2A68", "#FFFFFF", "#FFF0FA", "#4A1942", "#74556F", "#FBE7F5", "#E6B7D8", "#FFF5E8", "#E8B566", "#E8B566", "#805B12", "#F8EEF6", "#1F1630", "#1B122A", "#3B1F4A"),
+            "ocean" => new ThemePalette("#F1FAFF", "#075985", "#FFFFFF", "#E0F2FE", "#0C4A6E", "#4B6475", "#E6F6FF", "#A8D8EF", "#A8D8EF", "#FFF8E8", "#F0C36D", "#805B12", "#F0F7FA", "#102A43", "#102A43", "#0B3B5C"),
+            "midnight" => new ThemePalette("#111827", "#172554", "#1F2937", "#BFDBFE", "#E0E7FF", "#CBD5E1", "#1E3A5F", "#3B82B6", "#3B82B6", "#3A2D19", "#B88A3B", "#FDE68A", "#1F2937", "#F8FAFC", "#F8FAFC", "#FFFFFF"),
+            "lavender" => new ThemePalette("#FAF8FF", "#5B4B8A", "#FFFFFF", "#EDE9FE", "#44337A", "#665F78", "#F2EEFF", "#C9BDF2", "#C9BDF2", "#FFF8E8", "#E8B566", "#805B12", "#F4F1FB", "#241A3A", "#241A3A", "#372568"),
+            "crimson" => new ThemePalette("#FFF8F8", "#8F1D3D", "#FFFFFF", "#FFE4E6", "#7F1D1D", "#735B63", "#FFF0F1", "#F0B7BF", "#F0B7BF", "#FFF4E5", "#E8B566", "#805B12", "#FBF0F1", "#32131D", "#32131D", "#6B142C"),
+            _ => new ThemePalette(dark ? "#111827" : "#F5F7FA", dark ? "#093B5A" : "#093B5A", dark ? "#F9FAFB" : "#FFFFFF", dark ? "#1E3A5F" : "#D8EDF8", dark ? "#E5E7EB" : "#093B5A", dark ? "#CBD5E1" : "#52606D", dark ? "#17324D" : "#EAF4F9", dark ? "#315A7D" : "#B8D6E5", dark ? "#3A2D19" : "#FFF8E8", dark ? "#B88A3B" : "#F0C36D", dark ? "#B88A3B" : "#F0C36D", dark ? "#FDE68A" : "#805B12", dark ? "#1F2937" : "#F4F7F9", dark ? "#F8FAFC" : "#14202B", dark ? "#F8FAFC" : "#14202B", dark ? "#FFFFFF" : "#17324D")
         };
 
         SetBrush("AppBackgroundBrush", palette.AppBackground);
@@ -642,6 +642,9 @@ public partial class MainWindow : Avalonia.Controls.Window
         SetBrush("WarningBorderBrush", palette.WarningBorder);
         SetBrush("WarningTextBrush", palette.WarningText);
         SetBrush("SoftPanelBrush", palette.SoftPanel);
+        SetBrush("BodyTextBrush", palette.BodyText);
+        SetBrush("ControlForegroundBrush", palette.ControlForeground);
+        SetBrush("TabForegroundBrush", palette.TabForeground);
     }
 
     private void SetBrush(string key, string color)
@@ -650,7 +653,7 @@ public partial class MainWindow : Avalonia.Controls.Window
             brush.Color = parsed;
     }
 
-    private sealed record ThemePalette(string AppBackground, string Header, string HeaderForeground, string HeaderMuted, string Panel, string PanelBorder, string Heading, string MutedText, string Info, string InfoBorder, string WarningBorder, string WarningText, string SoftPanel)
+    private sealed record ThemePalette(string AppBackground, string Header, string HeaderForeground, string HeaderMuted, string Panel, string PanelBorder, string Heading, string MutedText, string Info, string InfoBorder, string WarningBorder, string WarningText, string SoftPanel, string BodyText, string ControlForeground, string TabForeground)
     {
         public string Warning => _warning;
         private const string _warning = "#FFF8E8";
