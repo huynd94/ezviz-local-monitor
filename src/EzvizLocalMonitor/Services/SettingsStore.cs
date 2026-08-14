@@ -13,6 +13,7 @@ public static class DataPaths
     public static readonly string SettingsFile = Path.Combine(Root, "settings.protected");
     public static readonly string DatabaseFile = Path.Combine(Root, "events.db");
     public static readonly string EventImages = Path.Combine(Root, "Events");
+    public static readonly string ZaloLogFile = Path.Combine(Root, "zalo-send.log");
 
     public static void EnsureCreated()
     {

@@ -14,11 +14,13 @@ public sealed class AlertDispatcher
         var aiCaption = string.IsNullOrWhiteSpace(item.AiSummary) ? string.Empty : $"\nAI: {item.AiSummary}";
         var label = item.IsHumanDetection ? "PHÁT HIỆN NGƯỜI" : "PHÁT HIỆN CHUYỂN ĐỘNG";
         var caption = $"{label} | {item.CameraName} | {item.DetectedAt:yyyy-MM-dd HH:mm:ss} | Tin cậy: {item.Confidence:P0} | Nguồn: {item.DetectionSource}{aiCaption}";
+        if (settings.ZaloEnabled)
+            ZaloDiagnostics.Info($"alert dispatch; tokenPresent={!string.IsNullOrWhiteSpace(settings.ZaloBotToken)}; chatId={ZaloDiagnostics.Mask(settings.ZaloChatId)}; chatIdLength={settings.ZaloChatId?.Trim().Length ?? 0}; imagePath={Path.GetFileName(item.ImagePath)}; imageExists={File.Exists(item.ImagePath)}; imageBytes={(File.Exists(item.ImagePath) ? new FileInfo(item.ImagePath).Length : 0)}");
         var tasks = new List<Task<string>>();
         if (settings.TelegramEnabled)
             tasks.Add(SafeSendAsync("Telegram", () => SendTelegramFastAlertAsync(settings.TelegramBotToken, settings.TelegramChatId, item.ImagePath, caption, cancellationToken)));
         if (settings.ZaloEnabled)
-            tasks.Add(SafeSendAsync("Zalo", () => SendZaloPhotoAsync(settings.ZaloBotToken, settings.ZaloChatId, item.ImagePath, caption, cancellationToken)));
+            tasks.Add(SafeSendAsync("Zalo", () => SendZaloFastAlertAsync(settings.ZaloBotToken ?? string.Empty, settings.ZaloChatId ?? string.Empty, item.ImagePath, caption, cancellationToken)));
         if (tasks.Count == 0) return "Không có kênh nào được bật";
         var results = await Task.WhenAll(tasks);
         return string.Join(" | ", results);
@@ -76,27 +78,76 @@ public sealed class AlertDispatcher
         return FormatApiResult("Telegram", response, body);
     }
 
+    private static async Task<string> SendZaloFastAlertAsync(string token, string chatId, string imagePath, string caption, CancellationToken ct)
+    {
+        string textResult;
+        try { textResult = await SendZaloTextAsync(token, chatId, caption, ct); }
+        catch (Exception ex)
+        {
+            ZaloDiagnostics.Error($"sendMessage exception; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}", ex);
+            textResult = "Zalo text: lỗi " + SafeException(ex);
+        }
+
+        string photoResult;
+        try { photoResult = await SendZaloPhotoAsync(token, chatId, imagePath, caption, ct); }
+        catch (Exception ex)
+        {
+            ZaloDiagnostics.Error($"sendPhoto exception; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}; imagePath={Path.GetFileName(imagePath)}", ex);
+            photoResult = "Zalo ảnh: lỗi " + SafeException(ex);
+        }
+        return $"{textResult} + {photoResult}";
+    }
+
     private static async Task<string> SendZaloTextAsync(string token, string chatId, string text, CancellationToken ct)
     {
         Require(token, "Zalo Bot Token");
         Require(chatId, "Zalo Chat ID");
-        using var payload = new StringContent(JsonSerializer.Serialize(new { chat_id = chatId, text }), Encoding.UTF8, "application/json");
+        ZaloDiagnostics.Info($"sendMessage start; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}; chatIdLength={chatId.Trim().Length}; textLength={text.Length}");
+        using var payload = new StringContent(JsonSerializer.Serialize(new { chat_id = chatId.Trim(), text }), Encoding.UTF8, "application/json");
         using var response = await Client.PostAsync($"https://bot-api.zaloplatforms.com/bot{token}/sendMessage", payload, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
-        return FormatApiResult("Zalo", response, body);
+        var result = FormatApiResult("Zalo", response, body);
+        LogApiResult("sendMessage", chatId, null, response, body, result);
+        return result;
     }
 
     private static async Task<string> SendZaloPhotoAsync(string token, string chatId, string imagePath, string caption, CancellationToken ct)
     {
         Require(token, "Zalo Bot Token");
         Require(chatId, "Zalo Chat ID");
-        using var form = new MultipartFormDataContent();
-        form.Add(new StringContent(chatId), "chat_id");
-        form.Add(new StringContent(caption), "caption");
-        form.Add(CreateImageContent(imagePath), "photo", Path.GetFileName(imagePath));
+        var fileExists = File.Exists(imagePath);
+        var imageBytes = fileExists ? new FileInfo(imagePath).Length : 0;
+        var isHttpsUrl = Uri.TryCreate(imagePath, UriKind.Absolute, out var photoUri) && photoUri.Scheme == Uri.UriSchemeHttps;
+        ZaloDiagnostics.Info($"sendPhoto start; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}; chatIdLength={chatId.Trim().Length}; imageFile={Path.GetFileName(imagePath)}; imageExists={fileExists}; imageBytes={imageBytes}; photoIsHttpsUrl={isHttpsUrl}");
+
+        if (!isHttpsUrl)
+        {
+            const string reason = "Zalo Bot sendPhoto yêu cầu photo là URL HTTPS công khai; ảnh sự kiện hiện chỉ có đường dẫn local trong máy.";
+            ZaloDiagnostics.Error($"sendPhoto skipped; reason={reason}; chatId={ZaloDiagnostics.Mask(chatId)}; imageExists={fileExists}; imageBytes={imageBytes}");
+            return "Zalo ảnh: chưa gửi; API yêu cầu URL HTTPS công khai cho photo";
+        }
+
+        // Zalo Bot API documents `photo` as a String URL. Use form-urlencoded so
+        // chat_id/photo/caption are parsed as the documented string fields rather
+        // than as a file upload that the endpoint may ignore.
+        using var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["chat_id"] = chatId.Trim(),
+            ["photo"] = photoUri!.ToString(),
+            ["caption"] = caption
+        });
         using var response = await Client.PostAsync($"https://bot-api.zaloplatforms.com/bot{token}/sendPhoto", form, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
-        return FormatApiResult("Zalo", response, body);
+        var result = FormatApiResult("Zalo", response, body);
+        LogApiResult("sendPhoto", chatId, imagePath, response, body, result);
+        return result;
+    }
+
+    private static void LogApiResult(string operation, string chatId, string? imagePath, HttpResponseMessage response, string body, string result)
+    {
+        var fileExists = !string.IsNullOrWhiteSpace(imagePath) && File.Exists(imagePath);
+        var imageBytes = fileExists ? new FileInfo(imagePath!).Length : 0;
+        ZaloDiagnostics.Info($"{operation} result; status={(int)response.StatusCode}; chatId={ZaloDiagnostics.Mask(chatId)}; chatIdLength={chatId.Trim().Length}; imageExists={fileExists}; imageBytes={imageBytes}; contentType={response.Content.Headers.ContentType?.MediaType ?? "<none>"}; result={result}; response={ZaloDiagnostics.SanitizeResponse(body)}");
     }
 
     private static ByteArrayContent CreateImageContent(string imagePath)

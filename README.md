@@ -1,8 +1,8 @@
 # EZVIZ Local Monitor for Windows
 
-Bản 0.6.9 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
+Bản 0.7.0 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
 
-**Phiên bản:** 0.6.9  
+**Phiên bản:** 0.7.0  
 **Mục đích:** Giám sát cục bộ tối đa bốn camera EZVIZ, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform. Với i7-7500U/RAM 8 GB, nên bắt đầu với hai camera rồi đo CPU trước khi bật bốn luồng YOLO đồng thời.
 
 ## Script cập nhật nhanh từ GitHub
@@ -21,11 +21,19 @@ Có thể chạy bằng PowerShell nếu cần:
 powershell -ExecutionPolicy Bypass -File .\scripts\Update-EzvizLocalMonitor.ps1
 ```
 
+## Gửi cảnh báo và log chẩn đoán Zalo
+
+Theo [tài liệu sendPhoto của Zalo Bot](https://bot.zapps.me/docs/apis/sendPhoto/), trường `photo` có kiểu **String** và là đường dẫn ảnh; API không nhận trực tiếp đường dẫn file local trong máy. Vì ứng dụng hoạt động trong LAN, ảnh sự kiện hiện được lưu local và không có URL HTTPS công khai để máy chủ Zalo truy cập. Bản v0.7.0 không tiếp tục gửi multipart file local khiến Zalo trả `chat_id/photo must not be empty`; ứng dụng gửi **văn bản Zalo trước** và ghi rõ lý do ảnh chưa thể gửi. Telegram vẫn gửi văn bản và ảnh theo cơ chế riêng.
+
+Ứng dụng ghi log riêng tại `%LOCALAPPDATA%\EZVIZ Local Monitor\zalo-send.log`. Trong tab **Cảnh báo**, bấm **Mở log Zalo** để mở file này. Log gồm thời điểm, thao tác `sendMessage`/`sendPhoto`, HTTP status, độ dài Chat ID, trạng thái tồn tại/kích thước ảnh, việc `photo` có phải URL HTTPS hay không và response lỗi đã rút gọn. Bot Token và Chat ID chỉ được che một phần, không ghi đầy đủ vào log; log tự xoay khi vượt quá 2 MB.
+
+Khi báo lỗi, hãy tạo lại một sự kiện mới, mở log và gửi các dòng liên quan đến `sendMessage`/`sendPhoto` sau khi đã kiểm tra không có dữ liệu nhạy cảm. Không gửi Bot Token, mã xác thực camera hoặc toàn bộ cấu hình ứng dụng.
+
 ## Khay thông báo và chạy nền
 
 Khi bấm nút đóng cửa sổ, ứng dụng sẽ **ẩn vào khay thông báo** thay vì thoát. Các luồng camera, nhận diện người và cảnh báo vẫn tiếp tục hoạt động. Bấm biểu tượng EZVIZ Local Monitor trong khay để mở lại cửa sổ; chọn **Thoát hoàn toàn** trong menu khay nếu muốn dừng giám sát và kết thúc ứng dụng.
 
-Bản 0.6.9 cũng giảm giật lag lúc mở ứng dụng bằng cách mở trước RTSP ở nền, giới hạn buffer khung hình để ưu tiên dữ liệu mới và gộp các preview đang chờ để không làm nghẽn hàng đợi giao diện.
+Bản 0.7.0 cũng giữ các tối ưu giảm giật lag lúc mở ứng dụng bằng cách mở trước RTSP ở nền, giới hạn buffer khung hình để ưu tiên dữ liệu mới và gộp các preview đang chờ để không làm nghẽn hàng đợi giao diện.
 
 ## Bố cục Tổng quan và tự động giám sát
 

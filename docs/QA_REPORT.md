@@ -167,3 +167,9 @@ Kiểm thử nút **Gửi thử** thành công xác nhận Bot Token và Chat ID
 Khi người dùng đóng cửa sổ, `Window_Closing` hủy thao tác đóng mặc định và ẩn cửa sổ; coordinator vẫn chạy, vì vậy camera, YOLO/ONVIF và cảnh báo tiếp tục hoạt động. Tray menu có các lệnh mở lại, ẩn và thoát hoàn toàn. Lệnh thoát đặt cờ shutdown rồi kết thúc desktop lifetime để coordinator được dispose đúng cách.
 
 RTSP snapshot được warm ở task nền thay vì chặn lúc khởi động. Luồng preview được gộp theo camera: mỗi camera chỉ có một lần cập nhật UI đang chờ, frame mới thay thế frame cũ chưa hiển thị và bitmap cũ được giải phóng. Điều này tránh tích tụ hàng đợi Dispatcher khi camera phát nhiều frame và giảm giật lag khi mở ứng dụng.
+
+## Zalo diagnostics và sửa cảnh báo thực tế — v0.7.0
+
+Ảnh nhật ký người dùng cho thấy `sendMessage` kiểm thử có thể thành công, trong khi cảnh báo thực tế trước đây chỉ gọi `sendPhoto` bằng multipart file local. Zalo Bot API mô tả `photo` là một chuỗi đường dẫn ảnh; một file path trong máy LAN không phải URL HTTPS mà máy chủ Zalo có thể truy cập. Điều này giải thích các response `error_code=400` với `chat_id/photo must not be empty` khi endpoint không phân tích multipart như một file upload.
+
+Bản v0.7.0 gửi `sendMessage` trước để cảnh báo chữ không bị mất, chỉ gọi `sendPhoto` khi giá trị ảnh là URL HTTPS hợp lệ, và ghi log khi ảnh local bị bỏ qua. Log tại `%LOCALAPPDATA%\EZVIZ Local Monitor\zalo-send.log` ghi thao tác, HTTP status, Chat ID đã che, độ dài Chat ID, trạng thái file/kích thước ảnh, cờ `photoIsHttpsUrl` và response rút gọn; không ghi Bot Token đầy đủ.

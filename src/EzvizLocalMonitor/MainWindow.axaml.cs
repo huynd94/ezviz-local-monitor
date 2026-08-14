@@ -405,6 +405,14 @@ public partial class MainWindow : Avalonia.Controls.Window
         Process.Start(new ProcessStartInfo { FileName = DataPaths.EventImages, UseShellExecute = true });
     }
 
+    private void OpenZaloLog_Click(object? sender, RoutedEventArgs e)
+    {
+        DataPaths.EnsureCreated();
+        if (!File.Exists(DataPaths.ZaloLogFile))
+            File.WriteAllText(DataPaths.ZaloLogFile, "Chưa có log gửi Zalo. Hãy tạo một sự kiện hoặc bấm Gửi thử trước.\n");
+        Process.Start(new ProcessStartInfo { FileName = DataPaths.ZaloLogFile, UseShellExecute = true });
+    }
+
     private async void MainWindow_Opened(object? sender, EventArgs e)
     {
         if (_updateCheckStarted) return;
