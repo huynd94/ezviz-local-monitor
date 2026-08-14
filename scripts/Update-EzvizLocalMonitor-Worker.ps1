@@ -67,6 +67,16 @@ function Get-LogTail([string]$path) {
     try { return ((Get-Content -LiteralPath $path -Tail 25 -ErrorAction Stop) -join "`n") } catch { return "" }
 }
 
+function Clear-LegacyUpdaterFolders {
+    $tempPath = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\\')
+    if (-not (Test-Path -LiteralPath $tempPath -PathType Container)) { return }
+    try {
+        Get-ChildItem -LiteralPath $tempPath -Directory -Filter "EZVIZ-AutoUpdater-*" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Parent.FullName.TrimEnd('\\') -eq $tempPath } |
+            ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+    } catch { }
+}
+
 try {
     Write-ProgressState 5 "Đang kiểm tra file thực thi hiện tại..."
     $installedExe = Join-Path $InstallDir "EzvizLocalMonitor.exe"
@@ -124,6 +134,7 @@ try {
         Write-Result @{ status = "ok"; action = "update"; installed = [string]$installed; latest = [string]$latest; updated = [string]$updated }
     } finally {
         if (Test-Path -LiteralPath $tempRoot) { Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue }
+        Clear-LegacyUpdaterFolders
     }
 } catch {
     Write-ProgressState 0 ("Lỗi: " + $_.Exception.Message)

@@ -165,8 +165,19 @@ $state = [hashtable]::Synchronized(@{ Busy = $false; CheckOnly = [bool]$CheckOnl
 $updateTimer = New-Object System.Windows.Forms.Timer
 $updateTimer.Interval = 250
 
+function Clear-LegacyUpdaterFolders {
+    $tempPath = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\\')
+    if (-not (Test-Path -LiteralPath $tempPath -PathType Container)) { return }
+    try {
+        Get-ChildItem -LiteralPath $tempPath -Directory -Filter "EZVIZ-AutoUpdater-*" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Parent.FullName.TrimEnd('\\') -eq $tempPath } |
+            ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+    } catch { }
+}
+
 function Clear-WorkerFiles {
     if ($state.TempRoot -and (Test-Path -LiteralPath $state.TempRoot)) { Remove-Item -LiteralPath $state.TempRoot -Recurse -Force -ErrorAction SilentlyContinue }
+    Clear-LegacyUpdaterFolders
 }
 
 function Finish-Worker {

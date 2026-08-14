@@ -1,6 +1,11 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.8**
+**Phiên bản phát hành hiện tại: v0.9.9**
+
+## Bản cập nhật v0.9.9 — dọn thư mục updater legacy
+
+Bản v0.9.9 bổ sung dọn dẹp tự động các thư mục tạm legacy có tên `EZVIZ-AutoUpdater-*` còn sót từ các phiên bản updater cũ. Updater chỉ xóa thư mục đúng tiền tố ở cấp trực tiếp của thư mục Temp; không quét hoặc xóa dữ liệu ở vị trí khác. Cơ chế dọn `EZVIZ-GUI-*` và `EZVIZ-Update-*` hiện tại vẫn được giữ nguyên.
+
 
 ## Bản cập nhật v0.9.8 — sửa chữ bị chìm trên các tab
 
