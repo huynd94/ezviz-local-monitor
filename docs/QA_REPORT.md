@@ -202,3 +202,9 @@ Bản v0.8.0 có thêm `Avalonia.Controls.DataGrid` và tham chiếu `avares://A
 Bản v0.8.1 thêm `StartupDiagnostics`: ghi `AppDomain.UnhandledException`, `TaskScheduler.UnobservedTaskException` và lỗi từ `Program.Main` vào `%LOCALAPPDATA%\\EZVIZ Local Monitor\\startup-crash.log`. Logger không ghi token, Chat ID, mã xác thực camera hoặc cấu hình cảnh báo.
 
 Kiểm thử: restore và Release build thành công, 0 lỗi biên dịch; bốn cảnh báo CA1416 DPAPI Windows vẫn tồn tại như các bản trước.
+
+## Startup crash follow-up — v0.8.2
+
+Log thực tế từ Windows 10.0.19045 xác định exception là `System.NullReferenceException` tại `MainWindow.PerformanceProfile_Changed`, dòng 290. Sự kiện `SelectionChanged` của ComboBox hồ sơ hiệu năng được phát sinh trong lúc Avalonia đang dựng XAML, trước khi field UI/constructor hoàn tất.
+
+Bản v0.8.2 thêm cờ `_uiInitialized`, bỏ qua các event chạy sớm và đọc ComboBox từ `sender` sau khi kiểm tra kiểu/null. Đây là hồi quy bắt buộc sau v0.8.1; không liên quan Bot Token, Chat ID, camera, RTSP hoặc DPAPI.

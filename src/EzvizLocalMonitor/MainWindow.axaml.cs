@@ -37,6 +37,7 @@ public partial class MainWindow : Avalonia.Controls.Window
     private int _lastPreviewFramesApplied;
     private DateTimeOffset _lastPreviewMetricAt;
     private bool _loadingSettings;
+    private bool _uiInitialized;
     private Bitmap? _eventDetailBitmap;
     private bool _updateCheckStarted;
     private bool _exitRequested;
@@ -68,6 +69,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         _systemStatusTimer.Tick += (_, _) => RefreshSystemStatus();
         _systemStatusTimer.Start();
         Closed += (_, _) => _systemStatusTimer.Stop();
+        _uiInitialized = true;
     }
 
     private void LoadSettings()
@@ -287,8 +289,8 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private async void PerformanceProfile_Changed(object? sender, SelectionChangedEventArgs e)
     {
-        if (_loadingSettings || PerformanceProfileCombo.SelectedIndex < 0) return;
-        _settings.PerformanceProfile = PerformanceProfileCombo.SelectedIndex;
+        if (!_uiInitialized || _loadingSettings || sender is not ComboBox combo || combo.SelectedIndex < 0) return;
+        _settings.PerformanceProfile = combo.SelectedIndex;
         _settings.InferenceFpsPerCamera = _settings.PerformanceProfile switch
         {
             0 => 1,
