@@ -60,6 +60,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         _cameraTiles = new[] { CameraTileOne, CameraTileTwo, CameraTileThree, CameraTileFour };
         var version = typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "không xác định";
         VersionText.Text = $"Bản {version} · Nhận diện người cục bộ · Ảnh sự kiện chỉ rời LAN khi Telegram/Zalo được bật.";
+        AuthorVersionText.Text = $"Bản {version}";
         DataPaths.EnsureCreated();
         _eventStore.Initialize();
         _loadingSettings = true;
@@ -810,6 +811,30 @@ public partial class MainWindow : Avalonia.Controls.Window
             Process.Start(new ProcessStartInfo { FileName = item.ImagePath, UseShellExecute = true });
         else
             SetStatus("Sự kiện chưa có ảnh hoặc ảnh đã bị xóa theo chính sách lưu trữ.");
+    }
+
+    private void OpenAuthorWebsite_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = "https://huynd.io.vn", UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Không mở được website tác giả: {ex.Message}");
+        }
+    }
+
+    private void SendAuthorEmail_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = "mailto:huynd130994@gmail.com", UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Không mở được ứng dụng email: {ex.Message}");
+        }
     }
 
     private void OpenEventsFolder_Click(object? sender, RoutedEventArgs e)

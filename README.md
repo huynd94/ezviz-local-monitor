@@ -1,6 +1,13 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.3**
+**Phiên bản phát hành hiện tại: v0.9.4**
+
+## Bản cập nhật v0.9.4 — tab Hướng dẫn & Tác giả
+
+Bản v0.9.4 thêm tab **Hướng dẫn & Tác giả** trong ứng dụng. Tab giải thích cách bắt đầu nhanh, thêm camera, giảm cảnh báo giả, cấu hình Telegram/Zalo/AI, sử dụng lịch, backup/restore, xuất gói chẩn đoán và xử lý các lỗi thường gặp.
+
+Thông tin tác giả được hiển thị trực tiếp trong ứng dụng: **Nguyen Duc Huy**, website [huynd.io.vn](https://huynd.io.vn) và email [huynd130994@gmail.com](mailto:huynd130994@gmail.com). Website và email là các nút có thể bấm để mở trình duyệt hoặc ứng dụng email mặc định.
+
 
 ## Bản cập nhật v0.9.3 — cải thiện giao diện nhập liệu
 

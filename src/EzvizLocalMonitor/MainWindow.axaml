@@ -125,6 +125,78 @@
         </StackPanel></ScrollViewer>
       </TabItem>
 
+      <TabItem Header="Hướng dẫn &amp; Tác giả">
+        <ScrollViewer>
+          <StackPanel Margin="16" Spacing="12">
+            <Border Background="#EAF4F9" BorderBrush="#B8D6E5" BorderThickness="1" CornerRadius="6" Padding="16">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Hướng dẫn sử dụng EZVIZ Local Monitor" FontSize="20" FontWeight="SemiBold" Foreground="#093B5A" />
+                <TextBlock Text="Ứng dụng giám sát cục bộ camera EZVIZ C6N/H8C trong mạng LAN. Video, nhận diện YOLO và dữ liệu sự kiện được xử lý tại máy Windows; ảnh chỉ rời LAN khi bạn bật kênh hoặc relay tương ứng." TextWrapping="Wrap" Foreground="#52606D" />
+              </StackPanel>
+            </Border>
+
+            <Border Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="6" Padding="16">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Bắt đầu nhanh" FontSize="17" FontWeight="SemiBold" Foreground="#093B5A" />
+                <TextBlock Text="1. Đặt máy tính và camera trong cùng Wi-Fi hoặc VLAN. Bật Local Service/RTSP trên camera nếu firmware yêu cầu." TextWrapping="Wrap" />
+                <TextBlock Text="2. Mở tab Camera, bấm Tìm camera trong LAN, chọn camera và nhập mã xác thực 6 ký tự trên nhãn thiết bị." TextWrapping="Wrap" />
+                <TextBlock Text="3. Bấm Thêm camera đã chọn, kiểm tra RTSP, đặt tên hiển thị rồi bấm Lưu camera. Chỉ camera được bật mới được giám sát." TextWrapping="Wrap" />
+                <TextBlock Text="4. Chọn hồ sơ hiệu năng phù hợp trong Tổng quan. Với máy i7-7500U, nên bắt đầu bằng Cân bằng và một đến hai camera." TextWrapping="Wrap" />
+                <TextBlock Text="5. Ứng dụng tự bắt đầu giám sát sau khi cấu hình hợp lệ. Dùng Dừng hoặc Bắt đầu giám sát để điều khiển thủ công." TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="6" Padding="16">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Giảm cảnh báo giả" FontSize="17" FontWeight="SemiBold" Foreground="#093B5A" />
+                <TextBlock Text="Ngưỡng nhận diện quyết định độ tin cậy tối thiểu của YOLO. Khoảng im lặng giới hạn tần suất cảnh báo lặp của cùng camera. Người xuất hiện tối thiểu yêu cầu người phải hiện diện liên tục đủ số giây trước khi tạo cảnh báo." TextWrapping="Wrap" />
+                <TextBlock Text="Nếu có cảnh báo giả, hãy tăng Ngưỡng nhận diện hoặc Người xuất hiện tối thiểu. Nếu cảnh báo chậm hoặc bỏ sót người, giảm các giá trị này và chọn hồ sơ hiệu năng phù hợp." TextWrapping="Wrap" Foreground="#805B12" />
+              </StackPanel>
+            </Border>
+
+            <Border Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="6" Padding="16">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Cấu hình cảnh báo và AI" FontSize="17" FontWeight="SemiBold" Foreground="#093B5A" />
+                <TextBlock Text="Trong tab Cảnh báo, bật Telegram hoặc Zalo rồi nhập Bot Token và Chat ID tương ứng. Bấm Gửi thử để kiểm tra văn bản; token được lưu mã hóa theo tài khoản Windows và không nên đưa vào ảnh chụp màn hình." TextWrapping="Wrap" />
+                <TextBlock Text="Relay ảnh Zalo chỉ cần khi bạn muốn ảnh local được upload tới endpoint HTTPS tùy chỉnh. Phải bật relay và đánh dấu Tôi đồng ý ảnh rời LAN; nếu không, ứng dụng vẫn gửi văn bản nhưng giữ ảnh trong LAN." TextWrapping="Wrap" />
+                <TextBlock Text="AI endpoint là tùy chọn. Nhập Base URL, model vision và API key của endpoint OpenAI-compatible. Bật Chỉ gửi cảnh báo khi AI xác nhận nếu chấp nhận thêm độ trễ để lọc cảnh báo." TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="6" Padding="16">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Lịch, backup và chẩn đoán" FontSize="17" FontWeight="SemiBold" Foreground="#093B5A" />
+                <TextBlock Text="Tab Lịch giám sát cho phép bật các khoảng thời gian theo ngày trong tuần và hồ sơ hiệu năng. Khoảng giờ qua nửa đêm được hỗ trợ; khi có lịch bật, ứng dụng chỉ giám sát trong thời gian phù hợp." TextWrapping="Wrap" />
+                <TextBlock Text="Dùng Sao lưu cấu hình để tạo file backup DPAPI. File chỉ khôi phục được trên tài khoản Windows đã tạo backup và không xuất token dạng plaintext." TextWrapping="Wrap" />
+                <TextBlock Text="Khi cần hỗ trợ, dùng Mở log Zalo hoặc Xuất gói chẩn đoán. Gói chẩn đoán đã che token, Chat ID, IP LAN và mã xác thực; vẫn nên kiểm tra nội dung trước khi chia sẻ." TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border Background="#FFF8E8" BorderBrush="#F0C36D" BorderThickness="1" CornerRadius="6" Padding="16">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Xử lý sự cố nhanh" FontSize="17" FontWeight="SemiBold" Foreground="#805B12" />
+                <TextBlock Text="Không tìm thấy camera: kiểm tra cùng mạng, bật Local Service/RTSP và thử lại. RTSP không mở: kiểm tra mã xác thực, URL, firewall và firmware camera. Không nhận cảnh báo: kiểm tra camera đang bật, trạng thái Tổng quan, cooldown và thời gian xuất hiện tối thiểu." TextWrapping="Wrap" />
+                <TextBlock Text="Telegram/Zalo lỗi: bấm Gửi thử, mở log, kiểm tra token/Chat ID và không gửi thông tin bí mật qua chat. Ứng dụng tự cô lập lỗi mạng và hàng đợi cảnh báo sẽ retry trong nền." TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border Background="#F4F7F9" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="6" Padding="16">
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Text="Thông tin tác giả" FontSize="17" FontWeight="SemiBold" Foreground="#093B5A" Grid.ColumnSpan="2" />
+                <TextBlock Text="Author" Grid.Row="1" FontWeight="SemiBold" />
+                <TextBlock Text="Nguyen Duc Huy" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Right" />
+                <TextBlock Text="Website" Grid.Row="2" FontWeight="SemiBold" />
+                <Button Content="https://huynd.io.vn" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Right" Click="OpenAuthorWebsite_Click" ToolTip.Tip="Mở website của tác giả trong trình duyệt mặc định." />
+                <TextBlock Text="Email" Grid.Row="3" FontWeight="SemiBold" />
+                <Button Content="huynd130994@gmail.com" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Right" Click="SendAuthorEmail_Click" ToolTip.Tip="Mở ứng dụng email mặc định để gửi thư cho tác giả." />
+                <TextBlock Text="Phiên bản" Grid.Row="4" FontWeight="SemiBold" />
+                <TextBlock x:Name="AuthorVersionText" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Right" />
+              </Grid>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
       <TabItem Header="Nhật ký sự kiện">
         <Grid Margin="12" RowDefinitions="Auto,*" ColumnDefinitions="*,340">
           <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
