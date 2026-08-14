@@ -226,3 +226,12 @@ Bản v0.8.4 thêm `ConcurrentDictionary<Guid, DateTimeOffset>` tại `MonitorCo
 Lỗi được truy vết tại `Window_Closing`: khi `_exitRequested` là true, code cũ gọi `DisposeAsync().AsTask().GetAwaiter().GetResult()` trên UI thread. `OnvifEventListener`, `CameraMonitor` hoặc `RtspSnapshotReader` có thể đang chờ I/O/lock, làm UI bị khóa vô thời hạn.
 
 Bản v0.8.5 chuyển `ExitFromTray` sang async, ẩn cửa sổ ngay, gọi `StopMonitoringAsync` qua `Interlocked.Exchange`, chờ tối đa 8 giây và ghi timeout vào `startup-crash.log`. `Window_Closing` không còn chờ đồng bộ; chỉ dọn bitmap UI. Nếu một capture không dừng kịp, ứng dụng vẫn không khóa giao diện và desktop lifetime được shutdown sau timeout.
+
+
+## QA regression — v0.9.0
+
+Bản v0.9.0 đã được build bằng `dotnet build src/EzvizLocalMonitor/EzvizLocalMonitor.csproj -c Release --no-restore` và publish self-contained cho `win-x64`. Build đạt **0 lỗi**; chỉ còn các cảnh báo phân tích CA1416 cho Windows DPAPI vì mã nguồn được kiểm tra trên môi trường Linux nhưng runtime mục tiêu là Windows.
+
+Bộ kiểm thử xUnit tại `tests/EzvizLocalMonitor.Tests` đạt **5/5 test**. Các nhóm đã kiểm tra gồm EventStore thêm/đọc/cập nhật trạng thái giao hàng và phân tích AI; AlertQueueService deduplication theo EventId, retry transient result và shutdown an toàn; MonitorScheduleService khớp Weekday và khoảng giờ.
+
+Các luồng mới được kiểm tra ở mức mã nguồn và build gồm logger phân kênh, gói chẩn đoán đã che dữ liệu, backup/restore DPAPI, lịch giám sát, Task Scheduler/watchdog, relay ảnh HTTPS có đồng thuận và queue cảnh báo. Kiểm thử thực tế RTSP/ONVIF, Telegram/Zalo và relay cần được chạy trên máy Windows của người dùng với camera và endpoint thật; không sử dụng credential thật trong môi trường build.

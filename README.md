@@ -1,8 +1,22 @@
-# EZVIZ Local Monitor for Windows
+# EZVIZ Local Monitor
+
+**Phiên bản phát hành hiện tại: v0.9.0**
+
+## 10 nhóm cải tiến v0.9.0
+
+Bản v0.9.0 hoàn thiện các nhóm vận hành đã thống nhất. Trung tâm Tổng quan hiển thị sức khỏe từng camera, kênh cảnh báo, sự kiện gần nhất và chỉ số runtime. CameraMonitor có state machine RTSP/ONVIF, reconnect counter, tracking thời gian xuất hiện tối thiểu và vùng ROI; cảnh báo chỉ được tạo sau khi đạt đủ xác nhận và thời gian hiện diện.
+
+Cảnh báo được đưa qua hàng đợi nền giới hạn 128 mục, idempotency theo Event ID và tối đa ba lần retry với backoff. Nhật ký được tách thành `app.log`, `camera.log`, `alerts.log` và `ai.log`; nút **Xuất gói chẩn đoán** tạo ZIP gồm log cùng metadata đã che token, API key, Chat ID, IP LAN và mã xác thực.
+
+Backup cấu hình dùng Windows DPAPI và chỉ giải mã được trong đúng tài khoản Windows. Tab **Lịch giám sát** hỗ trợ ngày trong tuần, Weekday/Weekend, giờ qua nửa đêm và hồ sơ hiệu năng. **Khởi động cùng Windows** dùng Task Scheduler thay vì Registry; watchdog chỉ khởi động lại sau thoát bất thường và được tắt khi người dùng chọn thoát hoàn toàn.
+
+Zalo vẫn chỉ nhận `photo` là URL HTTPS. Relay ảnh tùy chọn dùng endpoint HTTPS tùy chỉnh, chỉ hoạt động khi người dùng bật relay và đánh dấu đồng ý ảnh rời LAN; nếu không, ứng dụng gửi văn bản Zalo và ghi rõ ảnh local chưa thể gửi. Bộ test xUnit bao phủ EventStore CRUD, queue dedup/retry/shutdown và lịch hoạt động.
+
+
 
 Bản 0.8.5 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
 
-**Phiên bản:** 0.8.5
+**Phiên bản:** 0.9.0
 **Mục đích:** Giám sát cục bộ tối đa bốn camera EZVIZ, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform. Với i7-7500U/RAM 8 GB, nên bắt đầu với hai camera rồi đo CPU trước khi bật bốn luồng YOLO đồng thời.
 
 ## 8 nhóm cải tiến giao diện và vận hành
@@ -140,10 +154,10 @@ Camera và máy tính Windows phải ở cùng mạng LAN. Tài liệu EZVIZ hư
 rtsp://admin:<VERIFICATION_CODE>@<CAMERA_IP>:554/ch1/main
 ```
 
-Ví dụ minh họa:
+Ví dụ minh họa dùng placeholder, không phải thông tin camera thật:
 
 ```text
-rtsp://admin:ABCDEF@192.168.1.50:554/ch1/main
+rtsp://admin:<VERIFICATION_CODE>@<CAMERA_IP>:554/ch1/main
 ```
 
 Trong ứng dụng EZVIZ, bật Local View/Local Service hoặc RTSP nếu firmware hiển thị tùy chọn đó. H8C cần được kiểm tra bằng nút **Kiểm tra RTSP** trong ứng dụng, dù Local View hoạt động, vì Local View và RTSP là hai cơ chế khác nhau.

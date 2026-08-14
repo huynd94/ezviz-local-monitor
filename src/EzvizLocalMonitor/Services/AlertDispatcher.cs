@@ -9,6 +9,7 @@ public sealed class AlertDispatcher
 {
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(10) };
     private static readonly TimeSpan ZaloOperationTimeout = TimeSpan.FromSeconds(12);
+    private readonly ImageRelayService _imageRelay = new();
 
     public async Task<string> SendAsync(AlertChannelSettings settings, DetectionEvent item, CancellationToken cancellationToken = default)
     {
@@ -24,7 +25,7 @@ public sealed class AlertDispatcher
         if (settings.TelegramEnabled)
             tasks.Add(SafeSendAsync("Telegram", () => SendTelegramFastAlertAsync(settings.TelegramBotToken, settings.TelegramChatId, item.ImagePath, caption, cancellationToken)));
         if (settings.ZaloEnabled)
-            tasks.Add(SafeSendAsync("Zalo", () => SendZaloFastAlertAsync(settings.ZaloBotToken ?? string.Empty, settings.ZaloChatId ?? string.Empty, item.ImagePath, caption, cancellationToken)));
+            tasks.Add(SafeSendAsync("Zalo", () => SendZaloFastAlertAsync(settings, settings.ZaloBotToken ?? string.Empty, settings.ZaloChatId ?? string.Empty, item.ImagePath, caption, cancellationToken)));
         if (tasks.Count == 0) return "Không có kênh nào được bật";
         try
         {
@@ -123,7 +124,7 @@ public sealed class AlertDispatcher
         return FormatApiResult("Telegram", response, body);
     }
 
-    private static async Task<string> SendZaloFastAlertAsync(string token, string chatId, string imagePath, string caption, CancellationToken ct)
+    private async Task<string> SendZaloFastAlertAsync(AlertChannelSettings settings, string token, string chatId, string imagePath, string caption, CancellationToken ct)
     {
         token ??= string.Empty;
         chatId ??= string.Empty;
@@ -148,7 +149,7 @@ public sealed class AlertDispatcher
         try
         {
             using var photoTimeout = CreateZaloTimeout(ct);
-            photoResult = await SendZaloPhotoAsync(token, chatId, imagePath, caption, photoTimeout.Token);
+            photoResult = await SendZaloPhotoAsync(settings, token, chatId, imagePath, caption, photoTimeout.Token);
         }
         catch (OperationCanceledException)
         {
@@ -183,17 +184,32 @@ public sealed class AlertDispatcher
         return result;
     }
 
-    private static async Task<string> SendZaloPhotoAsync(string token, string chatId, string imagePath, string caption, CancellationToken ct)
+    private async Task<string> SendZaloPhotoAsync(AlertChannelSettings settings, string token, string chatId, string imagePath, string caption, CancellationToken ct)
     {
         Require(token, "Zalo Bot Token");
         Require(chatId, "Zalo Chat ID");
         var imageMetadata = ReadImageMetadata(imagePath);
         var isHttpsUrl = Uri.TryCreate(imagePath, UriKind.Absolute, out var photoUri) && photoUri.Scheme == Uri.UriSchemeHttps;
+        if (!isHttpsUrl && settings.ZaloImageRelayEnabled && settings.AllowImageRelayOutsideLan)
+        {
+            try
+            {
+                imagePath = await _imageRelay.UploadAsync(imagePath, settings.ZaloImageRelayUrl, settings.ZaloImageRelayApiKey, ct);
+                isHttpsUrl = Uri.TryCreate(imagePath, UriKind.Absolute, out photoUri) && photoUri.Scheme == Uri.UriSchemeHttps;
+                imageMetadata = (false, 0);
+                ZaloDiagnostics.Info($"sendPhoto relay completed; chatId={ZaloDiagnostics.Mask(chatId)}; relayUrlHost={photoUri?.Host ?? "<invalid>"}");
+            }
+            catch (Exception ex)
+            {
+                ZaloDiagnostics.Error($"sendPhoto relay failed; chatId={ZaloDiagnostics.Mask(chatId)}; imageFile={SafeFileName(imagePath)}", ex);
+                return "Zalo ảnh: relay HTTPS thất bại";
+            }
+        }
         ZaloDiagnostics.Info($"sendPhoto start; tokenPresent={!string.IsNullOrWhiteSpace(token)}; chatId={ZaloDiagnostics.Mask(chatId)}; chatIdLength={chatId.Trim().Length}; imageFile={SafeFileName(imagePath)}; imageExists={imageMetadata.Exists}; imageBytes={imageMetadata.Bytes}; photoIsHttpsUrl={isHttpsUrl}");
 
         if (!isHttpsUrl)
         {
-            const string reason = "Zalo Bot sendPhoto yêu cầu photo là URL HTTPS công khai; ảnh sự kiện hiện chỉ có đường dẫn local trong máy.";
+            const string reason = "Zalo Bot sendPhoto yêu cầu photo là URL HTTPS công khai; relay chưa bật hoặc chưa có đồng thuận.";
             ZaloDiagnostics.Error($"sendPhoto skipped; reason={reason}; chatId={ZaloDiagnostics.Mask(chatId)}; imageExists={imageMetadata.Exists}; imageBytes={imageMetadata.Bytes}");
             return "Zalo ảnh: chưa gửi; API yêu cầu URL HTTPS công khai cho photo";
         }

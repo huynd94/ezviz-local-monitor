@@ -10,17 +10,23 @@ public sealed class CameraMonitor : IAsyncDisposable
     private readonly int _fps;
     private readonly int _requiredConfirmations;
     private readonly int _confirmationWindow;
+    private readonly double _minPresenceSeconds;
     private readonly CancellationTokenSource _stop = new();
     private readonly Queue<bool> _recentHits = new();
     private DateTimeOffset _lastAlert = DateTimeOffset.MinValue;
+    private DateTimeOffset? _lastFrameAt;
+    private int _reconnectCount;
+    private CameraConnectionState _state = CameraConnectionState.Stopped;
     private Task? _runTask;
     private Mat? _previousInferenceFrame;
+    private DateTimeOffset? _presenceSince;
 
     public Guid CameraId => _camera.Id;
 
     public event Action<CameraDefinition, Mat, Mat?, PersonDetection>? PersonConfirmed;
     public event Action<CameraDefinition, string>? StatusChanged;
     public event Action<CameraDefinition, Mat>? PreviewReady;
+    public event Action<CameraDefinition, CameraRuntimeSnapshot>? RuntimeChanged;
 
     public CameraMonitor(CameraDefinition camera, YoloPersonDetector detector, int fps, int requiredConfirmations, int confirmationWindow)
     {
@@ -29,6 +35,7 @@ public sealed class CameraMonitor : IAsyncDisposable
         _fps = Math.Clamp(fps, 1, 3);
         _requiredConfirmations = Math.Clamp(requiredConfirmations, 1, confirmationWindow);
         _confirmationWindow = Math.Clamp(confirmationWindow, _requiredConfirmations, 5);
+        _minPresenceSeconds = Math.Clamp(camera.MinPresenceSeconds, 0, 30);
     }
 
     public void Start() => _runTask ??= Task.Run(RunAsync);
@@ -36,20 +43,26 @@ public sealed class CameraMonitor : IAsyncDisposable
     private async Task RunAsync()
     {
         var reconnectDelay = TimeSpan.FromSeconds(2);
+        SetState(CameraConnectionState.Connecting, "Đang khởi tạo luồng RTSP");
         while (!_stop.Token.IsCancellationRequested)
         {
             try
             {
+                SetState(CameraConnectionState.Connecting, "Đang kết nối RTSP...");
                 StatusChanged?.Invoke(_camera, "Đang kết nối...");
                 using var capture = new VideoCapture(_camera.RtspUrl, VideoCaptureAPIs.FFMPEG);
                 capture.Set(VideoCaptureProperties.BufferSize, 1);
                 if (!capture.IsOpened()) throw new InvalidOperationException("Không mở được luồng RTSP.");
 
                 reconnectDelay = TimeSpan.FromSeconds(2);
+                SetState(CameraConnectionState.Streaming, "Đang giám sát");
                 StatusChanged?.Invoke(_camera, "Đang giám sát");
                 using var frame = new Mat();
                 while (!_stop.Token.IsCancellationRequested && capture.Read(frame) && !frame.Empty())
                 {
+                    _lastFrameAt = DateTimeOffset.Now;
+                    if (_state != CameraConnectionState.Streaming)
+                        SetState(CameraConnectionState.Streaming, "Đang nhận frame");
                     var preview = frame.Clone();
                     PreviewReady?.Invoke(_camera, preview);
 
@@ -59,8 +72,14 @@ public sealed class CameraMonitor : IAsyncDisposable
                     var found = person is not null;
                     _recentHits.Enqueue(found);
                     while (_recentHits.Count > _confirmationWindow) _recentHits.Dequeue();
+                    if (found)
+                        _presenceSince ??= DateTimeOffset.Now;
+                    else
+                        _presenceSince = null;
 
+                    var presenceDuration = _presenceSince is null ? TimeSpan.Zero : DateTimeOffset.Now - _presenceSince.Value;
                     if (found && _recentHits.Count(x => x) >= _requiredConfirmations &&
+                        presenceDuration.TotalSeconds >= _minPresenceSeconds &&
                         DateTimeOffset.Now - _lastAlert >= TimeSpan.FromSeconds(_camera.CooldownSeconds))
                     {
                         _lastAlert = DateTimeOffset.Now;
@@ -68,6 +87,7 @@ public sealed class CameraMonitor : IAsyncDisposable
                         DrawDetection(snapshot, person!);
                         PersonConfirmed?.Invoke(_camera, snapshot, priorFrame?.Clone(), person!);
                         _recentHits.Clear();
+                        _presenceSince = null;
                     }
 
                     _previousInferenceFrame?.Dispose();
@@ -75,6 +95,9 @@ public sealed class CameraMonitor : IAsyncDisposable
                     await Task.Delay(TimeSpan.FromSeconds(1d / _fps), _stop.Token);
                 }
 
+                _reconnectCount++;
+                AppLogger.Info(LogChannel.Camera, $"camera={_camera.Name}; frame loop ended; reconnect={_reconnectCount}");
+                SetState(CameraConnectionState.Reconnecting, "Mất luồng; sẽ kết nối lại");
                 StatusChanged?.Invoke(_camera, "Mất luồng; sẽ kết nối lại");
             }
             catch (OperationCanceledException) when (_stop.IsCancellationRequested)
@@ -83,9 +106,13 @@ public sealed class CameraMonitor : IAsyncDisposable
             }
             catch (Exception ex)
             {
+                _reconnectCount++;
+                AppLogger.Error(LogChannel.Camera, $"camera={_camera.Name}; RTSP exception", ex);
+                SetState(CameraConnectionState.Degraded, $"Lỗi kết nối: {ex.Message}");
                 StatusChanged?.Invoke(_camera, $"Lỗi kết nối: {ex.Message}");
             }
 
+            SetState(CameraConnectionState.Reconnecting, $"Đang thử lại sau {reconnectDelay.TotalSeconds:0}s");
             try
             {
                 await Task.Delay(reconnectDelay, _stop.Token);
@@ -94,7 +121,22 @@ public sealed class CameraMonitor : IAsyncDisposable
             catch (OperationCanceledException) { break; }
         }
 
+        SetState(CameraConnectionState.Stopped, "Đã dừng");
         StatusChanged?.Invoke(_camera, "Đã dừng");
+    }
+
+    private void SetState(CameraConnectionState state, string message)
+    {
+        _state = state;
+        AppLogger.Info(LogChannel.Camera, $"camera={_camera.Name}; state={state}; reconnects={_reconnectCount}; message={message}");
+        try
+        {
+            RuntimeChanged?.Invoke(_camera, new CameraRuntimeSnapshot(state, _lastFrameAt, _reconnectCount, message));
+        }
+        catch
+        {
+            // Runtime telemetry must never stop the camera loop.
+        }
     }
 
     private bool IsInsideRoi(PersonDetection detection, int frameWidth, int frameHeight)
@@ -123,6 +165,7 @@ public sealed class CameraMonitor : IAsyncDisposable
             try { await _runTask; } catch (OperationCanceledException) { }
         }
         _previousInferenceFrame?.Dispose();
+        _presenceSince = null;
         _stop.Dispose();
     }
 }

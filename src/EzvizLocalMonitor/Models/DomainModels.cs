@@ -1,5 +1,21 @@
 namespace EzvizLocalMonitor.Models;
 
+public enum CameraConnectionState
+{
+    Stopped,
+    Connecting,
+    Streaming,
+    Degraded,
+    Reconnecting,
+    Failed
+}
+
+public sealed record CameraRuntimeSnapshot(
+    CameraConnectionState State,
+    DateTimeOffset? LastFrameAt,
+    int ReconnectCount,
+    string Message);
+
 public sealed class CameraDefinition
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -9,6 +25,7 @@ public sealed class CameraDefinition
     public bool IsEnabled { get; set; } = true;
     public double ConfidenceThreshold { get; set; } = 0.55;
     public int CooldownSeconds { get; set; } = 30;
+    public double MinPresenceSeconds { get; set; } = 1.0;
     public int RoiLeftPercent { get; set; } = 0;
     public int RoiTopPercent { get; set; } = 0;
     public int RoiRightPercent { get; set; } = 100;
@@ -25,6 +42,10 @@ public sealed class AlertChannelSettings
     public bool ZaloEnabled { get; set; }
     public string ZaloBotToken { get; set; } = string.Empty;
     public string ZaloChatId { get; set; } = string.Empty;
+    public bool ZaloImageRelayEnabled { get; set; }
+    public bool AllowImageRelayOutsideLan { get; set; }
+    public string ZaloImageRelayUrl { get; set; } = string.Empty;
+    public string ZaloImageRelayApiKey { get; set; } = string.Empty;
 }
 
 public sealed class AiSettings
@@ -35,6 +56,18 @@ public sealed class AiSettings
     public string ApiKey { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; } = 25;
     public bool RequireConfirmationBeforeAlert { get; set; }
+}
+
+public sealed class MonitorSchedule
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Name { get; set; } = "Lịch mới";
+    public bool IsEnabled { get; set; } = true;
+    public string Days { get; set; } = "Mon-Sun";
+    public string StartTime { get; set; } = "00:00";
+    public string EndTime { get; set; } = "23:59";
+    public int PerformanceProfile { get; set; } = 1;
+    public override string ToString() => Name;
 }
 
 public sealed class AppSettings
@@ -51,6 +84,8 @@ public sealed class AppSettings
     public bool HasCompletedOnboarding { get; set; }
     public int PerformanceProfile { get; set; } = 1;
     public bool DarkTheme { get; set; }
+    public List<MonitorSchedule> MonitorSchedules { get; set; } = new();
+    public bool WatchdogEnabled { get; set; }
 }
 
 public sealed record PersonDetection(double Confidence, int Left, int Top, int Right, int Bottom)

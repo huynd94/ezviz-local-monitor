@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Input;
 using Avalonia.Styling;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using EzvizLocalMonitor.Models;
 using EzvizLocalMonitor.Services;
@@ -24,10 +25,12 @@ public partial class MainWindow : Avalonia.Controls.Window
     private TextBlock[] _cameraStatuses = Array.Empty<TextBlock>();
     private Border[] _cameraTiles = Array.Empty<Border>();
     private readonly AppUpdateService _updateService = new();
+    private readonly WatchdogService _watchdog = new();
     private readonly object _previewSync = new();
     private readonly Dictionary<Guid, Bitmap> _pendingPreviewBitmaps = new();
     private readonly HashSet<Guid> _previewDispatchScheduled = new();
     private readonly Dictionary<Guid, string> _cameraRuntimeStatuses = new();
+    private readonly Dictionary<Guid, CameraRuntimeSnapshot> _cameraRuntimeSnapshots = new();
     private readonly Dictionary<Guid, DateTimeOffset> _lastPreviewAt = new();
     private readonly DispatcherTimer _systemStatusTimer = new() { Interval = TimeSpan.FromSeconds(2) };
     private IReadOnlyList<DetectionEvent> _eventCache = Array.Empty<DetectionEvent>();
@@ -42,6 +45,10 @@ public partial class MainWindow : Avalonia.Controls.Window
     private bool _updateCheckStarted;
     private bool _exitRequested;
     private bool _shutdownStarted;
+    private DetectionEvent? _lastRecordedEvent;
+    private bool? _lastScheduleAllowed;
+    private int? _lastScheduleProfile;
+    private int _scheduleTransition;
 
     public event Action<string>? TrayStatusChanged;
 
@@ -57,6 +64,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         _eventStore.Initialize();
         _loadingSettings = true;
         LoadSettings();
+        RefreshScheduleGrid();
         ApplyTheme();
         PerformanceProfileCombo.SelectedIndex = Math.Clamp(_settings.PerformanceProfile, 0, 3);
         _loadingSettings = false;
@@ -67,7 +75,11 @@ public partial class MainWindow : Avalonia.Controls.Window
             if (args.Property.Name == "Value") ConfidenceText.Text = $"{ConfidenceSlider.Value:P0}";
         };
         Opened += MainWindow_Opened;
-        _systemStatusTimer.Tick += (_, _) => RefreshSystemStatus();
+        _systemStatusTimer.Tick += (_, _) =>
+        {
+            RefreshSystemStatus();
+            _ = ApplyScheduleAsync();
+        };
         _systemStatusTimer.Start();
         Closed += (_, _) => _systemStatusTimer.Stop();
         _uiInitialized = true;
@@ -83,19 +95,27 @@ public partial class MainWindow : Avalonia.Controls.Window
         }
 
         RefreshCameraList();
+        RefreshScheduleGrid();
         TelegramEnabledCheck.IsChecked = _settings.Alerts.TelegramEnabled;
         TelegramTokenText.Text = _settings.Alerts.TelegramBotToken;
         TelegramChatText.Text = _settings.Alerts.TelegramChatId;
         ZaloEnabledCheck.IsChecked = _settings.Alerts.ZaloEnabled;
         ZaloTokenText.Text = _settings.Alerts.ZaloBotToken;
         ZaloChatText.Text = _settings.Alerts.ZaloChatId;
+        ZaloImageRelayEnabledCheck.IsChecked = _settings.Alerts.ZaloImageRelayEnabled;
+        ZaloAllowImageRelayCheck.IsChecked = _settings.Alerts.AllowImageRelayOutsideLan;
+        ZaloImageRelayUrlText.Text = _settings.Alerts.ZaloImageRelayUrl;
+        ZaloImageRelayApiKeyText.Text = _settings.Alerts.ZaloImageRelayApiKey;
         AiEnabledCheck.IsChecked = _settings.Ai.Enabled;
         AiBaseUrlText.Text = _settings.Ai.BaseUrl;
         AiModelText.Text = _settings.Ai.Model;
         AiApiKeyText.Text = _settings.Ai.ApiKey;
         AiTimeoutText.Text = _settings.Ai.TimeoutSeconds.ToString();
-        AiRequireConfirmationCheck.IsChecked = _settings.Ai.RequireConfirmationBeforeAlert;
-        RuntimeInfoText.Text = $"Hồ sơ: {PerformanceProfileName(_settings.PerformanceProfile)} · {_settings.InferenceFpsPerCamera} lần suy luận/giây/camera · xác nhận {_settings.ConfirmationsRequired}/{_settings.ConfirmationWindow} khung";
+                AiRequireConfirmationCheck.IsChecked = _settings.Ai.RequireConfirmationBeforeAlert;
+        StartWithWindowsCheck.IsChecked = _settings.StartWithWindows;
+        WatchdogEnabledCheck.IsChecked = _settings.WatchdogEnabled;
+        RuntimeInfoText.Text =
+ $"Hồ sơ: {PerformanceProfileName(_settings.PerformanceProfile)} · {_settings.InferenceFpsPerCamera} lần suy luận/giây/camera · xác nhận {_settings.ConfirmationsRequired}/{_settings.ConfirmationWindow} khung";
 
         if (_settings.Cameras.Count > 0) CameraList.SelectedIndex = 0;
     }
@@ -118,6 +138,29 @@ public partial class MainWindow : Avalonia.Controls.Window
         var telegram = _settings.Alerts.TelegramEnabled ? "Telegram bật" : "Telegram tắt";
         var zalo = _settings.Alerts.ZaloEnabled ? "Zalo bật" : "Zalo tắt";
         SystemHealthText.Text = $"Hệ thống: {active}/{enabled} camera đang hoạt động · {warning} cảnh báo kết nối · {telegram} · {zalo}";
+
+        var cameraDetails = _settings.Cameras.Count == 0
+            ? "Camera: chưa cấu hình"
+            : "Camera: " + string.Join(" · ", _settings.Cameras.Take(4).Select(camera =>
+            {
+                var configured = camera.IsEnabled && !string.IsNullOrWhiteSpace(camera.RtspUrl);
+                var status = _cameraRuntimeStatuses.TryGetValue(camera.Id, out var runtime) ? runtime : configured ? "Chờ kết nối" : "Chưa cấu hình";
+                var reconnect = _cameraRuntimeSnapshots.TryGetValue(camera.Id, out var snapshot) ? $", reconnect {snapshot.ReconnectCount}" : string.Empty;
+                var preview = _lastPreviewAt.TryGetValue(camera.Id, out var last)
+                    ? $", frame {Math.Max(0, (DateTimeOffset.Now - last).TotalSeconds):0.0}s trước"
+                    : string.Empty;
+                return $"{camera.Name}: {status}{reconnect}{preview}";
+            }));
+        CameraHealthText.Text = cameraDetails;
+
+        var alertParts = new List<string>();
+        alertParts.Add(_settings.Alerts.TelegramEnabled ? "Telegram đã bật" : "Telegram tắt");
+        alertParts.Add(_settings.Alerts.ZaloEnabled ? "Zalo đã bật" : "Zalo tắt");
+        if (_settings.Ai.Enabled) alertParts.Add($"AI bật ({_settings.Ai.Model})");
+        AlertHealthText.Text = "Cảnh báo: " + string.Join(" · ", alertParts);
+        LastEventHealthText.Text = _lastRecordedEvent is null
+            ? "Sự kiện gần nhất: chưa có"
+            : $"Sự kiện gần nhất: {_lastRecordedEvent.CameraName} · {_lastRecordedEvent.DetectedAt:HH:mm:ss} · {_lastRecordedEvent.DeliveryStatus}";
         var process = Process.GetCurrentProcess();
         var now = DateTimeOffset.Now;
         var cpu = 0d;
@@ -149,6 +192,92 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private CameraDefinition? SelectedCamera => CameraList.SelectedItem as CameraDefinition;
 
+    private void RefreshScheduleGrid()
+    {
+        ScheduleGrid.ItemsSource = null;
+        ScheduleGrid.ItemsSource = _settings.MonitorSchedules;
+    }
+
+    private void AddSchedule_Click(object? sender, RoutedEventArgs e)
+    {
+        _settings.MonitorSchedules.Add(new MonitorSchedule { Name = $"Lịch {_settings.MonitorSchedules.Count + 1}" });
+        RefreshScheduleGrid();
+        ScheduleGrid.SelectedIndex = _settings.MonitorSchedules.Count - 1;
+    }
+
+    private void RemoveSchedule_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ScheduleGrid.SelectedItem is not MonitorSchedule selected) { SetStatus("Hãy chọn một lịch để xóa."); return; }
+        _settings.MonitorSchedules.Remove(selected);
+        RefreshScheduleGrid();
+        SaveSettings();
+        _lastScheduleAllowed = null;
+    }
+
+    private void SaveSchedules_Click(object? sender, RoutedEventArgs e)
+    {
+        foreach (var schedule in _settings.MonitorSchedules)
+        {
+            if (!TimeSpan.TryParseExact(schedule.StartTime, new[] { @"hh\:mm", @"h\:mm" }, System.Globalization.CultureInfo.InvariantCulture, out _) ||
+                !TimeSpan.TryParseExact(schedule.EndTime, new[] { @"hh\:mm", @"h\:mm" }, System.Globalization.CultureInfo.InvariantCulture, out _) ||
+                schedule.PerformanceProfile is < 0 or > 3)
+            {
+                SetStatus($"Lịch “{schedule.Name}” chưa hợp lệ: giờ phải HH:mm và hồ sơ từ 0 đến 3.");
+                return;
+            }
+        }
+        SaveSettings();
+        _lastScheduleAllowed = null;
+        SetStatus(_settings.MonitorSchedules.Count == 0 ? "Đã lưu: không có lịch, giám sát liên tục." : "Đã lưu lịch giám sát.");
+    }
+
+    private async Task ApplyScheduleAsync()
+    {
+        if (!_uiInitialized || _shutdownStarted || Interlocked.Exchange(ref _scheduleTransition, 1) != 0) return;
+        try
+        {
+            var allowed = MonitorScheduleService.IsMonitoringAllowed(_settings);
+            var profile = MonitorScheduleService.ActivePerformanceProfile(_settings);
+            if (_lastScheduleAllowed == allowed && _lastScheduleProfile == profile) return;
+            _lastScheduleAllowed = allowed;
+            _lastScheduleProfile = profile;
+
+            if (!allowed)
+            {
+                if (_coordinator is not null)
+                {
+                    SetStatus("Ngoài lịch giám sát — đang tạm dừng camera.");
+                    await StopMonitoringAsync(TimeSpan.FromSeconds(5));
+                }
+                return;
+            }
+
+            if (profile is int scheduledProfile && scheduledProfile != _settings.PerformanceProfile)
+            {
+                _settings.PerformanceProfile = scheduledProfile;
+                _settings.InferenceFpsPerCamera = scheduledProfile switch { 0 => 1, 2 => 3, 3 => 1, _ => 2 };
+                PerformanceProfileCombo.SelectedIndex = scheduledProfile;
+                if (_coordinator is not null)
+                {
+                    await StopMonitoringAsync(TimeSpan.FromSeconds(5));
+                    await StartMonitoringAsync(false);
+                }
+            }
+            else if (_coordinator is null && _settings.Cameras.Any(x => x.IsEnabled && !string.IsNullOrWhiteSpace(x.RtspUrl)))
+            {
+                await StartMonitoringAsync(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(LogChannel.App, "schedule transition failed", ex);
+        }
+        finally
+        {
+            Volatile.Write(ref _scheduleTransition, 0);
+        }
+    }
+
     private void CameraList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         var item = SelectedCamera;
@@ -158,6 +287,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         ConfidenceSlider.Value = item.ConfidenceThreshold;
         ConfidenceText.Text = $"{item.ConfidenceThreshold:P0}";
         CooldownText.Text = item.CooldownSeconds.ToString();
+        MinPresenceText.Text = item.MinPresenceSeconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
         CameraEnabledCheck.IsChecked = item.IsEnabled;
     }
 
@@ -255,10 +385,16 @@ public partial class MainWindow : Avalonia.Controls.Window
             SetStatus("Khoảng im lặng phải là số từ 5 đến 3600 giây.");
             return;
         }
+        if (!double.TryParse(MinPresenceText.Text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var minPresence) || minPresence is < 0 or > 30)
+        {
+            SetStatus("Thời gian xuất hiện tối thiểu phải từ 0 đến 30 giây, ví dụ 1.5.");
+            return;
+        }
         camera.Name = string.IsNullOrWhiteSpace(CameraNameText.Text) ? "Camera" : CameraNameText.Text.Trim();
         camera.RtspUrl = CameraRtspText.Text?.Trim() ?? string.Empty;
         camera.ConfidenceThreshold = ConfidenceSlider.Value;
         camera.CooldownSeconds = cooldown;
+        camera.MinPresenceSeconds = minPresence;
         camera.IsEnabled = CameraEnabledCheck.IsChecked == true;
         RefreshCameraList();
         SaveSettings();
@@ -312,12 +448,20 @@ public partial class MainWindow : Avalonia.Controls.Window
         _settings.Alerts.ZaloEnabled = ZaloEnabledCheck.IsChecked == true;
         _settings.Alerts.ZaloBotToken = ZaloTokenText.Text?.Trim() ?? string.Empty;
         _settings.Alerts.ZaloChatId = ZaloChatText.Text?.Trim() ?? string.Empty;
+        _settings.Alerts.ZaloImageRelayEnabled = ZaloImageRelayEnabledCheck.IsChecked == true;
+        _settings.Alerts.AllowImageRelayOutsideLan = ZaloAllowImageRelayCheck.IsChecked == true;
+        _settings.Alerts.ZaloImageRelayUrl = ZaloImageRelayUrlText.Text?.Trim() ?? string.Empty;
+        _settings.Alerts.ZaloImageRelayApiKey = ZaloImageRelayApiKeyText.Text?.Trim() ?? string.Empty;
         _settings.Ai.Enabled = AiEnabledCheck.IsChecked == true;
         _settings.Ai.BaseUrl = AiBaseUrlText.Text?.Trim() ?? string.Empty;
         _settings.Ai.Model = AiModelText.Text?.Trim() ?? string.Empty;
         _settings.Ai.ApiKey = AiApiKeyText.Text?.Trim() ?? string.Empty;
         _settings.Ai.TimeoutSeconds = int.TryParse(AiTimeoutText.Text, out var timeout) ? Math.Clamp(timeout, 5, 90) : 25;
         _settings.Ai.RequireConfirmationBeforeAlert = AiRequireConfirmationCheck.IsChecked == true;
+        _settings.StartWithWindows = StartWithWindowsCheck.IsChecked == true;
+        _settings.WatchdogEnabled = WatchdogEnabledCheck.IsChecked == true;
+        WindowsStartupService.Apply(_settings.StartWithWindows);
+        if (_settings.WatchdogEnabled) _watchdog.Start(); else _watchdog.Stop();
         SaveSettings();
         RefreshSystemStatus();
     }
@@ -381,8 +525,9 @@ public partial class MainWindow : Avalonia.Controls.Window
         {
             _coordinator = new MonitorCoordinator(_eventStore, _alerts);
             _coordinator.CameraStatusChanged += UpdateCameraStatus;
+            _coordinator.CameraRuntimeChanged += UpdateCameraRuntime;
             _coordinator.PreviewReady += UpdatePreview;
-            _coordinator.EventRecorded += _ => Dispatcher.UIThread.Post(RefreshEvents);
+            _coordinator.EventRecorded += HandleEventRecorded;
             await _coordinator.StartAsync(_settings);
             SetStatus("Đang giám sát cục bộ — ONVIF event hoặc YOLO fallback");
         }
@@ -514,6 +659,16 @@ public partial class MainWindow : Avalonia.Controls.Window
         });
     }
 
+    private void UpdateCameraRuntime(Guid id, CameraRuntimeSnapshot runtime)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            _cameraRuntimeSnapshots[id] = runtime;
+            _cameraRuntimeStatuses[id] = runtime.Message;
+            RefreshSystemStatus();
+        });
+    }
+
     private void UpdatePreview(Guid id, Mat image)
     {
         Bitmap? bitmap = null;
@@ -571,6 +726,16 @@ public partial class MainWindow : Avalonia.Controls.Window
         Cv2.ImEncode(".jpg", image, out var bytes);
         using var stream = new MemoryStream(bytes);
         return new Bitmap(stream);
+    }
+
+    private void HandleEventRecorded(DetectionEvent item)
+    {
+        _lastRecordedEvent = item;
+        Dispatcher.UIThread.Post(() =>
+        {
+            RefreshEvents();
+            RefreshSystemStatus();
+        });
     }
 
     private void RefreshEvents_Click(object? sender, RoutedEventArgs e) => RefreshEvents();
@@ -661,6 +826,86 @@ public partial class MainWindow : Avalonia.Controls.Window
         Process.Start(new ProcessStartInfo { FileName = DataPaths.ZaloLogFile, UseShellExecute = true });
     }
 
+    private async void BackupSettings_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SaveAlerts_Click(sender, e);
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Sao lưu cấu hình EZVIZ Local Monitor",
+                SuggestedFileName = $"ezviz-settings-backup-{DateTime.Now:yyyyMMdd-HHmmss}.ezvizbackup",
+                FileTypeChoices = new[] { new FilePickerFileType("EZVIZ backup") { Patterns = new[] { "*.ezvizbackup" } } }
+            });
+            var path = file?.TryGetLocalPath();
+            if (string.IsNullOrWhiteSpace(path)) { SetStatus("Đã hủy sao lưu cấu hình."); return; }
+            _settingsStore.ExportBackup(_settings, path);
+            AppLogger.Info(LogChannel.App, $"settings backup exported; file={Path.GetFileName(path)}");
+            SetStatus("Đã sao lưu cấu hình bằng DPAPI; token không nằm dạng plaintext trong file.");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(LogChannel.App, "settings backup failed", ex);
+            SetStatus($"Không sao lưu được cấu hình: {ex.Message}");
+        }
+    }
+
+    private async void RestoreSettings_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Khôi phục cấu hình EZVIZ Local Monitor",
+                AllowMultiple = false,
+                FileTypeFilter = new[] { new FilePickerFileType("EZVIZ backup") { Patterns = new[] { "*.ezvizbackup" } } }
+            });
+            var path = files.FirstOrDefault()?.TryGetLocalPath();
+            if (string.IsNullOrWhiteSpace(path)) { SetStatus("Đã hủy khôi phục cấu hình."); return; }
+            var imported = _settingsStore.ImportBackup(path);
+            var wasRunning = _coordinator is not null;
+            if (wasRunning) await StopMonitoringAsync();
+            _settings = imported;
+            _settingsStore.Save(_settings);
+            _loadingSettings = true;
+            LoadSettings();
+            PerformanceProfileCombo.SelectedIndex = Math.Clamp(_settings.PerformanceProfile, 0, 3);
+            _loadingSettings = false;
+            ApplyTheme();
+            ApplyLayoutMode(_settings.DashboardLayoutMode, false);
+            if (wasRunning) await StartMonitoringAsync(false);
+            AppLogger.Info(LogChannel.App, $"settings backup restored; file={Path.GetFileName(path)}");
+            SetStatus("Đã khôi phục cấu hình và mã hóa lại bằng Windows DPAPI.");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(LogChannel.App, "settings restore failed", ex);
+            SetStatus($"Không khôi phục được cấu hình: {ex.Message}");
+        }
+    }
+
+    private async void ExportDiagnostics_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SaveAlerts_Click(sender, e);
+            SetStatus("Đang tạo gói chẩn đoán đã che thông tin nhạy cảm...");
+            var package = await AppLogger.ExportDiagnosticsAsync(_settings);
+            AppLogger.Info(LogChannel.App, $"diagnostics package exported; file={Path.GetFileName(package)}");
+            SetStatus($"Đã xuất gói chẩn đoán: {package}");
+            Process.Start(new ProcessStartInfo { FileName = DataPaths.Root, UseShellExecute = true });
+        }
+        catch (OperationCanceledException)
+        {
+            SetStatus("Đã hủy xuất gói chẩn đoán.");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(LogChannel.App, "diagnostics package export failed", ex);
+            SetStatus($"Không xuất được gói chẩn đoán: {ex.Message}");
+        }
+    }
+
     private async void MainWindow_Opened(object? sender, EventArgs e)
     {
         if (_updateCheckStarted) return;
@@ -676,7 +921,11 @@ public partial class MainWindow : Avalonia.Controls.Window
             }
         }
 
-        var monitoringTask = StartMonitoringAsync(false);
+        WindowsStartupService.Apply(_settings.StartWithWindows);
+        if (_settings.WatchdogEnabled) _watchdog.Start();
+        var monitoringTask = MonitorScheduleService.IsMonitoringAllowed(_settings)
+            ? StartMonitoringAsync(false)
+            : Task.CompletedTask;
 
         try
         {
@@ -726,6 +975,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         }
 
         SetStatus("Đang mở trình cập nhật...");
+        _watchdog.Stop();
         await StopMonitoringAsync();
         var process = new ProcessStartInfo
         {
@@ -795,6 +1045,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         if (_shutdownStarted) return;
         _shutdownStarted = true;
         _exitRequested = true;
+        _watchdog.Stop();
         Hide();
         SetStatus("Đang dừng camera và thoát an toàn...");
 
@@ -819,8 +1070,9 @@ public partial class MainWindow : Avalonia.Controls.Window
         {
             foreach (var pending in _pendingPreviewBitmaps.Values) pending.Dispose();
             _pendingPreviewBitmaps.Clear();
-            _previewDispatchScheduled.Clear();
+                        _previewDispatchScheduled.Clear();
         }
+        _watchdog.Dispose();
         // Không dispose đồng bộ trên UI thread. ExitFromTray/LaunchUpdaterAsync đã dừng
         // coordinator theo đường async có timeout; Window_Closing chỉ giải phóng bitmap UI.
     }

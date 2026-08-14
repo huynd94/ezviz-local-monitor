@@ -38,6 +38,7 @@ public static class ZaloDiagnostics
 
     private static void Write(string level, string message)
     {
+        AppLogger.Write(LogChannel.Alerts, level, message);
         if (Interlocked.Increment(ref PendingWrites) > MaxPendingWrites)
         {
             Interlocked.Decrement(ref PendingWrites);

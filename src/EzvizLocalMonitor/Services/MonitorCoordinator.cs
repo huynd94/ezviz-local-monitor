@@ -8,6 +8,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
 {
     private readonly EventStore _eventStore;
     private readonly AlertDispatcher _alerts;
+    private readonly AlertQueueService _alertQueue;
     private readonly OpenAiCompatibleMovementAnalyzer _movementAnalyzer = new();
     private readonly List<CameraMonitor> _monitors = new();
     private readonly List<OnvifEventListener> _onvifListeners = new();
@@ -19,6 +20,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
     private bool _started;
 
     public event Action<Guid, string>? CameraStatusChanged;
+    public event Action<Guid, CameraRuntimeSnapshot>? CameraRuntimeChanged;
     public event Action<Guid, Mat>? PreviewReady;
     public event Action<DetectionEvent>? EventRecorded;
 
@@ -26,6 +28,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
     {
         _eventStore = eventStore;
         _alerts = alerts;
+        _alertQueue = new AlertQueueService(alerts);
     }
 
     public async Task StartAsync(AppSettings settings)
@@ -62,6 +65,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
         var monitor = new CameraMonitor(camera, _detector, _settings?.InferenceFpsPerCamera ?? 1,
             _settings?.ConfirmationsRequired ?? 2, _settings?.ConfirmationWindow ?? 3);
         monitor.StatusChanged += (definition, status) => CameraStatusChanged?.Invoke(definition.Id, status);
+        monitor.RuntimeChanged += (definition, runtime) => CameraRuntimeChanged?.Invoke(definition.Id, runtime);
         monitor.PreviewReady += (definition, image) => PreviewReady?.Invoke(definition.Id, image);
         monitor.PersonConfirmed += OnPersonConfirmed;
         _monitors.Add(monitor);
@@ -95,6 +99,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
             }
             catch (Exception ex)
             {
+                AppLogger.Error(LogChannel.Camera, $"camera={camera.Name}; ONVIF/RTSP verification failed", ex);
                 CameraStatusChanged?.Invoke(camera.Id, "Lỗi xác minh ONVIF/RTSP: " + SafeMessage(ex));
             }
         });
@@ -138,6 +143,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                     IsHumanDetection = isHumanDetection
                 };
                 item.Id = _eventStore.Add(item);
+                AppLogger.Info(LogChannel.Alerts, $"event recorded; eventId={item.Id}; camera={camera.Name}; source={detectionSource}; human={isHumanDetection}");
                 EventRecorded?.Invoke(item);
 
                 var requiresAiConfirmation = _settings?.Ai.Enabled == true && _settings.Ai.RequireConfirmationBeforeAlert;
@@ -145,7 +151,8 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                 var shouldSend = !requiresAiConfirmation || analysis?.ShouldSendAlert == true;
                 var status = !shouldSend
                     ? "Không gửi: AI không thấy chuyển động/người"
-                    : _settings is null ? "Không có cấu hình cảnh báo" : await _alerts.SendAsync(_settings.Alerts, item);
+                    : _settings is null ? "Không có cấu hình cảnh báo" : await _alertQueue.EnqueueAsync(_settings.Alerts, item);
+                AppLogger.Info(LogChannel.Alerts, $"alert queued result; eventId={item.Id}; status={status}");
                 item.DeliveryStatus = status;
                 _eventStore.UpdateDeliveryStatus(item.Id, status);
                 EventRecorded?.Invoke(item);
@@ -197,7 +204,9 @@ public sealed class MonitorCoordinator : IAsyncDisposable
         if (_settings?.Ai.Enabled != true) return null;
         try
         {
+            AppLogger.Info(LogChannel.Ai, $"analysis start; eventId={item.Id}; camera={item.CameraName}; model={AppLogger.Redact(_settings.Ai.Model)}; previousImage={previousImagePath is not null}");
             var analysis = await _movementAnalyzer.AnalyzeAsync(_settings.Ai, item.ImagePath, previousImagePath);
+            AppLogger.Info(LogChannel.Ai, $"analysis result; eventId={item.Id}; status={analysis.Status}; motion={analysis.MotionDetected}; person={analysis.PersonPresent}; confidence={analysis.Confidence:0.00}");
             item.AiStatus = analysis.Status;
             item.AiMotionDetected = analysis.MotionDetected;
             item.AiPersonPresent = analysis.PersonPresent;
@@ -209,6 +218,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
         }
         catch (Exception ex)
         {
+            AppLogger.Error(LogChannel.Ai, $"analysis failed; eventId={item.Id}; camera={item.CameraName}", ex);
             item.AiStatus = "Lỗi AI: " + SafeMessage(ex);
             _eventStore.UpdateAiStatus(item.Id, item.AiStatus);
             EventRecorded?.Invoke(item);
@@ -234,6 +244,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
         _onvifListeners.Clear();
         foreach (var monitor in _monitors) await monitor.DisposeAsync();
         _monitors.Clear();
+        await _alertQueue.DisposeAsync();
         _detector?.Dispose();
         _detector = null;
         _snapshotReader.Dispose();

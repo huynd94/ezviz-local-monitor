@@ -5,7 +5,12 @@ namespace EzvizLocalMonitor.Services;
 
 public sealed class EventStore
 {
-    private readonly string _connectionString = $"Data Source={DataPaths.DatabaseFile}";
+    private readonly string _connectionString;
+
+    public EventStore(string? databaseFile = null)
+    {
+        _connectionString = $"Data Source={databaseFile ?? DataPaths.DatabaseFile}";
+    }
 
     public void Initialize()
     {
