@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="EzvizLocalMonitor.MainWindow"
         Title="EZVIZ Local Monitor" Icon="/Assets/ezviz-local-monitor.ico" Width="1220" Height="810" MinWidth="980" MinHeight="650"
-        Background="#F5F7FA" Closing="Window_Closing">
+        Background="#F5F7FA" Closing="Window_Closing" KeyDown="Window_KeyDown">
   <Grid Margin="16" RowDefinitions="Auto,*,Auto">
     <Border Grid.Row="0" Background="#093B5A" CornerRadius="8" Padding="18" Margin="0,0,0,12">
       <Grid ColumnDefinitions="*,Auto">
@@ -25,7 +25,16 @@
             <Button x:Name="LayoutOneButton" Tag="1" Content="1 màn hình" Click="LayoutMode_Click" />
             <Button x:Name="LayoutTwoButton" Tag="2" Content="2 màn hình" Click="LayoutMode_Click" />
             <Button x:Name="LayoutFourButton" Tag="4" Content="4 màn hình" Click="LayoutMode_Click" />
-            <TextBlock Text="Có thể quản lý tối đa 4 camera; ô chưa cấu hình sẽ hiển thị trạng thái chờ." VerticalAlignment="Center" Foreground="#52606D" Margin="8,0,0,0" />
+            <Button Content="Phóng to camera" Click="FocusSelectedCamera_Click" ToolTip.Tip="Phóng to camera đang chọn hoặc camera đầu tiên" />
+            <Button Content="Sáng/Tối" Click="ToggleTheme_Click" ToolTip.Tip="Chuyển giao diện sáng và tối" />
+            <TextBlock Text="Hiệu năng:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#093B5A" Margin="10,0,0,0" />
+            <ComboBox x:Name="PerformanceProfileCombo" Width="170" SelectedIndex="1" SelectionChanged="PerformanceProfile_Changed">
+              <ComboBoxItem Content="Tiết kiệm CPU" />
+              <ComboBoxItem Content="Cân bằng" />
+              <ComboBoxItem Content="Phản hồi nhanh" />
+              <ComboBoxItem Content="Ưu tiên ONVIF" />
+            </ComboBox>
+            <TextBlock Text="Tối đa 4 camera; ô chưa cấu hình hiển thị trạng thái chờ. Phím tắt: Ctrl+1/2/4, F11, Esc." VerticalAlignment="Center" Foreground="#52606D" Margin="8,0,0,0" />
           </StackPanel>
           <Grid x:Name="CameraGrid" Grid.Row="1" Background="#19232D" RowDefinitions="*" ColumnDefinitions="*,*">
             <Border x:Name="CameraTileOne" Background="#19232D" CornerRadius="5" Margin="4">
@@ -42,7 +51,13 @@
             </Border>
           </Grid>
           <Border Grid.Row="2" Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,14,0,0">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*"><Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" /><Button Grid.Column="1" Content="Dừng" Click="StopMonitoring_Click" Margin="8,0,0,0" /><Button Grid.Column="2" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="8,0,0,0" /><TextBlock x:Name="RuntimeInfoText" Grid.Column="3" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#52606D" /></Grid>
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto,Auto,*">
+              <Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" />
+              <Button Grid.Column="1" Content="Dừng" Click="StopMonitoring_Click" Margin="8,0,0,0" />
+              <Button Grid.Column="2" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="8,0,0,0" />
+              <TextBlock x:Name="RuntimeInfoText" Grid.Column="3" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#52606D" />
+              <TextBlock x:Name="SystemHealthText" Grid.Row="1" Grid.ColumnSpan="4" Text="Hệ thống: đang khởi tạo…" Margin="0,10,0,0" Foreground="#52606D" TextWrapping="Wrap" />
+            </Grid>
           </Border>
         </Grid>
       </TabItem>
@@ -73,19 +88,51 @@
       <TabItem Header="Cảnh báo">
         <ScrollViewer><StackPanel Margin="16" Spacing="12">
           <TextBlock Text="Token và địa chỉ camera được mã hóa theo tài khoản Windows; không được đưa vào nhật ký." Foreground="#093B5A" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <Border Background="#EAF4F9" BorderBrush="#B8D6E5" BorderThickness="1" CornerRadius="5" Padding="12"><Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto"><StackPanel><TextBlock Text="Kiểm tra cấu hình" FontWeight="SemiBold" Foreground="#093B5A" /><TextBlock Text="Kiểm tra trường bắt buộc và trạng thái kênh; không tự gửi tin nhắn." Foreground="#52606D" TextWrapping="Wrap" /></StackPanel><Button Grid.Column="1" Content="Kiểm tra toàn bộ cấu hình" Click="ValidateAlerts_Click" /><TextBlock x:Name="ConfigurationCheckText" Grid.Row="1" Grid.ColumnSpan="2" Text="Chưa kiểm tra cấu hình." Margin="0,8,0,0" TextWrapping="Wrap" Foreground="#52606D" /></Grid></Border>
+          <TextBlock Text="Kênh thông báo" FontSize="16" FontWeight="SemiBold" Foreground="#093B5A" Margin="0,4,0,0" />
           <Border Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="14"><Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="150,*,Auto"><CheckBox x:Name="TelegramEnabledCheck" Content="Bật Telegram" /><TextBlock Grid.Row="1" Text="Bot Token" VerticalAlignment="Center" /><TextBox x:Name="TelegramTokenText" Grid.Row="1" Grid.Column="1" PasswordChar="●" /><TextBlock Grid.Row="2" Text="Chat ID" VerticalAlignment="Center" /><TextBox x:Name="TelegramChatText" Grid.Row="2" Grid.Column="1" /><Button Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Content="Gửi thử" Click="TestTelegram_Click" Margin="10,0,0,0" /></Grid></Border>
           <Border Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="14"><Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="150,*,Auto"><CheckBox x:Name="ZaloEnabledCheck" Content="Bật Zalo Bot" /><TextBlock Grid.Row="1" Text="Bot Token" VerticalAlignment="Center" /><TextBox x:Name="ZaloTokenText" Grid.Row="1" Grid.Column="1" PasswordChar="●" /><TextBlock Grid.Row="2" Text="Chat ID" VerticalAlignment="Center" /><TextBox x:Name="ZaloChatText" Grid.Row="2" Grid.Column="1" /><Button Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Content="Gửi thử" Click="TestZalo_Click" Margin="10,0,0,0" /></Grid></Border>
+          <TextBlock Text="Phân tích AI" FontSize="16" FontWeight="SemiBold" Foreground="#093B5A" Margin="0,4,0,0" />
           <Border Background="#FFF8E8" BorderBrush="#F0C36D" BorderThickness="1" CornerRadius="5" Padding="14"><Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="170,*"><CheckBox x:Name="AiEnabledCheck" Content="Bật phân tích AI cho sự kiện" /><TextBlock Grid.Row="1" Text="Base URL" VerticalAlignment="Center" /><TextBox x:Name="AiBaseUrlText" Grid.Row="1" Grid.Column="1" Watermark="https://api.openai.com/v1" /><TextBlock Grid.Row="2" Text="Model" VerticalAlignment="Center" /><TextBox x:Name="AiModelText" Grid.Row="2" Grid.Column="1" Watermark="Vision-capable model" /><TextBlock Grid.Row="3" Text="API key" VerticalAlignment="Center" /><TextBox x:Name="AiApiKeyText" Grid.Row="3" Grid.Column="1" PasswordChar="●" /><Grid Grid.Row="4" Grid.ColumnSpan="2" ColumnDefinitions="170,100,*"><TextBlock Text="Timeout (giây)" VerticalAlignment="Center" /><TextBox x:Name="AiTimeoutText" Grid.Column="1" /><CheckBox x:Name="AiRequireConfirmationCheck" Grid.Column="2" Content="Chỉ gửi cảnh báo khi AI xác nhận chuyển động/người" Margin="14,0,0,0" VerticalAlignment="Center" /></Grid></Grid></Border>
           <TextBlock Text="Khi AI bật, tối đa hai ảnh JPEG của sự kiện (trước/sau) được gửi tới endpoint đã cấu hình; video RTSP không được gửi." TextWrapping="Wrap" Foreground="#805B12" />
+          <TextBlock Text="Chẩn đoán và lưu cấu hình" FontSize="16" FontWeight="SemiBold" Foreground="#093B5A" Margin="0,4,0,0" />
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"><Button Content="Mở log Zalo" Click="OpenZaloLog_Click" /><Button Content="Lưu cấu hình cảnh báo và AI" Click="SaveAlerts_Click" /></StackPanel>
         </StackPanel></ScrollViewer>
       </TabItem>
 
       <TabItem Header="Nhật ký sự kiện">
-        <Grid Margin="12" RowDefinitions="Auto,*"><Button Content="Làm mới" HorizontalAlignment="Left" Click="RefreshEvents_Click" /><ListBox x:Name="EventsList" Grid.Row="1" Margin="0,10,0,0" /></Grid>
+        <Grid Margin="12" RowDefinitions="Auto,*" ColumnDefinitions="*,340">
+          <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+            <Button Content="Làm mới" Click="RefreshEvents_Click" />
+            <TextBox x:Name="EventSearchText" Width="230" Watermark="Tìm camera, nguồn, trạng thái…" TextChanged="EventSearch_Changed" />
+            <ComboBox x:Name="EventCameraFilter" Width="180" PlaceholderText="Tất cả camera" SelectionChanged="EventCameraFilter_Changed" />
+          </StackPanel>
+          <DataGrid x:Name="EventsGrid" Grid.Row="1" Grid.Column="0" AutoGenerateColumns="False" IsReadOnly="True" CanUserResizeColumns="True" GridLinesVisibility="All" SelectionChanged="EventsGrid_SelectionChanged" Margin="0,0,10,0">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Thời gian" Binding="{Binding DetectedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" Width="190" />
+              <DataGridTextColumn Header="Camera" Binding="{Binding CameraName}" Width="130" />
+              <DataGridTextColumn Header="Phát hiện" Binding="{Binding IsHumanDetection}" Width="95" />
+              <DataGridTextColumn Header="Tin cậy" Binding="{Binding Confidence, StringFormat={}{0:P0}}" Width="85" />
+              <DataGridTextColumn Header="Nguồn" Binding="{Binding DetectionSource}" Width="150" />
+              <DataGridTextColumn Header="AI" Binding="{Binding AiStatus}" Width="150" />
+              <DataGridTextColumn Header="Gửi cảnh báo" Binding="{Binding DeliveryStatus}" Width="260" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <Border Grid.Row="1" Grid.Column="1" Background="White" BorderBrush="#D9E1E8" BorderThickness="1" CornerRadius="5" Padding="12">
+            <ScrollViewer><StackPanel Spacing="8">
+              <TextBlock Text="Chi tiết sự kiện" FontSize="18" FontWeight="SemiBold" Foreground="#093B5A" />
+              <TextBlock x:Name="EventDetailText" Text="Chọn một dòng để xem chi tiết." TextWrapping="Wrap" Foreground="#52606D" />
+              <Border Background="#19232D" MinHeight="170"><Image x:Name="EventDetailImage" Stretch="Uniform" /></Border>
+              <Button Content="Mở ảnh sự kiện" Click="OpenSelectedEventImage_Click" HorizontalAlignment="Left" />
+            </StackPanel></ScrollViewer>
+          </Border>
+        </Grid>
       </TabItem>
     </TabControl>
 
-    <TextBlock x:Name="VersionText" Grid.Row="2" Text="Đang đọc phiên bản…" Foreground="#52606D" Margin="4,10,4,0" />
+    <Grid Grid.Row="2" Margin="4,10,4,0" ColumnDefinitions="*,Auto">
+      <TextBlock x:Name="VersionText" Text="Đang đọc phiên bản…" Foreground="#52606D" />
+      <TextBlock x:Name="SystemMetricsText" Grid.Column="1" Text="CPU — · RAM —" Foreground="#52606D" HorizontalAlignment="Right" />
+    </Grid>
   </Grid>
 </Window>

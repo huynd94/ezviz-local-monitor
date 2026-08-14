@@ -1,9 +1,17 @@
 # EZVIZ Local Monitor for Windows
 
-Bản 0.7.1 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
+Bản 0.8.0 có icon ứng dụng riêng, Auto-updater kiểm tra bản mới khi mở ứng dụng, updater GUI đã sửa lỗi Runspace và trang **Tổng quan** với bố cục linh động **1, 2 hoặc 4 màn hình**. Chọn bố cục ở hàng nút phía trên lưới camera; lựa chọn được lưu trong cấu hình Windows và giữ lại ở lần mở sau. Bố cục 1 màn hình hiển thị camera đầu tiên, bố cục 2 hiển thị hai camera đầu tiên, còn bố cục 4 hiển thị tối đa bốn camera; các ô chưa cấu hình vẫn hiện trạng thái chờ.
 
-**Phiên bản:** 0.7.1
+**Phiên bản:** 0.8.0
 **Mục đích:** Giám sát cục bộ tối đa bốn camera EZVIZ, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform. Với i7-7500U/RAM 8 GB, nên bắt đầu với hai camera rồi đo CPU trước khi bật bốn luồng YOLO đồng thời.
+
+## 8 nhóm cải tiến giao diện và vận hành
+
+Bản 0.8.0 triển khai đầy đủ các nhóm cải tiến đã thống nhất. Tổng quan có trạng thái từng camera, số camera hoạt động, cảnh báo kết nối, kênh Telegram/Zalo và chỉ số CPU/RAM/FPS preview. Tab Cảnh báo được chia nhóm và có nút kiểm tra toàn bộ cấu hình mà không tự gửi tin. Nhật ký sự kiện dùng bảng cột cố định, tìm kiếm, lọc theo camera, chọn dòng, xem ảnh và mở ảnh gốc.
+
+Onboarding lần đầu hướng dẫn tìm camera LAN, nhập mã xác thực, kiểm tra RTSP/ONVIF và cấu hình cảnh báo. Hồ sơ hiệu năng gồm Tiết kiệm CPU, Cân bằng, Phản hồi nhanh và Ưu tiên ONVIF. Tray có trạng thái động, dừng camera, kiểm tra cập nhật và thoát hoàn toàn. Người dùng có thể chuyển sáng/tối, phóng to camera, dùng F11/Esc và Ctrl+1/Ctrl+2/Ctrl+4.
+
+Các trạng thái lỗi được tách khỏi trạng thái giám sát; lỗi một kênh thông báo không làm dừng camera. Các chỉ số CPU/RAM/FPS chỉ mang tính quan sát runtime và giúp chọn hồ sơ phù hợp với máy i7-7500U/RAM 8 GB.
 
 ## Script cập nhật nhanh từ GitHub
 
@@ -35,7 +43,7 @@ Khi báo lỗi, hãy tạo lại một sự kiện mới, mở log và gửi cá
 
 Khi bấm nút đóng cửa sổ, ứng dụng sẽ **ẩn vào khay thông báo** thay vì thoát. Các luồng camera, nhận diện người và cảnh báo vẫn tiếp tục hoạt động. Bấm biểu tượng EZVIZ Local Monitor trong khay để mở lại cửa sổ; chọn **Thoát hoàn toàn** trong menu khay nếu muốn dừng giám sát và kết thúc ứng dụng.
 
-Bản 0.7.1 cũng giữ các tối ưu giảm giật lag lúc mở ứng dụng bằng cách mở trước RTSP ở nền, giới hạn buffer khung hình để ưu tiên dữ liệu mới và gộp các preview đang chờ để không làm nghẽn hàng đợi giao diện.
+Bản 0.8.0 cũng giữ các tối ưu giảm giật lag lúc mở ứng dụng bằng cách mở trước RTSP ở nền, giới hạn buffer khung hình để ưu tiên dữ liệu mới và gộp các preview đang chờ để không làm nghẽn hàng đợi giao diện.
 
 ## Bố cục Tổng quan và tự động giám sát
 

@@ -7,7 +7,7 @@
     <AssemblyName>EzvizLocalMonitor</AssemblyName>
     <RootNamespace>EzvizLocalMonitor</RootNamespace>
     <ApplicationIcon>Assets\ezviz-local-monitor.ico</ApplicationIcon>
-    <Version>0.7.1</Version>
+    <Version>0.8.0</Version>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
@@ -17,6 +17,7 @@
     <PackageReference Include="Avalonia" Version="11.2.3" />
     <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.3" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.12" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.1" />
     <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />

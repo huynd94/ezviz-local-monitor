@@ -48,6 +48,9 @@ public sealed class AppSettings
     public int ConfirmationWindow { get; set; } = 3;
     public bool StartWithWindows { get; set; }
     public int DashboardLayoutMode { get; set; } = 2;
+    public bool HasCompletedOnboarding { get; set; }
+    public int PerformanceProfile { get; set; } = 1;
+    public bool DarkTheme { get; set; }
 }
 
 public sealed record PersonDetection(double Confidence, int Left, int Top, int Right, int Bottom)

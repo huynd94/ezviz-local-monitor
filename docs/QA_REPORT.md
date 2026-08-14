@@ -181,3 +181,16 @@ AlertDispatcher tạo timeout riêng tối đa 12 giây cho từng thao tác Zal
 Các nhóm lỗi được cô lập gồm thiếu token/Chat ID, hủy hoặc timeout, lỗi DNS/HTTP, response JSON không hợp lệ, file ảnh bị xóa/không thể đọc, URL ảnh không hợp lệ, lỗi metadata và lỗi ghi log. Logger sử dụng worker nền, giới hạn 128 bản ghi chờ, tự xoay ở 2 MB và nuốt mọi lỗi I/O. Log chỉ ghi Chat ID đã che, không ghi Bot Token đầy đủ.
 
 Build Release đã thành công với 0 lỗi biên dịch. Các cảnh báo CA1416 hiện hữu liên quan Windows DPAPI không thuộc thay đổi Zalo.
+
+## UI/UX và vận hành — v0.8.0
+
+Checklist triển khai theo thứ tự yêu cầu:
+
+1. Tổng quan: trạng thái từng camera, số camera hoạt động, cảnh báo kết nối và thanh trạng thái hệ thống.
+2. Cảnh báo: chia nhóm Kênh thông báo/Phân tích AI/Chẩn đoán và nút kiểm tra toàn bộ cấu hình không tự gửi tin.
+3. Nhật ký: DataGrid cột cố định, tìm kiếm, lọc camera, chọn sự kiện, panel chi tiết, xem ảnh và mở ảnh gốc.
+4. Lỗi/onboarding: trạng thái lỗi kênh được tách khỏi giám sát; onboarding lần đầu hướng dẫn bốn bước cấu hình.
+5. Hiệu năng: hồ sơ Tiết kiệm CPU/Cân bằng/Phản hồi nhanh/Ưu tiên ONVIF, chỉ số CPU/RAM/FPS preview.
+6. Tray/Auto-updater: menu tray có trạng thái, mở lại, ẩn, dừng camera, kiểm tra cập nhật và thoát; updater vẫn chạy khi có bản mới.
+7. Giao diện/khả năng tiếp cận: theme sáng/tối, phóng to camera, F11/Esc, Ctrl+1/2/4 và tooltip cho điều khiển chính.
+8. Đóng gói: build Release, restore DataGrid, kiểm tra ZIP/checksum, phát hành public không chứa cấu hình/token.
