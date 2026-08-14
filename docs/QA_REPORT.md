@@ -208,3 +208,9 @@ Kiểm thử: restore và Release build thành công, 0 lỗi biên dịch; bố
 Log thực tế từ Windows 10.0.19045 xác định exception là `System.NullReferenceException` tại `MainWindow.PerformanceProfile_Changed`, dòng 290. Sự kiện `SelectionChanged` của ComboBox hồ sơ hiệu năng được phát sinh trong lúc Avalonia đang dựng XAML, trước khi field UI/constructor hoàn tất.
 
 Bản v0.8.2 thêm cờ `_uiInitialized`, bỏ qua các event chạy sớm và đọc ComboBox từ `sender` sau khi kiểm tra kiểu/null. Đây là hồi quy bắt buộc sau v0.8.1; không liên quan Bot Token, Chat ID, camera, RTSP hoặc DPAPI.
+
+## Event log display fix — v0.8.3
+
+Cảnh báo Telegram/Zalo thành công chứng minh `MonitorCoordinator.QueueDetection` đã đi qua bước `_eventStore.Add(item)`. Nguyên nhân hiển thị trống ở v0.8.1/v0.8.2 là DataGrid style Fluent bị loại bỏ để xử lý startup crash, khiến DataGrid không có template/style đầy đủ để render.
+
+Bản v0.8.3 khôi phục `avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml` theo tài liệu DataGrid Avalonia, đồng thời thêm summary `đã tải N sự kiện` và `hiển thị M/N sự kiện`. Refresh bắt exception đọc SQLite/DataGrid, đưa lỗi lên giao diện và ghi vào startup-crash.log.

@@ -560,11 +560,24 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private void RefreshEvents()
     {
-        _eventCache = _eventStore.Recent();
-        var cameraNames = new[] { "Tất cả camera" }.Concat(_eventCache.Select(x => x.CameraName).Distinct(StringComparer.OrdinalIgnoreCase)).ToList();
-        EventCameraFilter.ItemsSource = cameraNames;
-        if (EventCameraFilter.SelectedIndex < 0) EventCameraFilter.SelectedIndex = 0;
-        ApplyEventFilters();
+        try
+        {
+            _eventCache = _eventStore.Recent();
+            var cameraNames = new[] { "Tất cả camera" }.Concat(_eventCache.Select(x => x.CameraName).Distinct(StringComparer.OrdinalIgnoreCase)).ToList();
+            var previousCamera = EventCameraFilter.SelectedItem as string;
+            EventCameraFilter.ItemsSource = cameraNames;
+            var preferredIndex = !string.IsNullOrWhiteSpace(previousCamera) ? cameraNames.IndexOf(previousCamera) : 0;
+            EventCameraFilter.SelectedIndex = preferredIndex >= 0 ? preferredIndex : 0;
+            ApplyEventFilters();
+            EventLogSummaryText.Text = $"Đã tải {_eventCache.Count} sự kiện · {DateTime.Now:HH:mm:ss}";
+        }
+        catch (Exception ex)
+        {
+            _eventCache = Array.Empty<DetectionEvent>();
+            EventsGrid.ItemsSource = Array.Empty<DetectionEvent>();
+            EventLogSummaryText.Text = $"Lỗi đọc nhật ký: {ex.Message}";
+            StartupDiagnostics.Write("RefreshEvents", ex);
+        }
     }
 
     private void ApplyEventFilters()
@@ -576,6 +589,8 @@ public partial class MainWindow : Avalonia.Controls.Window
             (string.IsNullOrWhiteSpace(selectedCamera) || selectedCamera == "Tất cả camera" || x.CameraName.Equals(selectedCamera, StringComparison.OrdinalIgnoreCase)) &&
             (string.IsNullOrWhiteSpace(search) || $"{x.CameraName} {x.DetectionSource} {x.DeliveryStatus} {x.AiStatus} {x.AiSummary}".Contains(search, StringComparison.OrdinalIgnoreCase))).ToList();
         EventsGrid.ItemsSource = filtered;
+        if (EventLogSummaryText is not null)
+            EventLogSummaryText.Text = $"Hiển thị {filtered.Count}/{_eventCache.Count} sự kiện";
     }
 
     private void EventsGrid_SelectionChanged(object? sender, SelectionChangedEventArgs e)
