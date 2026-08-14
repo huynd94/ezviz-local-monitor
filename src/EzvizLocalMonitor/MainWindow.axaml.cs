@@ -21,6 +21,8 @@ public partial class MainWindow : Avalonia.Controls.Window
     public MainWindow()
     {
         InitializeComponent();
+        var version = typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "không xác định";
+        VersionText.Text = $"Bản {version} · Nhận diện người cục bộ · Ảnh sự kiện chỉ rời LAN khi Telegram/Zalo được bật.";
         DataPaths.EnsureCreated();
         _eventStore.Initialize();
         LoadSettings();

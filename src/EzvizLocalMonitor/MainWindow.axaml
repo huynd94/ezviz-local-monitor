@@ -71,6 +71,6 @@
       </TabItem>
     </TabControl>
 
-    <TextBlock Grid.Row="2" Text="Bản mẫu v0.1 · Nhận diện người cục bộ · Ảnh sự kiện chỉ rời LAN khi Telegram/Zalo được bật." Foreground="#52606D" Margin="4,10,4,0" />
+    <TextBlock x:Name="VersionText" Grid.Row="2" Text="Đang đọc phiên bản…" Foreground="#52606D" Margin="4,10,4,0" />
   </Grid>
 </Window>

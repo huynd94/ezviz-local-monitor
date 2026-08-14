@@ -1,7 +1,19 @@
 # EZVIZ Local Monitor for Windows
 
-**Phiên bản:** 0.5.0  
+**Phiên bản:** 0.5.1  
 **Mục đích:** Giám sát cục bộ tối đa hai camera EZVIZ C6N/H8C, phát hiện **người** tại máy Windows và gửi ảnh kèm văn bản qua Telegram cùng Zalo Bot Platform.
+
+## Bản vá xác minh phiên bản 0.5.1
+
+Bản 0.5.1 thay nhãn phiên bản cứng trong giao diện bằng phiên bản assembly thực tế. File `EzvizLocalMonitor.exe` được cài trực tiếp vào thư mục đích, ví dụ `D:\EZVIZ-Local-Monitor\EzvizLocalMonitor.exe`, không nằm trong thư mục con `app`.
+
+Sau khi cài, xác minh bằng PowerShell:
+
+```powershell
+(Get-Item 'D:\EZVIZ-Local-Monitor\EzvizLocalMonitor.exe').VersionInfo | Select-Object ProductVersion,FileVersion
+```
+
+Kết quả của bản này phải là `0.5.1`.
 
 ## Tối ưu cảnh báo thời gian thực 0.5.0
 

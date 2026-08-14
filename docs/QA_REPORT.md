@@ -89,3 +89,7 @@ Cảnh báo: ONVIF Events và topic `Human shape detection` phụ thuộc model/
 | Lỗi kênh độc lập | Telegram vẫn được thử nếu Zalo lỗi và ngược lại |
 
 Môi trường dựng đã biên dịch thành công. Độ trễ end-to-end Telegram vẫn cần đo trên PC Windows cùng camera và mạng thật, vì còn phụ thuộc firmware camera, router/Wi-Fi, máy chủ Telegram và kích thước ảnh. Khi kiểm tra, ghi thời điểm sự kiện trên nhật ký camera, thời điểm ứng dụng ghi `DetectedAt`, thời điểm Telegram nhận tin chữ và thời điểm nhận ảnh. Chế độ **Chỉ gửi cảnh báo khi AI xác nhận** phải tắt nếu ưu tiên độ trễ thấp nhất.
+
+## Bản vá 0.5.1 — Xác minh cài đặt
+
+Bản 0.5.1 thay nhãn `Bản mẫu v0.1` bằng phiên bản đọc động từ assembly. Theo script cài đặt, nội dung của thư mục `app` trong gói được chép trực tiếp vào thư mục đích, nên file thực thi đúng là `D:\EZVIZ-Local-Monitor\EzvizLocalMonitor.exe` khi dùng thư mục mặc định. Lệnh PowerShell xác minh phải trỏ tới file này, không phải `D:\EZVIZ-Local-Monitor\app\EzvizLocalMonitor.exe`.
