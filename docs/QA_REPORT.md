@@ -194,3 +194,11 @@ Checklist triển khai theo thứ tự yêu cầu:
 6. Tray/Auto-updater: menu tray có trạng thái, mở lại, ẩn, dừng camera, kiểm tra cập nhật và thoát; updater vẫn chạy khi có bản mới.
 7. Giao diện/khả năng tiếp cận: theme sáng/tối, phóng to camera, F11/Esc, Ctrl+1/2/4 và tooltip cho điều khiển chính.
 8. Đóng gói: build Release, restore DataGrid, kiểm tra ZIP/checksum, phát hành public không chứa cấu hình/token.
+
+## Startup crash hotfix — v0.8.1
+
+Bản v0.8.0 có thêm `Avalonia.Controls.DataGrid` và tham chiếu `avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml`. Kiểm tra package NuGet `Avalonia.Controls.DataGrid` 11.2.3 cho thấy gói runtime không chứa file XAML theme theo đường dẫn này. Tham chiếu đã được loại bỏ khỏi `App.axaml` trong v0.8.1 để tránh lỗi nạp resource làm ứng dụng dừng trước khi hiển thị cửa sổ.
+
+Bản v0.8.1 thêm `StartupDiagnostics`: ghi `AppDomain.UnhandledException`, `TaskScheduler.UnobservedTaskException` và lỗi từ `Program.Main` vào `%LOCALAPPDATA%\\EZVIZ Local Monitor\\startup-crash.log`. Logger không ghi token, Chat ID, mã xác thực camera hoặc cấu hình cảnh báo.
+
+Kiểm thử: restore và Release build thành công, 0 lỗi biên dịch; bốn cảnh báo CA1416 DPAPI Windows vẫn tồn tại như các bản trước.
