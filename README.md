@@ -1,6 +1,11 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.7**
+**Phiên bản phát hành hiện tại: v0.9.8**
+
+## Bản cập nhật v0.9.8 — sửa chữ bị chìm trên các tab
+
+Bản v0.9.8 sửa lớp màu nền panel theo từng theme: Orchid, Ocean, Lavender và Crimson dùng panel sáng với chữ tối; Midnight và Dark dùng panel tối với chữ sáng. Heading, muted text, nội dung hướng dẫn, footer, DataGrid, tiêu đề cột và ô dữ liệu được áp dụng foreground tương phản riêng, không dùng màu mặc định dễ bị Fluent ghi đè.
+
 
 ## Bản cập nhật v0.9.7 — button và input tương phản cao
 
