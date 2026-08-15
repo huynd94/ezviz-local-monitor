@@ -128,6 +128,23 @@ public sealed class AlertQueueTests
     }
 }
 
+public sealed class AlertMessagePolicyTests
+{
+    [Fact]
+    public void CaptionForPhoto_ReturnsEmpty_WhenTextSucceeded()
+    {
+        var result = AlertMessagePolicy.CaptionForPhotoAfterText("caption text", "Telegram: đã gửi");
+        Assert.Equal(string.Empty, result);
+    }
+
+    [Fact]
+    public void CaptionForPhoto_ReturnsCaption_WhenTextFailed()
+    {
+        var result = AlertMessagePolicy.CaptionForPhotoAfterText("caption text", "Telegram: lỗi timeout");
+        Assert.Equal("caption text", result);
+    }
+}
+
 public sealed class MonitorScheduleTests
 {
     [Fact]

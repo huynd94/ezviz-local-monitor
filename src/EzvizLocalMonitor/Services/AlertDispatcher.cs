@@ -64,7 +64,11 @@ public sealed class AlertDispatcher
         try { textResult = await SendIdempotentAsync(eventId, "Telegram text", () => SendTelegramTextAsync(token, chatId, caption, ct)); }
         catch (Exception ex) { textResult = "Telegram text: lỗi " + SafeException(ex); }
         string photoResult;
-        try { photoResult = await SendIdempotentAsync(eventId, "Telegram photo", () => SendTelegramPhotoAsync(token, chatId, imagePath, caption, ct)); }
+        try
+        {
+            var photoCaption = AlertMessagePolicy.CaptionForPhotoAfterText(caption, textResult);
+            photoResult = await SendIdempotentAsync(eventId, "Telegram photo", () => SendTelegramPhotoAsync(token, chatId, imagePath, photoCaption, ct));
+        }
         catch (Exception ex) { photoResult = "Telegram ảnh: lỗi " + SafeException(ex); }
         return $"{textResult} + {photoResult}";
     }
@@ -151,7 +155,8 @@ public sealed class AlertDispatcher
         try
         {
             using var photoTimeout = CreateZaloTimeout(ct);
-            photoResult = await SendIdempotentAsync(eventId, "Zalo photo", () => SendZaloPhotoAsync(settings, token, chatId, imagePath, caption, photoTimeout.Token));
+            var photoCaption = AlertMessagePolicy.CaptionForPhotoAfterText(caption, textResult);
+            photoResult = await SendIdempotentAsync(eventId, "Zalo photo", () => SendZaloPhotoAsync(settings, token, chatId, imagePath, photoCaption, photoTimeout.Token));
         }
         catch (OperationCanceledException)
         {

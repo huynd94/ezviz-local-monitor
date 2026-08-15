@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.12**
+**Phiên bản phát hành hiện tại: v0.9.13**
+
+## Bản vá v0.9.13 — không lặp nội dung caption Telegram/Zalo
+
+Bản v0.9.13 sửa lỗi cùng một nội dung cảnh báo xuất hiện hai lần trong tin nhắn Telegram khi ứng dụng gửi văn bản trước rồi gửi ảnh sau. Sau khi thao tác gửi văn bản của cùng `EventId` thành công, thao tác gửi ảnh không gửi lại caption; nếu văn bản thất bại, ảnh vẫn giữ caption để không mất nội dung cảnh báo. Chính sách này được áp dụng đồng nhất cho Telegram và Zalo, đồng thời bổ sung test hồi quy.
 
 ## Bản cập nhật v0.9.12 — làm rõ updater và panel Phân tích AI
 
