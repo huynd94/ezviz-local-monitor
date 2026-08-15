@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.17**
+**Phiên bản phát hành hiện tại: v0.9.18**
+
+## Bản cập nhật v0.9.18 — thu gọn footer trạng thái
+
+Bản v0.9.18 chuyển các thẻ CAMERA, KẾT NỐI, CẢNH BÁO, AI và SỰ KIỆN sang bố cục ngang nhỏ gọn. Tiêu đề thẻ giảm còn 9 px, giá trị trạng thái còn 12 px, padding còn 4 px và khoảng cách giữa các thẻ được giảm. Hàng nút Bắt đầu/Dừng cũng được thu gọn để dành thêm chiều cao cho khung hình camera. Tooltip vẫn giữ thông tin chi tiết cho sự kiện gần nhất và trạng thái kỹ thuật.
 
 ## Bản cập nhật v0.9.17 — tăng vùng hiển thị camera
 

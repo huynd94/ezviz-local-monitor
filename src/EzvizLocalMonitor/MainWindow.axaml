@@ -221,29 +221,29 @@
               </Grid>
             </Border>
           </Grid>
-          <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,8,0,0">
+          <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="4" Margin="0,4,0,0">
             <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
               <WrapPanel Grid.Column="0" Orientation="Horizontal">
-                <Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" Margin="0,0,8,8" />
-                <Button Content="Dừng" Click="StopMonitoring_Click" Margin="0,0,8,8" />
-                <Button x:Name="OpenEventsFolderButton" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="0,0,8,8" />
+                <Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" Margin="0,0,4,4" />
+                <Button Content="Dừng" Click="StopMonitoring_Click" Margin="0,0,4,4" />
+                <Button x:Name="OpenEventsFolderButton" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="0,0,4,4" />
               </WrapPanel>
-              <TextBlock x:Name="RuntimeInfoText" Grid.Column="1" FontSize="11" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="8,0,0,8" />
+              <TextBlock x:Name="RuntimeInfoText" Grid.Column="1" FontSize="11" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="4,0,0,4" />
               <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal">
-                <Border Width="150" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,0,4,0">
-                  <StackPanel><TextBlock Text="CAMERA" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="SystemHealthText" Text="Đang khởi tạo…" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="140" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="4" Margin="0,0,2,0">
+                  <Grid ColumnDefinitions="Auto,*"><TextBlock Text="CAMERA" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,5,0" /><TextBlock x:Name="SystemHealthText" Text="Đang khởi tạo…" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /></Grid>
                 </Border>
-                <Border Width="180" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,0,4,0">
-                  <StackPanel><TextBlock Text="KẾT NỐI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="CameraHealthText" Text="Đang khởi tạo…" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="160" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="4" Margin="0,0,2,0">
+                  <Grid ColumnDefinitions="Auto,*"><TextBlock Text="KẾT NỐI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,5,0" /><TextBlock x:Name="CameraHealthText" Text="Đang khởi tạo…" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /></Grid>
                 </Border>
-                <Border Width="170" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,0,4,0">
-                  <StackPanel><TextBlock Text="CẢNH BÁO" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="AlertHealthText" Text="Đang khởi tạo…" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="155" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="4" Margin="0,0,2,0">
+                  <Grid ColumnDefinitions="Auto,*"><TextBlock Text="CẢNH BÁO" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,5,0" /><TextBlock x:Name="AlertHealthText" Text="Đang khởi tạo…" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /></Grid>
                 </Border>
-                <Border Width="120" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,0,4,0">
-                  <StackPanel><TextBlock Text="AI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="AiHealthText" Text="Đang tắt" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="110" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="4" Margin="0,0,2,0">
+                  <Grid ColumnDefinitions="Auto,*"><TextBlock Text="AI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,5,0" /><TextBlock x:Name="AiHealthText" Text="Đang tắt" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /></Grid>
                 </Border>
-                <Border Width="180" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6">
-                  <StackPanel><TextBlock Text="SỰ KIỆN GẦN NHẤT" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="LastEventHealthText" Text="Chưa có" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="160" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="4">
+                  <Grid ColumnDefinitions="Auto,*"><TextBlock Text="SỰ KIỆN" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,5,0" ToolTip.Tip="Sự kiện gần nhất" /><TextBlock x:Name="LastEventHealthText" Text="Chưa có" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /></Grid>
                 </Border>
               </WrapPanel>
             </Grid>
@@ -388,7 +388,7 @@
       <TabItem Header="Nhật ký sự kiện">
         <Grid Margin="12" RowDefinitions="Auto,*" ColumnDefinitions="*,340">
           <WrapPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,10">
-            <Button Content="Làm mới" Click="RefreshEvents_Click" Margin="0,0,8,8" />
+            <Button Content="Làm mới" Click="RefreshEvents_Click" Margin="0,0,4,4" />
             <TextBox x:Name="EventSearchText" Width="280" Watermark="Tìm camera, nguồn, trạng thái…" TextChanged="EventSearch_Changed" Margin="0,0,8,8" ToolTip.Tip="Lọc nhật ký theo tên camera, nguồn phát hiện hoặc trạng thái gửi cảnh báo." />
             <ComboBox x:Name="EventCameraFilter" Width="220" PlaceholderText="Tất cả camera" SelectionChanged="EventCameraFilter_Changed" Margin="0,0,8,8" ToolTip.Tip="Chỉ hiển thị sự kiện của một camera hoặc chọn tất cả camera." />
             <TextBlock x:Name="EventLogSummaryText" Text="Chưa tải nhật ký" Width="340" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,8" />
