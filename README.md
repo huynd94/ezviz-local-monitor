@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.13**
+**Phiên bản phát hành hiện tại: v0.9.14**
+
+## Bản vá v0.9.14 — hiển thị đầy đủ hộp thoại cập nhật
+
+Bản v0.9.14 sửa hộp thoại phát hiện phiên bản mới trong ứng dụng chính. Cửa sổ được tăng không gian hiển thị, tách khu vực nút thành hàng riêng và đặt màu nền, màu chữ, viền cùng trạng thái hover rõ ràng cho ba lựa chọn `Cập nhật ngay`, `Để sau` và `Mở trang release`. Các nút không còn bị khuất hoặc bị chìm trên nền trắng do style Fluent/theme dùng chung.
 
 ## Bản vá v0.9.13 — không lặp nội dung caption Telegram/Zalo
 
