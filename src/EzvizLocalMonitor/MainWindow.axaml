@@ -37,12 +37,13 @@
   </Window.Resources>
   <Window.Styles>
     <Style Selector="TabItem">
-      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontSize" Value="14" />
       <Setter Property="FontWeight" Value="Bold" />
       <Setter Property="Foreground" Value="{DynamicResource TabForegroundBrush}" />
     </Style>
     <Style Selector="TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource BodyTextBrush}" />
+      <Setter Property="FontSize" Value="13" />
     </Style>
     <Style Selector="Button">
       <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}" />
@@ -50,6 +51,8 @@
       <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Padding" Value="6,3" />
       <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="Button:pointerover">
@@ -69,6 +72,7 @@
       <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="TextBox">
+      <Setter Property="FontSize" Value="12" />
       <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
@@ -81,6 +85,8 @@
       <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="ComboBox">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Padding" Value="6,3" />
       <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
@@ -115,16 +121,16 @@
       <Setter Property="Opacity" Value="1" />
     </Style>
   </Window.Styles>
-  <Grid Margin="16" RowDefinitions="Auto,*,Auto">
-    <Border Grid.Row="0" Background="{DynamicResource HeaderBrush}" CornerRadius="8" Padding="18" Margin="0,0,0,12">
+  <Grid Margin="12" RowDefinitions="Auto,*,Auto">
+    <Border Grid.Row="0" Background="{DynamicResource HeaderBrush}" CornerRadius="8" Padding="12,10" Margin="0,0,0,8">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel>
-          <TextBlock Text="EZVIZ Local Monitor" Foreground="{DynamicResource HeaderForegroundBrush}" FontSize="24" FontWeight="SemiBold" />
-          <TextBlock Text="Nhận diện người cục bộ · C6N &amp; H8C · Telegram &amp; Zalo Bot" Foreground="{DynamicResource HeaderMutedBrush}" Margin="0,5,0,0" />
+          <TextBlock Text="EZVIZ Local Monitor" Foreground="{DynamicResource HeaderForegroundBrush}" FontSize="20" FontWeight="SemiBold" />
+          <TextBlock Text="Nhận diện người cục bộ · C6N &amp; H8C · Telegram &amp; Zalo Bot" Foreground="{DynamicResource HeaderMutedBrush}" FontSize="12" Margin="0,3,0,0" />
         </StackPanel>
         <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-          <TextBlock x:Name="GlobalStatusText" Text="Chưa khởi động giám sát" Foreground="{DynamicResource HeaderForegroundBrush}" HorizontalAlignment="Right" FontWeight="SemiBold" />
-          <TextBlock Text="Video và suy luận giữ trong LAN" Foreground="{DynamicResource HeaderMutedBrush}" Margin="0,5,0,0" HorizontalAlignment="Right" />
+          <TextBlock x:Name="GlobalStatusText" Text="Chưa khởi động giám sát" Foreground="{DynamicResource HeaderForegroundBrush}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="12" />
+          <TextBlock Text="Video và suy luận giữ trong LAN" Foreground="{DynamicResource HeaderMutedBrush}" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Right" />
         </StackPanel>
       </Grid>
     </Border>
@@ -132,27 +138,27 @@
     <TabControl Grid.Row="1">
       <TabItem Header="Tổng quan">
         <Grid Margin="12" RowDefinitions="Auto,*,Auto">
-          <Grid Grid.Row="0" RowDefinitions="Auto,Auto" Margin="0,0,0,10">
+          <Grid Grid.Row="0" RowDefinitions="Auto,Auto" Margin="0,0,0,5">
             <WrapPanel Orientation="Horizontal">
-              <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="8" Margin="0,0,8,8">
+              <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="4" Margin="0,0,4,4">
                 <StackPanel Orientation="Horizontal">
                   <TextBlock Text="Bố cục" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,8,0" />
-                  <Button x:Name="LayoutOneButton" Tag="1" Content="1 màn hình" Click="LayoutMode_Click" Margin="0,0,6,0" ToolTip.Tip="Hiển thị một camera chiếm toàn bộ vùng xem trước." />
-                  <Button x:Name="LayoutTwoButton" Tag="2" Content="2 màn hình" Click="LayoutMode_Click" Margin="0,0,6,0" ToolTip.Tip="Chia vùng xem trước thành hai ô camera." />
-                  <Button x:Name="LayoutFourButton" Tag="4" Content="4 màn hình" Click="LayoutMode_Click" Margin="0,0,6,0" ToolTip.Tip="Chia vùng xem trước thành tối đa bốn ô camera." />
+                  <Button x:Name="LayoutOneButton" Tag="1" Content="1 ô" Click="LayoutMode_Click" Margin="0,0,6,0" ToolTip.Tip="Hiển thị một camera chiếm toàn bộ vùng xem trước." />
+                  <Button x:Name="LayoutTwoButton" Tag="2" Content="2 ô" Click="LayoutMode_Click" Margin="0,0,6,0" ToolTip.Tip="Chia vùng xem trước thành hai ô camera." />
+                  <Button x:Name="LayoutFourButton" Tag="4" Content="4 ô" Click="LayoutMode_Click" Margin="0,0,6,0" ToolTip.Tip="Chia vùng xem trước thành tối đa bốn ô camera." />
                   <Button Content="Phóng to" Click="FocusSelectedCamera_Click" ToolTip.Tip="Phóng to camera đang chọn hoặc camera đầu tiên" />
                 </StackPanel>
               </Border>
-              <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="8" Margin="0,0,8,8">
+              <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="4" Margin="0,0,4,4">
                 <StackPanel Orientation="Horizontal">
                   <TextBlock Text="Hiển thị" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,8,0" />
                   <Button Content="Sáng/Tối" Click="ToggleTheme_Click" Margin="0,0,8,0" ToolTip.Tip="Chuyển nhanh sáng/tối và đưa lựa chọn về theme Dark/Light" />
-                  <ComboBox x:Name="PreviewFitCombo" Width="160" SelectedIndex="0" SelectionChanged="PreviewFit_SelectionChanged" Margin="0,0,8,0" ToolTip.Tip="Chọn giữ nguyên tỷ lệ để xem đầy đủ khung hình hoặc lấp đầy khung để tận dụng tối đa diện tích preview.">
+                  <ComboBox x:Name="PreviewFitCombo" Width="125" SelectedIndex="0" SelectionChanged="PreviewFit_SelectionChanged" Margin="0,0,8,0" ToolTip.Tip="Chọn giữ nguyên tỷ lệ để xem đầy đủ khung hình hoặc lấp đầy khung để tận dụng tối đa diện tích preview.">
                     <ComboBoxItem Content="Giữ nguyên tỷ lệ" />
                     <ComboBoxItem Content="Lấp đầy khung" />
                   </ComboBox>
                   <TextBlock Text="Theme" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,6,0" />
-                  <ComboBox x:Name="ThemeCombo" Width="150" SelectedIndex="5" SelectionChanged="Theme_SelectionChanged" Margin="0,0,8,0" ToolTip.Tip="Chọn palette màu Orchid, Ocean, Midnight, Lavender, Crimson hoặc Dark/Light. Lựa chọn được lưu vào cấu hình." >
+                  <ComboBox x:Name="ThemeCombo" Width="120" SelectedIndex="5" SelectionChanged="Theme_SelectionChanged" Margin="0,0,8,0" ToolTip.Tip="Chọn palette màu Orchid, Ocean, Midnight, Lavender, Crimson hoặc Dark/Light. Lựa chọn được lưu vào cấu hình." >
                     <ComboBoxItem Content="Orchid" />
                     <ComboBoxItem Content="Ocean" />
                     <ComboBoxItem Content="Midnight" />
@@ -161,16 +167,16 @@
                     <ComboBoxItem Content="Dark/Light" />
                   </ComboBox>
                   <TextBlock Text="Chế độ" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,6,0" />
-                  <ComboBox x:Name="DashboardViewModeCombo" Width="130" SelectedIndex="0" SelectionChanged="DashboardViewMode_SelectionChanged" ToolTip.Tip="Giám sát ưu tiên preview lớn và trạng thái ngắn; Vận hành hiển thị thêm thông tin kỹ thuật.">
+                  <ComboBox x:Name="DashboardViewModeCombo" Width="105" SelectedIndex="0" SelectionChanged="DashboardViewMode_SelectionChanged" ToolTip.Tip="Giám sát ưu tiên preview lớn và trạng thái ngắn; Vận hành hiển thị thêm thông tin kỹ thuật.">
                     <ComboBoxItem Content="Giám sát" />
                     <ComboBoxItem Content="Vận hành" />
                   </ComboBox>
                 </StackPanel>
               </Border>
-              <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="8" Margin="0,0,0,8">
+              <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="4" Margin="0,0,0,4">
                 <StackPanel Orientation="Horizontal">
                   <TextBlock Text="Hiệu năng" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,8,0" />
-                  <ComboBox x:Name="PerformanceProfileCombo" Width="190" SelectedIndex="1" SelectionChanged="PerformanceProfile_Changed" ToolTip.Tip="Chọn cân bằng giữa mức dùng CPU, tốc độ nhận diện và độ trễ. Máy i7-7500U nên bắt đầu với Cân bằng." >
+                  <ComboBox x:Name="PerformanceProfileCombo" Width="150" SelectedIndex="1" SelectionChanged="PerformanceProfile_Changed" ToolTip.Tip="Chọn cân bằng giữa mức dùng CPU, tốc độ nhận diện và độ trễ. Máy i7-7500U nên bắt đầu với Cân bằng." >
                     <ComboBoxItem Content="Tiết kiệm CPU" />
                     <ComboBoxItem Content="Cân bằng" />
                     <ComboBoxItem Content="Phản hồi nhanh" />
@@ -179,65 +185,65 @@
                 </StackPanel>
               </Border>
             </WrapPanel>
-            <TextBlock Grid.Row="1" Text="Tối đa 4 camera; ô chưa cấu hình hiển thị trạng thái chờ. Phím tắt: Ctrl+1/2/4, F11, Esc." VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,2" />
+            <TextBlock Grid.Row="1" Text="Tối đa 4 camera · Phím tắt: Ctrl+1/2/4, F11, Esc." FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,2" />
           </Grid>
           <Grid x:Name="CameraGrid" Grid.Row="1" Background="#19232D" RowDefinitions="*" ColumnDefinitions="*,*">
-            <Border x:Name="CameraTileOne" Background="#19232D" CornerRadius="5" Margin="4">
+            <Border x:Name="CameraTileOne" Background="#19232D" CornerRadius="5" Margin="2">
               <Grid RowDefinitions="*,Auto">
                 <Image x:Name="PreviewOne" Stretch="Uniform" />
                 <Border Background="#B0101720" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" Padding="8,4" CornerRadius="4"><TextBlock x:Name="CameraOneOverlay" Text="Camera 1" Foreground="White" FontWeight="SemiBold" /></Border>
                 <Button x:Name="CameraOneFocusButton" Grid.Row="0" Tag="0" Content="Phóng to" Click="FocusCameraTile_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8,4" ToolTip.Tip="Phóng to camera này" />
-                <TextBlock x:Name="CameraOneStatus" Grid.Row="1" Text="Camera 1 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="8" />
+                <TextBlock x:Name="CameraOneStatus" Grid.Row="1" Text="Camera 1 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="6" />
               </Grid>
             </Border>
-            <Border x:Name="CameraTileTwo" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="4">
+            <Border x:Name="CameraTileTwo" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="2">
               <Grid RowDefinitions="*,Auto">
                 <Image x:Name="PreviewTwo" Stretch="Uniform" />
                 <Border Background="#B0101720" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" Padding="8,4" CornerRadius="4"><TextBlock x:Name="CameraTwoOverlay" Text="Camera 2" Foreground="White" FontWeight="SemiBold" /></Border>
                 <Button x:Name="CameraTwoFocusButton" Grid.Row="0" Tag="1" Content="Phóng to" Click="FocusCameraTile_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8,4" ToolTip.Tip="Phóng to camera này" />
-                <TextBlock x:Name="CameraTwoStatus" Grid.Row="1" Text="Camera 2 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="8" />
+                <TextBlock x:Name="CameraTwoStatus" Grid.Row="1" Text="Camera 2 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="6" />
               </Grid>
             </Border>
-            <Border x:Name="CameraTileThree" Background="#19232D" CornerRadius="5" Margin="4" IsVisible="False">
+            <Border x:Name="CameraTileThree" Background="#19232D" CornerRadius="5" Margin="2" IsVisible="False">
               <Grid RowDefinitions="*,Auto">
                 <Image x:Name="PreviewThree" Stretch="Uniform" />
                 <Border Background="#B0101720" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" Padding="8,4" CornerRadius="4"><TextBlock x:Name="CameraThreeOverlay" Text="Camera 3" Foreground="White" FontWeight="SemiBold" /></Border>
                 <Button x:Name="CameraThreeFocusButton" Grid.Row="0" Tag="2" Content="Phóng to" Click="FocusCameraTile_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8,4" ToolTip.Tip="Phóng to camera này" />
-                <TextBlock x:Name="CameraThreeStatus" Grid.Row="1" Text="Camera 3 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="8" />
+                <TextBlock x:Name="CameraThreeStatus" Grid.Row="1" Text="Camera 3 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="6" />
               </Grid>
             </Border>
-            <Border x:Name="CameraTileFour" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="4" IsVisible="False">
+            <Border x:Name="CameraTileFour" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="2" IsVisible="False">
               <Grid RowDefinitions="*,Auto">
                 <Image x:Name="PreviewFour" Stretch="Uniform" />
                 <Border Background="#B0101720" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" Padding="8,4" CornerRadius="4"><TextBlock x:Name="CameraFourOverlay" Text="Camera 4" Foreground="White" FontWeight="SemiBold" /></Border>
                 <Button x:Name="CameraFourFocusButton" Grid.Row="0" Tag="3" Content="Phóng to" Click="FocusCameraTile_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8,4" ToolTip.Tip="Phóng to camera này" />
-                <TextBlock x:Name="CameraFourStatus" Grid.Row="1" Text="Camera 4 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="8" />
+                <TextBlock x:Name="CameraFourStatus" Grid.Row="1" Text="Camera 4 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="6" />
               </Grid>
             </Border>
           </Grid>
-          <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,14,0,0">
+          <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,8,0,0">
             <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
               <WrapPanel Grid.Column="0" Orientation="Horizontal">
                 <Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" Margin="0,0,8,8" />
                 <Button Content="Dừng" Click="StopMonitoring_Click" Margin="0,0,8,8" />
                 <Button x:Name="OpenEventsFolderButton" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="0,0,8,8" />
               </WrapPanel>
-              <TextBlock x:Name="RuntimeInfoText" Grid.Column="1" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="8,0,0,8" />
+              <TextBlock x:Name="RuntimeInfoText" Grid.Column="1" FontSize="11" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="8,0,0,8" />
               <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal">
-                <Border Width="150" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,8,0">
-                  <StackPanel><TextBlock Text="CAMERA" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="SystemHealthText" Text="Đang khởi tạo…" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="150" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,0,4,0">
+                  <StackPanel><TextBlock Text="CAMERA" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="SystemHealthText" Text="Đang khởi tạo…" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
                 </Border>
-                <Border Width="180" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,8,0">
-                  <StackPanel><TextBlock Text="KẾT NỐI" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="CameraHealthText" Text="Đang khởi tạo…" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="180" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,0,4,0">
+                  <StackPanel><TextBlock Text="KẾT NỐI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="CameraHealthText" Text="Đang khởi tạo…" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
                 </Border>
-                <Border Width="170" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,8,0">
-                  <StackPanel><TextBlock Text="CẢNH BÁO" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="AlertHealthText" Text="Đang khởi tạo…" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="170" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,0,4,0">
+                  <StackPanel><TextBlock Text="CẢNH BÁO" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="AlertHealthText" Text="Đang khởi tạo…" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
                 </Border>
-                <Border Width="120" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,8,0">
-                  <StackPanel><TextBlock Text="AI" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="AiHealthText" Text="Đang tắt" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="120" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6" Margin="0,0,4,0">
+                  <StackPanel><TextBlock Text="AI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="AiHealthText" Text="Đang tắt" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
                 </Border>
-                <Border Width="180" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10">
-                  <StackPanel><TextBlock Text="SỰ KIỆN GẦN NHẤT" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="LastEventHealthText" Text="Chưa có" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                <Border Width="180" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="6">
+                  <StackPanel><TextBlock Text="SỰ KIỆN GẦN NHẤT" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="LastEventHealthText" Text="Chưa có" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
                 </Border>
               </WrapPanel>
             </Grid>
@@ -295,13 +301,13 @@
         <ScrollViewer><StackPanel Margin="16" Spacing="12">
           <TextBlock Text="Token và địa chỉ camera được mã hóa theo tài khoản Windows; không được đưa vào nhật ký." Foreground="{DynamicResource HeadingBrush}" FontWeight="SemiBold" TextWrapping="Wrap" />
           <Border Background="{DynamicResource InfoBrush}" BorderBrush="{DynamicResource InfoBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="12"><Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto"><StackPanel><TextBlock Text="Kiểm tra cấu hình" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" /><TextBlock Text="Kiểm tra trường bắt buộc và trạng thái kênh; không tự gửi tin nhắn." Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" /></StackPanel><Button Grid.Column="1" Content="Kiểm tra toàn bộ cấu hình" Click="ValidateAlerts_Click" ToolTip.Tip="Kiểm tra token, Chat ID, endpoint và các trường bắt buộc. Nút này không gửi tin nhắn thật." /><TextBlock x:Name="ConfigurationCheckText" Grid.Row="1" Grid.ColumnSpan="2" Text="Chưa kiểm tra cấu hình." Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" /></Grid></Border>
-          <TextBlock Text="Kênh thông báo" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,4,0,0" />
+          <TextBlock Text="Kênh thông báo" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,4,0,0" />
           <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="14"><Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="220,*,Auto"><CheckBox x:Name="TelegramEnabledCheck" Content="Bật Telegram" ToolTip.Tip="Bật để gửi văn bản và ảnh sự kiện qua Telegram Bot." /><TextBlock Grid.Row="1" Text="Bot Token" VerticalAlignment="Center" ToolTip.Tip="Token do BotFather cấp, thường có dạng số:chuỗi. Dữ liệu được lưu mã hóa và không ghi vào log." /><TextBox x:Name="TelegramTokenText" Grid.Row="1" Grid.Column="1" PasswordChar="●" ToolTip.Tip="Dán Bot Token Telegram tại đây. Không gửi token qua chat hoặc đưa vào ảnh chụp màn hình." /><TextBlock Grid.Row="2" Text="Chat ID" VerticalAlignment="Center" ToolTip.Tip="ID cuộc trò chuyện, nhóm hoặc kênh Telegram nhận cảnh báo." /><TextBox x:Name="TelegramChatText" Grid.Row="2" Grid.Column="1" ToolTip.Tip="Nhập đúng Chat ID của nơi nhận thông báo. Có thể là số âm nếu dùng nhóm." /><Button Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Content="Gửi thử" Click="TestTelegram_Click" Margin="10,0,0,0" ToolTip.Tip="Gửi một tin nhắn kiểm thử đến Telegram để xác nhận token và Chat ID." /></Grid></Border>
           <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="14"><Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="220,*,Auto"><CheckBox x:Name="ZaloEnabledCheck" Content="Bật Zalo Bot" ToolTip.Tip="Bật để gửi văn bản cảnh báo qua Zalo Bot ZApps. Ảnh chỉ gửi được khi có URL HTTPS công khai." /><TextBlock Grid.Row="1" Text="Bot Token" VerticalAlignment="Center" ToolTip.Tip="Token do Zalo Bot ZApps cấp. Dữ liệu được lưu mã hóa và không ghi đầy đủ vào log." /><TextBox x:Name="ZaloTokenText" Grid.Row="1" Grid.Column="1" PasswordChar="●" ToolTip.Tip="Dán Bot Token Zalo Bot ZApps tại đây; không sử dụng token Official Account nếu API yêu cầu Bot Token." /><TextBlock Grid.Row="2" Text="Chat ID" VerticalAlignment="Center" ToolTip.Tip="ID cuộc trò chuyện Zalo nhận cảnh báo." /><TextBox x:Name="ZaloChatText" Grid.Row="2" Grid.Column="1" ToolTip.Tip="Nhập Chat ID lấy từ Zalo Bot ZApps. Có thể bấm Gửi thử để kiểm tra." /><Button Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Content="Gửi thử" Click="TestZalo_Click" Margin="10,0,0,0" ToolTip.Tip="Gửi tin nhắn văn bản kiểm thử đến Zalo; không gửi ảnh local trong bước này." /><CheckBox x:Name="ZaloImageRelayEnabledCheck" Grid.Row="3" Grid.ColumnSpan="2" Content="Bật relay ảnh qua HTTPS tùy chỉnh" Margin="0,8,0,0" ToolTip.Tip="Cho phép upload ảnh sự kiện lên endpoint HTTPS tùy chỉnh trước khi gửi URL ảnh cho Zalo." /><TextBlock Grid.Row="4" Text="Relay URL" VerticalAlignment="Center" ToolTip.Tip="Endpoint HTTPS nhận multipart ảnh và trả về URL HTTPS công khai." /><TextBox x:Name="ZaloImageRelayUrlText" Grid.Row="4" Grid.Column="1" Watermark="https://example.com/upload" ToolTip.Tip="Nhập URL bắt đầu bằng https://. Endpoint cần nhận trường file và trả về url, photo_url hoặc image_url." /><TextBlock Grid.Row="5" Text="Relay API key" VerticalAlignment="Center" ToolTip.Tip="API key tùy chọn của endpoint relay; để trống nếu endpoint không yêu cầu." /><TextBox x:Name="ZaloImageRelayApiKeyText" Grid.Row="5" Grid.Column="1" PasswordChar="●" ToolTip.Tip="API key được gửi dưới dạng Bearer header và lưu mã hóa; không đưa key vào URL." /><CheckBox x:Name="ZaloAllowImageRelayCheck" Grid.Row="3" Grid.Column="2" Content="Tôi đồng ý ảnh rời LAN" Margin="10,8,0,0" ToolTip.Tip="Phải đánh dấu rõ ràng nếu đồng ý upload ảnh sự kiện ra ngoài mạng LAN. Bỏ chọn để giữ ảnh hoàn toàn local." /></Grid></Border>
-          <TextBlock Text="Phân tích AI" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,4,0,0" />
+          <TextBlock Text="Phân tích AI" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,4,0,0" />
           <Border Background="{DynamicResource WarningBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="14"><Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="220,*"><CheckBox x:Name="AiEnabledCheck" Foreground="{DynamicResource AiPanelTextBrush}" Content="Bật phân tích AI cho sự kiện" ToolTip.Tip="Bật để gửi tối đa hai ảnh JPEG sự kiện tới endpoint OpenAI-compatible đã cấu hình. Video RTSP không được gửi." /><TextBlock Grid.Row="1" Text="Base URL" Foreground="{DynamicResource AiPanelTextBrush}" VerticalAlignment="Center" ToolTip.Tip="Địa chỉ gốc của API OpenAI-compatible, không phải URL đầy đủ của chat completions." /><TextBox x:Name="AiBaseUrlText" Grid.Row="1" Grid.Column="1" Watermark="https://api.openai.com/v1" ToolTip.Tip="Ví dụ https://api.openai.com/v1 hoặc endpoint nội bộ. Chỉ dùng HTTPS khi endpoint ở ngoài LAN." /><TextBlock Grid.Row="2" Text="Model" Foreground="{DynamicResource AiPanelTextBrush}" VerticalAlignment="Center" ToolTip.Tip="Tên model có khả năng nhận ảnh theo API endpoint, ví dụ model vision tương thích." /><TextBox x:Name="AiModelText" Grid.Row="2" Grid.Column="1" Watermark="Vision-capable model" ToolTip.Tip="Nhập chính xác tên model mà endpoint hỗ trợ; model không có vision sẽ không phân tích được ảnh." /><TextBlock Grid.Row="3" Text="API key" Foreground="{DynamicResource AiPanelTextBrush}" VerticalAlignment="Center" ToolTip.Tip="API key của endpoint AI. Key được lưu mã hóa và không đưa vào log." /><TextBox x:Name="AiApiKeyText" Grid.Row="3" Grid.Column="1" PasswordChar="●" ToolTip.Tip="Dán API key tại đây; không gửi key qua chat hoặc đưa vào ảnh chụp màn hình." /><Grid Grid.Row="4" Grid.ColumnSpan="2" ColumnDefinitions="220,120,*"><TextBlock Text="Timeout (giây)" Foreground="{DynamicResource AiPanelTextBrush}" VerticalAlignment="Center" ToolTip.Tip="Thời gian tối đa chờ endpoint AI phản hồi cho một sự kiện." /><TextBox x:Name="AiTimeoutText" Grid.Column="1" ToolTip.Tip="Nhập số giây, thường 15–30. Timeout ngắn giúp cảnh báo không bị chậm quá lâu." /><CheckBox x:Name="AiRequireConfirmationCheck" Grid.Column="2" Foreground="{DynamicResource AiPanelTextBrush}" Content="Chỉ gửi cảnh báo khi AI xác nhận chuyển động/người" Margin="14,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Nếu bật, cảnh báo chỉ gửi sau khi AI xác nhận. Nếu ưu tiên độ trễ thấp, nên tắt tùy chọn này." /></Grid></Grid></Border>
           <TextBlock Text="Khi AI bật, tối đa hai ảnh JPEG của sự kiện (trước/sau) được gửi tới endpoint đã cấu hình; video RTSP không được gửi." TextWrapping="Wrap" Foreground="{DynamicResource WarningTextBrush}" />
-          <TextBlock Text="Chẩn đoán và lưu cấu hình" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,4,0,0" />
+          <TextBlock Text="Chẩn đoán và lưu cấu hình" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,4,0,0" />
           <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="12"><StackPanel Spacing="6"><CheckBox x:Name="StartWithWindowsCheck" Content="Khởi động cùng Windows bằng Task Scheduler (không dùng Registry)" ToolTip.Tip="Tạo task chạy ứng dụng khi đăng nhập Windows; không ghi khóa Registry và chỉ hoạt động trên Windows." /><CheckBox x:Name="WatchdogEnabledCheck" Content="Bật watchdog: tự khởi động lại sau khi tiến trình thoát bất thường" ToolTip.Tip="Tiến trình phụ theo dõi ứng dụng và khởi động lại sau crash. Không khởi động lại khi bạn chọn Thoát hoàn toàn." /><TextBlock Text="Watchdog không khởi động lại khi bạn chọn Thoát hoàn toàn." Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" /></StackPanel></Border>
           <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Mở log Zalo" Click="OpenZaloLog_Click" Margin="0,0,8,8" ToolTip.Tip="Mở log gửi Zalo đã che token và Chat ID để kiểm tra lỗi HTTP/JSON." /><Button Content="Xuất gói chẩn đoán" Click="ExportDiagnostics_Click" Margin="0,0,8,8" ToolTip.Tip="Tạo ZIP chẩn đoán gồm log và metadata đã che token, API key, Chat ID, IP LAN và mã xác thực." /><Button Content="Sao lưu cấu hình" Click="BackupSettings_Click" Margin="0,0,8,8" ToolTip.Tip="Lưu bản sao cấu hình đã mã hóa bằng DPAPI; chỉ tài khoản Windows hiện tại mới khôi phục được." /><Button Content="Khôi phục cấu hình" Click="RestoreSettings_Click" Margin="0,0,8,8" ToolTip.Tip="Nạp một file backup DPAPI đã tạo trước đó. Nên dừng giám sát trước khi khôi phục." /><Button Content="Lưu cấu hình cảnh báo và AI" Click="SaveAlerts_Click" Margin="0,0,0,8" ToolTip.Tip="Lưu token, endpoint, lịch và tùy chọn cảnh báo vào cấu hình mã hóa." /></WrapPanel>
         </StackPanel></ScrollViewer>
@@ -410,9 +416,9 @@
       </TabItem>
     </TabControl>
 
-    <Grid Grid.Row="2" Margin="4,10,4,0" ColumnDefinitions="*,Auto">
-      <TextBlock x:Name="VersionText" Text="Đang đọc phiên bản…" Foreground="{DynamicResource MutedTextBrush}" />
-      <TextBlock x:Name="SystemMetricsText" Grid.Column="1" Text="CPU — · RAM —" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" />
+    <Grid Grid.Row="2" Margin="0,0,0,0" ColumnDefinitions="*,Auto">
+      <TextBlock x:Name="VersionText" Text="Đang đọc phiên bản…" FontSize="10" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" />
+      <TextBlock x:Name="SystemMetricsText" Grid.Column="1" Text="CPU — · RAM —" FontSize="10" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" />
     </Grid>
   </Grid>
 </Window>

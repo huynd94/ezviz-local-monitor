@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.16**
+**Phiên bản phát hành hiện tại: v0.9.17**
+
+## Bản cập nhật v0.9.17 — tăng vùng hiển thị camera
+
+Bản v0.9.17 tinh gọn trang Tổng quan để ưu tiên vùng xem camera. Header và footer được giảm padding/margin; thanh điều khiển dùng cỡ chữ và kích thước control gọn hơn; nhãn bố cục được rút gọn thành `1 ô`, `2 ô`, `4 ô`; thẻ trạng thái và thanh trạng thái camera cũng giảm padding nhưng vẫn giữ tương phản và khả năng đọc. Các nút chức năng vẫn được giữ đầy đủ và toolbar tiếp tục tự xuống dòng khi cửa sổ hẹp.
 
 ## Bản cập nhật v0.9.16 — tối ưu trang Tổng quan
 
