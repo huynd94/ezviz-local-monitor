@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.20**
+**Phiên bản phát hành hiện tại: v0.9.21**
+
+## Bản cập nhật v0.9.21 — tối ưu live view RTSP
+
+Bản v0.9.21 tách nhịp preview khỏi nhịp YOLO: preview có thể cập nhật tối đa 5 FPS trong khi YOLO vẫn chạy theo hồ sơ 1–3 lần/giây/camera. Resize và JPEG encode được chuyển khỏi thread đọc RTSP sang worker riêng; mỗi camera chỉ giữ frame preview mới nhất và bỏ frame cũ khi UI hoặc encoder đang bận. YOLO cũng chạy trong worker riêng với hàng đợi chỉ giữ frame suy luận mới nhất, tránh làm live view đứng hình khi CPU i7-7500U đang xử lý nhận diện.
+
+Preview được giới hạn kích thước tối đa 960 px ở cạnh dài để giảm chi phí encode và cập nhật Avalonia. Khi thoát ứng dụng, các frame Mat/Bitmap đang chờ được giải phóng an toàn.
 
 ## Bản cập nhật v0.9.20 — sửa chồng nội dung thẻ trạng thái
 

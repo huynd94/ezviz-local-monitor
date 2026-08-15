@@ -30,7 +30,9 @@ public partial class MainWindow : Avalonia.Controls.Window
     private readonly AppUpdateService _updateService = new();
     private readonly WatchdogService _watchdog = new();
     private readonly object _previewSync = new();
+    private readonly Dictionary<Guid, Mat> _pendingPreviewMats = new();
     private readonly Dictionary<Guid, Bitmap> _pendingPreviewBitmaps = new();
+    private readonly HashSet<Guid> _previewEncodeScheduled = new();
     private readonly HashSet<Guid> _previewDispatchScheduled = new();
     private readonly Dictionary<Guid, string> _cameraRuntimeStatuses = new();
     private readonly Dictionary<Guid, CameraRuntimeSnapshot> _cameraRuntimeSnapshots = new();
@@ -829,18 +831,47 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private void UpdatePreview(Guid id, Mat image)
     {
-        Bitmap? bitmap = null;
-        try { bitmap = ToBitmap(image); }
-        finally { image.Dispose(); }
-        if (bitmap is null) return;
-
         lock (_previewSync)
         {
-            if (_pendingPreviewBitmaps.TryGetValue(id, out var oldPending)) oldPending.Dispose();
-            _pendingPreviewBitmaps[id] = bitmap;
-            if (!_previewDispatchScheduled.Add(id)) return;
+            if (_pendingPreviewMats.TryGetValue(id, out var oldPending)) oldPending.Dispose();
+            _pendingPreviewMats[id] = image;
+            if (!_previewEncodeScheduled.Add(id)) return;
         }
-        Dispatcher.UIThread.Post(() => ApplyPendingPreview(id));
+
+        // Không encode JPEG trên thread đọc RTSP. Mỗi camera chỉ có một encode
+        // task; frame mới sẽ thay thế frame cũ trong pending queue.
+        _ = Task.Run(() => EncodeLatestPreview(id));
+    }
+
+    private void EncodeLatestPreview(Guid id)
+    {
+        while (!_shutdownStarted)
+        {
+            Mat? image;
+            lock (_previewSync)
+            {
+                if (!_pendingPreviewMats.Remove(id, out image))
+                {
+                    _previewEncodeScheduled.Remove(id);
+                    return;
+                }
+            }
+
+            Bitmap? bitmap = null;
+            try { bitmap = ToBitmap(image); }
+            catch (Exception ex) { AppLogger.Error(LogChannel.App, $"preview encode failed; cameraId={id}", ex); }
+            finally { image.Dispose(); }
+            if (bitmap is null) continue;
+
+            var shouldPost = false;
+            lock (_previewSync)
+            {
+                if (_pendingPreviewBitmaps.TryGetValue(id, out var oldPending)) oldPending.Dispose();
+                _pendingPreviewBitmaps[id] = bitmap;
+                shouldPost = _previewDispatchScheduled.Add(id);
+            }
+            if (shouldPost) Dispatcher.UIThread.Post(() => ApplyPendingPreview(id));
+        }
     }
 
     private void ApplyPendingPreview(Guid id)
@@ -865,7 +896,6 @@ public partial class MainWindow : Avalonia.Controls.Window
             old?.Dispose();
             _lastPreviewAt[id] = DateTimeOffset.Now;
             _previewFramesApplied++;
-            RefreshSystemStatus();
         }
         else
         {
@@ -881,7 +911,23 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private static Bitmap ToBitmap(Mat image)
     {
-        Cv2.ImEncode(".jpg", image, out var bytes);
+        const int maxPreviewDimension = 960;
+        using var preview = new Mat();
+        var longest = Math.Max(image.Width, image.Height);
+        if (longest > maxPreviewDimension)
+        {
+            var scale = maxPreviewDimension / (double)longest;
+            var size = new OpenCvSharp.Size(
+                Math.Max(1, (int)Math.Round(image.Width * scale)),
+                Math.Max(1, (int)Math.Round(image.Height * scale)));
+            Cv2.Resize(image, preview, size, 0, 0, InterpolationFlags.Area);
+        }
+        else
+        {
+            image.CopyTo(preview);
+        }
+
+        Cv2.ImEncode(".jpg", preview, out var bytes);
         using var stream = new MemoryStream(bytes);
         return new Bitmap(stream);
     }
@@ -1252,9 +1298,12 @@ public partial class MainWindow : Avalonia.Controls.Window
 
         lock (_previewSync)
         {
+            foreach (var pending in _pendingPreviewMats.Values) pending.Dispose();
             foreach (var pending in _pendingPreviewBitmaps.Values) pending.Dispose();
+            _pendingPreviewMats.Clear();
             _pendingPreviewBitmaps.Clear();
-                        _previewDispatchScheduled.Clear();
+            _previewEncodeScheduled.Clear();
+            _previewDispatchScheduled.Clear();
         }
         _watchdog.Dispose();
         // Không dispose đồng bộ trên UI thread. ExitFromTray/LaunchUpdaterAsync đã dừng

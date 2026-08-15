@@ -8,10 +8,13 @@ public sealed class CameraMonitor : IAsyncDisposable
     private readonly CameraDefinition _camera;
     private readonly YoloPersonDetector _detector;
     private readonly int _fps;
+    private readonly TimeSpan _inferenceInterval;
+    private readonly TimeSpan _previewInterval;
     private readonly int _requiredConfirmations;
     private readonly int _confirmationWindow;
     private readonly double _minPresenceSeconds;
     private readonly CancellationTokenSource _stop = new();
+    private readonly object _inferenceSync = new();
     private readonly Queue<bool> _recentHits = new();
     private DateTimeOffset _lastAlert = DateTimeOffset.MinValue;
     private DateTimeOffset? _lastFrameAt;
@@ -20,6 +23,11 @@ public sealed class CameraMonitor : IAsyncDisposable
     private Task? _runTask;
     private Mat? _previousInferenceFrame;
     private DateTimeOffset? _presenceSince;
+    private DateTimeOffset _lastInferenceAt = DateTimeOffset.MinValue;
+    private DateTimeOffset _lastPreviewAt = DateTimeOffset.MinValue;
+    private Mat? _pendingInferenceFrame;
+    private Task? _inferenceWorker;
+    private bool _inferenceWorkerRunning;
 
     public Guid CameraId => _camera.Id;
 
@@ -28,11 +36,13 @@ public sealed class CameraMonitor : IAsyncDisposable
     public event Action<CameraDefinition, Mat>? PreviewReady;
     public event Action<CameraDefinition, CameraRuntimeSnapshot>? RuntimeChanged;
 
-    public CameraMonitor(CameraDefinition camera, YoloPersonDetector detector, int fps, int requiredConfirmations, int confirmationWindow)
+    public CameraMonitor(CameraDefinition camera, YoloPersonDetector detector, int fps, int requiredConfirmations, int confirmationWindow, int previewFps = 5)
     {
         _camera = camera;
         _detector = detector;
         _fps = Math.Clamp(fps, 1, 3);
+        _inferenceInterval = TimeSpan.FromSeconds(1d / _fps);
+        _previewInterval = TimeSpan.FromSeconds(1d / Math.Clamp(previewFps, 3, 5));
         _requiredConfirmations = Math.Clamp(requiredConfirmations, 1, confirmationWindow);
         _confirmationWindow = Math.Clamp(confirmationWindow, _requiredConfirmations, 5);
         _minPresenceSeconds = Math.Clamp(camera.MinPresenceSeconds, 0, 30);
@@ -57,42 +67,32 @@ public sealed class CameraMonitor : IAsyncDisposable
                 reconnectDelay = TimeSpan.FromSeconds(2);
                 SetState(CameraConnectionState.Streaming, "Đang giám sát");
                 StatusChanged?.Invoke(_camera, "Đang giám sát");
+                _lastInferenceAt = DateTimeOffset.MinValue;
+                _lastPreviewAt = DateTimeOffset.MinValue;
                 using var frame = new Mat();
                 while (!_stop.Token.IsCancellationRequested && capture.Read(frame) && !frame.Empty())
                 {
                     _lastFrameAt = DateTimeOffset.Now;
                     if (_state != CameraConnectionState.Streaming)
                         SetState(CameraConnectionState.Streaming, "Đang nhận frame");
-                    var preview = frame.Clone();
-                    PreviewReady?.Invoke(_camera, preview);
 
-                    using var priorFrame = _previousInferenceFrame?.Clone();
-                    var detections = _detector.Detect(frame, _camera.ConfidenceThreshold);
-                    var person = detections.FirstOrDefault(x => IsInsideRoi(x, frame.Width, frame.Height));
-                    var found = person is not null;
-                    _recentHits.Enqueue(found);
-                    while (_recentHits.Count > _confirmationWindow) _recentHits.Dequeue();
-                    if (found)
-                        _presenceSince ??= DateTimeOffset.Now;
-                    else
-                        _presenceSince = null;
-
-                    var presenceDuration = _presenceSince is null ? TimeSpan.Zero : DateTimeOffset.Now - _presenceSince.Value;
-                    if (found && _recentHits.Count(x => x) >= _requiredConfirmations &&
-                        presenceDuration.TotalSeconds >= _minPresenceSeconds &&
-                        DateTimeOffset.Now - _lastAlert >= TimeSpan.FromSeconds(_camera.CooldownSeconds))
+                    // Preview có nhịp riêng, không bị giới hạn bởi tần suất YOLO.
+                    // Chỉ clone theo nhịp preview; resize và JPEG encode thực hiện ở
+                    // worker UI để thread đọc RTSP không bị chặn.
+                    var now = DateTimeOffset.UtcNow;
+                    if (now - _lastPreviewAt >= _previewInterval)
                     {
-                        _lastAlert = DateTimeOffset.Now;
-                        var snapshot = frame.Clone();
-                        DrawDetection(snapshot, person!);
-                        PersonConfirmed?.Invoke(_camera, snapshot, priorFrame?.Clone(), person!);
-                        _recentHits.Clear();
-                        _presenceSince = null;
+                        _lastPreviewAt = now;
+                        PreviewReady?.Invoke(_camera, frame.Clone());
                     }
 
-                    _previousInferenceFrame?.Dispose();
-                    _previousInferenceFrame = frame.Clone();
-                    await Task.Delay(TimeSpan.FromSeconds(1d / _fps), _stop.Token);
+                    // Chỉ xếp frame mới nhất cho worker YOLO. Nếu detector đang bận,
+                    // frame cũ trong hàng đợi sẽ bị thay thế thay vì làm tăng độ trễ.
+                    if (now - _lastInferenceAt >= _inferenceInterval)
+                    {
+                        _lastInferenceAt = now;
+                        QueueInferenceFrame(frame);
+                    }
                 }
 
                 _reconnectCount++;
@@ -150,6 +150,77 @@ public sealed class CameraMonitor : IAsyncDisposable
                detection.CenterY >= top && detection.CenterY <= bottom;
     }
 
+    private void QueueInferenceFrame(Mat frame)
+    {
+        lock (_inferenceSync)
+        {
+            _pendingInferenceFrame?.Dispose();
+            _pendingInferenceFrame = frame.Clone();
+            if (_inferenceWorkerRunning) return;
+            _inferenceWorkerRunning = true;
+            _inferenceWorker = Task.Run(ProcessInferenceQueueAsync);
+        }
+    }
+
+    private Task ProcessInferenceQueueAsync()
+    {
+        while (!_stop.IsCancellationRequested)
+        {
+            Mat? frame;
+            lock (_inferenceSync)
+            {
+                frame = _pendingInferenceFrame;
+                _pendingInferenceFrame = null;
+                if (frame is null)
+                {
+                    _inferenceWorkerRunning = false;
+                    return Task.CompletedTask;
+                }
+            }
+
+            try
+            {
+                using (frame)
+                using (var priorFrame = _previousInferenceFrame?.Clone())
+                {
+                    var detections = _detector.Detect(frame, _camera.ConfidenceThreshold);
+                    var person = detections.FirstOrDefault(x => IsInsideRoi(x, frame.Width, frame.Height));
+                    var found = person is not null;
+                    _recentHits.Enqueue(found);
+                    while (_recentHits.Count > _confirmationWindow) _recentHits.Dequeue();
+                    if (found) _presenceSince ??= DateTimeOffset.Now;
+                    else _presenceSince = null;
+
+                    var presenceDuration = _presenceSince is null ? TimeSpan.Zero : DateTimeOffset.Now - _presenceSince.Value;
+                    if (found && _recentHits.Count(x => x) >= _requiredConfirmations &&
+                        presenceDuration.TotalSeconds >= _minPresenceSeconds &&
+                        DateTimeOffset.Now - _lastAlert >= TimeSpan.FromSeconds(_camera.CooldownSeconds))
+                    {
+                        _lastAlert = DateTimeOffset.Now;
+                        var snapshot = frame.Clone();
+                        DrawDetection(snapshot, person!);
+                        PersonConfirmed?.Invoke(_camera, snapshot, priorFrame?.Clone(), person!);
+                        _recentHits.Clear();
+                        _presenceSince = null;
+                    }
+
+                    _previousInferenceFrame?.Dispose();
+                    _previousInferenceFrame = frame.Clone();
+                }
+            }
+            catch (Exception ex) when (!_stop.IsCancellationRequested)
+            {
+                AppLogger.Error(LogChannel.Camera, $"camera={_camera.Name}; YOLO worker exception", ex);
+            }
+        }
+
+        lock (_inferenceSync)
+        {
+            _inferenceWorkerRunning = false;
+        }
+        return Task.CompletedTask;
+    }
+
     private static void DrawDetection(Mat image, PersonDetection person)
     {
         Cv2.Rectangle(image, new Rect(person.Left, person.Top, person.Width, person.Height), Scalar.LimeGreen, 3);
@@ -163,6 +234,16 @@ public sealed class CameraMonitor : IAsyncDisposable
         if (_runTask is not null)
         {
             try { await _runTask; } catch (OperationCanceledException) { }
+        }
+        if (_inferenceWorker is not null)
+        {
+            try { await _inferenceWorker; } catch (OperationCanceledException) { }
+        }
+        lock (_inferenceSync)
+        {
+            _pendingInferenceFrame?.Dispose();
+            _pendingInferenceFrame = null;
+            _inferenceWorkerRunning = false;
         }
         _previousInferenceFrame?.Dispose();
         _presenceSince = null;
