@@ -1,8 +1,97 @@
 using Xunit;
+using System.Text.Json;
 using EzvizLocalMonitor.Models;
 using EzvizLocalMonitor.Services;
 
 namespace EzvizLocalMonitor.Tests;
+
+public sealed class SettingsSerializationTests
+{
+    [Fact]
+    public void AppSettings_SerializesAndRestoresAllConfigurationSections()
+    {
+        var cameraId = Guid.NewGuid();
+        var scheduleId = Guid.NewGuid();
+        var settings = new AppSettings
+        {
+            Cameras = new List<CameraDefinition>
+            {
+                new()
+                {
+                    Id = cameraId,
+                    Name = "Cửa trước",
+                    RtspUrl = "rtsp://admin:masked@192.168.1.20:554/ch1/main",
+                    OnvifServiceUrl = "http://192.168.1.20/onvif",
+                    IsEnabled = true,
+                    ConfidenceThreshold = 0.72,
+                    CooldownSeconds = 45,
+                    MinPresenceSeconds = 1.5,
+                    RoiLeftPercent = 5,
+                    RoiTopPercent = 10,
+                    RoiRightPercent = 95,
+                    RoiBottomPercent = 90
+                }
+            },
+            Alerts = new AlertChannelSettings
+            {
+                TelegramEnabled = true,
+                TelegramBotToken = "telegram-token",
+                TelegramChatId = "telegram-chat",
+                ZaloEnabled = true,
+                ZaloBotToken = "zalo-token",
+                ZaloChatId = "zalo-chat",
+                ZaloImageRelayEnabled = true,
+                AllowImageRelayOutsideLan = true,
+                ZaloImageRelayUrl = "https://relay.example/upload",
+                ZaloImageRelayApiKey = "relay-key"
+            },
+            Ai = new AiSettings
+            {
+                Enabled = true,
+                BaseUrl = "https://ai.example/v1",
+                Model = "vision-model",
+                ApiKey = "ai-key",
+                TimeoutSeconds = 35,
+                RequireConfirmationBeforeAlert = true
+            },
+            RetentionDays = 21,
+            InferenceFpsPerCamera = 3,
+            ConfirmationsRequired = 2,
+            ConfirmationWindow = 4,
+            StartWithWindows = true,
+            DashboardLayoutMode = 4,
+            PreviewFitMode = 1,
+            DashboardViewMode = 1,
+            HasCompletedOnboarding = true,
+            PerformanceProfile = 2,
+            DarkTheme = true,
+            ThemeName = "Midnight",
+            MonitorSchedules = new List<MonitorSchedule>
+            {
+                new() { Id = scheduleId, Name = "Ban đêm", Days = "Mon-Fri", StartTime = "22:00", EndTime = "06:00", PerformanceProfile = 3 }
+            },
+            WatchdogEnabled = true
+        };
+
+        var json = JsonSerializer.Serialize(settings);
+        var restored = JsonSerializer.Deserialize<AppSettings>(json);
+
+        Assert.NotNull(restored);
+        Assert.Equal(cameraId, restored!.Cameras.Single().Id);
+        Assert.Equal(settings.Cameras[0].Name, restored.Cameras[0].Name);
+        Assert.Equal(settings.Cameras[0].RtspUrl, restored.Cameras[0].RtspUrl);
+        Assert.Equal(settings.Cameras[0].ConfidenceThreshold, restored.Cameras[0].ConfidenceThreshold);
+        Assert.Equal(settings.Cameras[0].MinPresenceSeconds, restored.Cameras[0].MinPresenceSeconds);
+        Assert.Equal(settings.Alerts.TelegramBotToken, restored.Alerts.TelegramBotToken);
+        Assert.Equal(settings.Alerts.ZaloImageRelayUrl, restored.Alerts.ZaloImageRelayUrl);
+        Assert.Equal(settings.Ai.Model, restored.Ai.Model);
+        Assert.Equal(settings.Ai.RequireConfirmationBeforeAlert, restored.Ai.RequireConfirmationBeforeAlert);
+        Assert.Equal(settings.MonitorSchedules.Single().Id, restored.MonitorSchedules.Single().Id);
+        Assert.Equal(settings.MonitorSchedules.Single().StartTime, restored.MonitorSchedules.Single().StartTime);
+        Assert.Equal(settings.ThemeName, restored.ThemeName);
+        Assert.Equal(settings.WatchdogEnabled, restored.WatchdogEnabled);
+    }
+}
 
 public sealed class EventStoreTests : IDisposable
 {

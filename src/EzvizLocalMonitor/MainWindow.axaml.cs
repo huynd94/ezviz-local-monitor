@@ -399,28 +399,83 @@ public partial class MainWindow : Avalonia.Controls.Window
         DiscoveryStatusText.Text = "Đã thêm camera và bảo vệ cấu hình bằng Windows DPAPI.";
     }
 
-    private void RemoveCamera_Click(object? sender, RoutedEventArgs e)
+    private async void RemoveCamera_Click(object? sender, RoutedEventArgs e)
     {
         var camera = SelectedCamera;
-        if (camera is null) return;
+        if (camera is null)
+        {
+            SetStatus("Hãy chọn camera cần xóa.");
+            return;
+        }
+
+        var confirmed = await new CleanupConfirmWindow(
+            "Xóa camera",
+            $"Bạn có chắc muốn xóa camera \"{camera.Name}\" khỏi danh sách? Thao tác này chỉ xóa cấu hình camera khỏi ứng dụng, không xóa thiết bị trong tài khoản EZVIZ.").ShowDialog<bool>(this);
+        if (confirmed != true)
+        {
+            SetStatus("Đã hủy xóa camera.");
+            return;
+        }
+
+        var wasRunning = _coordinator is not null;
+        if (wasRunning) await StopMonitoringAsync();
         _settings.Cameras.Remove(camera);
+        ClearRuntimeStateForConfigurationChange();
         RefreshCameraList();
         SaveSettings();
+        if (wasRunning) await StartMonitoringAsync(false);
+        SetStatus($"Đã xóa camera {camera.Name} khỏi danh sách.");
+    }
+
+    private void ClearRuntimeStateForConfigurationChange()
+    {
+        _cameraRuntimeStatuses.Clear();
+        _cameraRuntimeSnapshots.Clear();
+        _lastPreviewAt.Clear();
+        lock (_previewSync)
+        {
+            foreach (var pendingMat in _pendingPreviewMats.Values) pendingMat.Dispose();
+            foreach (var pendingBitmap in _pendingPreviewBitmaps.Values) pendingBitmap.Dispose();
+            _pendingPreviewMats.Clear();
+            _pendingPreviewBitmaps.Clear();
+            _previewEncodeScheduled.Clear();
+            _previewDispatchScheduled.Clear();
+        }
+        foreach (var preview in _previews)
+        {
+            (preview.Source as IDisposable)?.Dispose();
+            preview.Source = null;
+        }
     }
 
     private void SaveCamera_Click(object? sender, RoutedEventArgs e)
     {
-        var camera = SelectedCamera;
-        if (camera is null) { SetStatus("Hãy thêm hoặc chọn camera trước khi lưu."); return; }
-        if (!int.TryParse(CooldownText.Text, out var cooldown) || cooldown is < 5 or > 3600)
+        if (!TryApplySelectedCameraFromUi(out var error))
         {
-            SetStatus("Khoảng im lặng phải là số từ 5 đến 3600 giây.");
+            SetStatus(error);
             return;
         }
-        if (!double.TryParse(MinPresenceText.Text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var minPresence) || minPresence is < 0 or > 30)
+        RefreshCameraList();
+        SaveSettings();
+    }
+
+    private bool TryApplySelectedCameraFromUi(out string error)
+    {
+        var camera = SelectedCamera;
+        if (camera is null)
         {
-            SetStatus("Thời gian xuất hiện tối thiểu phải từ 0 đến 30 giây, ví dụ 1.5.");
-            return;
+            error = "Hãy thêm hoặc chọn camera trước khi lưu.";
+            return false;
+        }
+        if (!int.TryParse(CooldownText.Text, out var cooldown) || cooldown is < 5 or > 3600)
+        {
+            error = "Khoảng im lặng phải là số từ 5 đến 3600 giây.";
+            return false;
+        }
+        if (!double.TryParse(MinPresenceText.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var minPresence) || minPresence is < 0 or > 30)
+        {
+            error = "Thời gian xuất hiện tối thiểu phải từ 0 đến 30 giây, ví dụ 1.5.";
+            return false;
         }
         camera.Name = string.IsNullOrWhiteSpace(CameraNameText.Text) ? "Camera" : CameraNameText.Text.Trim();
         camera.RtspUrl = CameraRtspText.Text?.Trim() ?? string.Empty;
@@ -428,8 +483,8 @@ public partial class MainWindow : Avalonia.Controls.Window
         camera.CooldownSeconds = cooldown;
         camera.MinPresenceSeconds = minPresence;
         camera.IsEnabled = CameraEnabledCheck.IsChecked == true;
-        RefreshCameraList();
-        SaveSettings();
+        error = string.Empty;
+        return true;
     }
 
     private async void TestRtsp_Click(object? sender, RoutedEventArgs e)
@@ -1166,6 +1221,12 @@ public partial class MainWindow : Avalonia.Controls.Window
     {
         try
         {
+            if (SelectedCamera is not null && !TryApplySelectedCameraFromUi(out var cameraError))
+            {
+                SetStatus($"Không sao lưu được cấu hình camera: {cameraError}");
+                return;
+            }
+            if (SelectedCamera is not null) RefreshCameraList();
             SaveAlerts_Click(sender, e);
             var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
@@ -1202,6 +1263,7 @@ public partial class MainWindow : Avalonia.Controls.Window
             var wasRunning = _coordinator is not null;
             if (wasRunning) await StopMonitoringAsync();
             _settings = imported;
+            ClearRuntimeStateForConfigurationChange();
             _settingsStore.Save(_settings);
             _loadingSettings = true;
             LoadSettings();

@@ -1,6 +1,14 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.3.1**
+**Phiên bản phát hành hiện tại: v1.4.0**
+
+## Bản cập nhật v1.4.0 — quản lý camera và backup cấu hình
+
+Nút `Xóa` trong tab Camera yêu cầu xác nhận trước khi xóa. Nếu ứng dụng đang giám sát, coordinator và các worker camera được dừng an toàn, camera được xóa khỏi danh sách và trạng thái/preview cũ được dọn khỏi bộ nhớ trước khi các camera còn lại được khởi động lại.
+
+Nút `Sao lưu cấu hình` xuất toàn bộ `AppSettings`, gồm camera, Telegram, Zalo Bot, relay ảnh, AI, lịch giám sát, theme, bố cục, hiệu năng, startup và watchdog. Các thay đổi camera đang có trên form được ghi vào bản backup trước khi xuất. File backup dùng mã hóa Windows DPAPI, vì vậy chỉ khôi phục được bằng đúng tài khoản Windows đã tạo file.
+
+Nút `Khôi phục cấu hình` kiểm tra header và giải mã file, chuẩn hóa dữ liệu, dừng giám sát hiện tại, thay thế toàn bộ cấu hình, dọn trạng thái/preview cũ, nạp lại giao diện và khởi động lại giám sát nếu trước đó đang chạy. File hỏng, sai định dạng hoặc không giải mã được sẽ không thay thế cấu hình hiện tại.
 
 ## Bản vá v1.3.1 — hiển thị nút hộp thoại xác nhận
 
