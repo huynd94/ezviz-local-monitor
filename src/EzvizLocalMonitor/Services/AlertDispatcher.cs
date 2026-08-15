@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -10,6 +11,7 @@ public sealed class AlertDispatcher
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(10) };
     private static readonly TimeSpan ZaloOperationTimeout = TimeSpan.FromSeconds(12);
     private readonly ImageRelayService _imageRelay = new();
+    private readonly ConcurrentDictionary<string, byte> _successfulOperations = new();
 
     public async Task<string> SendAsync(AlertChannelSettings settings, DetectionEvent item, CancellationToken cancellationToken = default)
     {
@@ -23,9 +25,9 @@ public sealed class AlertDispatcher
         }
         var tasks = new List<Task<string>>();
         if (settings.TelegramEnabled)
-            tasks.Add(SafeSendAsync("Telegram", () => SendTelegramFastAlertAsync(settings.TelegramBotToken, settings.TelegramChatId, item.ImagePath, caption, cancellationToken)));
+            tasks.Add(SafeSendAsync("Telegram", () => SendTelegramFastAlertAsync(item.Id, settings.TelegramBotToken, settings.TelegramChatId, item.ImagePath, caption, cancellationToken)));
         if (settings.ZaloEnabled)
-            tasks.Add(SafeSendAsync("Zalo", () => SendZaloFastAlertAsync(settings, settings.ZaloBotToken ?? string.Empty, settings.ZaloChatId ?? string.Empty, item.ImagePath, caption, cancellationToken)));
+            tasks.Add(SafeSendAsync("Zalo", () => SendZaloFastAlertAsync(item.Id, settings, settings.ZaloBotToken ?? string.Empty, settings.ZaloChatId ?? string.Empty, item.ImagePath, caption, cancellationToken)));
         if (tasks.Count == 0) return "Không có kênh nào được bật";
         try
         {
@@ -55,14 +57,14 @@ public sealed class AlertDispatcher
         };
     }
 
-    private static async Task<string> SendTelegramFastAlertAsync(string token, string chatId, string imagePath, string caption, CancellationToken ct)
+    private async Task<string> SendTelegramFastAlertAsync(long eventId, string token, string chatId, string imagePath, string caption, CancellationToken ct)
     {
         // Tin chữ nhỏ đi trước để Telegram hiển thị cảnh báo gần như ngay lập tức; ảnh được upload ngay sau đó.
         string textResult;
-        try { textResult = await SendTelegramTextAsync(token, chatId, caption, ct); }
+        try { textResult = await SendIdempotentAsync(eventId, "Telegram text", () => SendTelegramTextAsync(token, chatId, caption, ct)); }
         catch (Exception ex) { textResult = "Telegram text: lỗi " + SafeException(ex); }
         string photoResult;
-        try { photoResult = await SendTelegramPhotoAsync(token, chatId, imagePath, caption, ct); }
+        try { photoResult = await SendIdempotentAsync(eventId, "Telegram photo", () => SendTelegramPhotoAsync(token, chatId, imagePath, caption, ct)); }
         catch (Exception ex) { photoResult = "Telegram ảnh: lỗi " + SafeException(ex); }
         return $"{textResult} + {photoResult}";
     }
@@ -124,7 +126,7 @@ public sealed class AlertDispatcher
         return FormatApiResult("Telegram", response, body);
     }
 
-    private async Task<string> SendZaloFastAlertAsync(AlertChannelSettings settings, string token, string chatId, string imagePath, string caption, CancellationToken ct)
+    private async Task<string> SendZaloFastAlertAsync(long eventId, AlertChannelSettings settings, string token, string chatId, string imagePath, string caption, CancellationToken ct)
     {
         token ??= string.Empty;
         chatId ??= string.Empty;
@@ -132,7 +134,7 @@ public sealed class AlertDispatcher
         try
         {
             using var textTimeout = CreateZaloTimeout(ct);
-            textResult = await SendZaloTextAsync(token, chatId, caption, textTimeout.Token);
+            textResult = await SendIdempotentAsync(eventId, "Zalo text", () => SendZaloTextAsync(token, chatId, caption, textTimeout.Token));
         }
         catch (OperationCanceledException)
         {
@@ -149,7 +151,7 @@ public sealed class AlertDispatcher
         try
         {
             using var photoTimeout = CreateZaloTimeout(ct);
-            photoResult = await SendZaloPhotoAsync(settings, token, chatId, imagePath, caption, photoTimeout.Token);
+            photoResult = await SendIdempotentAsync(eventId, "Zalo photo", () => SendZaloPhotoAsync(settings, token, chatId, imagePath, caption, photoTimeout.Token));
         }
         catch (OperationCanceledException)
         {
@@ -162,6 +164,17 @@ public sealed class AlertDispatcher
             photoResult = "Zalo ảnh: lỗi " + SafeException(ex);
         }
         return $"{textResult} + {photoResult}";
+    }
+
+    private async Task<string> SendIdempotentAsync(long eventId, string operation, Func<Task<string>> sender)
+    {
+        var key = $"{eventId}:{operation}";
+        if (_successfulOperations.ContainsKey(key)) return $"{operation}: đã gửi (idempotent)";
+
+        var result = await sender();
+        if (result.Contains("đã gửi", StringComparison.OrdinalIgnoreCase))
+            _successfulOperations.TryAdd(key, 0);
+        return result;
     }
 
     private static CancellationTokenSource CreateZaloTimeout(CancellationToken parent)

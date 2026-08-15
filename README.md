@@ -1,6 +1,13 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.10**
+**Phiên bản phát hành hiện tại: v0.9.11**
+
+## Bản cập nhật v0.9.11 — chống gửi lặp Telegram/Zalo
+
+Bản v0.9.11 sửa lỗi một sự kiện chỉ có một dòng trong nhật ký nhưng bị gửi lặp qua Telegram hoặc Zalo. Hàng đợi vẫn retry lỗi mạng, nhưng AlertDispatcher ghi nhận thành công theo `EventId` và từng thao tác Telegram text/photo, Zalo text/photo. Khi retry, chỉ thao tác thất bại được thử lại; thao tác đã thành công không tạo tin nhắn trùng.
+
+Các trạng thái hợp lệ như Zalo gửi được văn bản nhưng không gửi ảnh local vì chưa bật relay HTTPS không còn bị coi là lỗi để retry toàn bộ sự kiện. Bộ test hồi quy bao gồm dedup khi đang chờ, dedup sau khi hoàn tất, kết quả gộp Telegram/Zalo, retry lỗi tạm thời và shutdown an toàn.
+
 
 ## Bản cập nhật v0.9.10 — sửa bố cục tab Camera
 

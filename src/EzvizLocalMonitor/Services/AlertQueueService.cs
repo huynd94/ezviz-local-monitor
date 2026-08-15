@@ -101,11 +101,35 @@ public sealed class AlertQueueService : IAsyncDisposable
         return result;
     }
 
-    private static bool NeedsRetry(string result) =>
-        result.Contains("lỗi", StringComparison.OrdinalIgnoreCase) ||
-        result.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
-        result.Contains("hủy", StringComparison.OrdinalIgnoreCase) ||
-        result.Contains("chưa gửi", StringComparison.OrdinalIgnoreCase);
+    private static bool NeedsRetry(string result)
+    {
+        if (string.IsNullOrWhiteSpace(result)) return true;
+
+        // AlertDispatcher trả về nhiều thao tác trong cùng một chuỗi, ví dụ:
+        // "Telegram: đã gửi + Telegram ảnh: lỗi ... | Zalo: đã gửi + Zalo ảnh: chưa gửi...".
+        // Chỉ retry khi có thao tác thất bại. AlertDispatcher có idempotency theo
+        // EventId + thao tác nên phần đã thành công sẽ không gửi lại qua mạng.
+        var operations = result.Split(new[] { " | ", " + " }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return operations.Any(NeedsRetryPart);
+    }
+
+    private static bool NeedsRetryPart(string part)
+    {
+        var separator = part.IndexOf(':');
+        var operationResult = separator >= 0 ? part[(separator + 1)..].Trim() : part.Trim();
+
+        // Đây là trạng thái hợp lệ khi Zalo chỉ được cấu hình gửi văn bản còn
+        // relay ảnh HTTPS chưa bật/được đồng ý; không được coi là lỗi mạng.
+        if (operationResult.Contains("ảnh: chưa gửi", StringComparison.OrdinalIgnoreCase) ||
+            operationResult.Contains("API yêu cầu URL HTTPS công khai", StringComparison.OrdinalIgnoreCase) ||
+            operationResult.Contains("relay chưa bật", StringComparison.OrdinalIgnoreCase)) return false;
+
+        return operationResult.Contains("lỗi", StringComparison.OrdinalIgnoreCase) ||
+               operationResult.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
+               operationResult.Contains("hủy", StringComparison.OrdinalIgnoreCase) ||
+               operationResult.Contains("chưa gửi", StringComparison.OrdinalIgnoreCase) ||
+               operationResult.Contains("chưa xác nhận", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static string Safe(Exception ex)
     {

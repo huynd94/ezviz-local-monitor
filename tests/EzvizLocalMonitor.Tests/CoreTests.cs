@@ -65,6 +65,38 @@ public sealed class AlertQueueTests
     }
 
     [Fact]
+    public async Task Queue_DoesNotRedispatchCompletedEvent()
+    {
+        var calls = 0;
+        await using var queue = new AlertQueueService((_, _, _) =>
+        {
+            Interlocked.Increment(ref calls);
+            return Task.FromResult("Telegram: đã gửi");
+        });
+
+        Assert.Equal("Telegram: đã gửi", await queue.EnqueueAsync(new AlertChannelSettings(), Event(10)));
+        Assert.Equal("Telegram: đã gửi", await queue.EnqueueAsync(new AlertChannelSettings(), Event(10)));
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public async Task Queue_RetriesOnlyMixedFailureWithoutAcceptingDuplicateSuccesses()
+    {
+        var calls = 0;
+        await using var queue = new AlertQueueService((_, _, _) =>
+        {
+            var attempt = Interlocked.Increment(ref calls);
+            return Task.FromResult(attempt == 1
+                ? "Telegram text: đã gửi + Telegram photo: lỗi timeout | Zalo text: đã gửi + Zalo photo: chưa gửi; API yêu cầu URL HTTPS công khai"
+                : "Telegram text: đã gửi (idempotent) + Telegram photo: đã gửi | Zalo text: đã gửi (idempotent) + Zalo photo: chưa gửi; API yêu cầu URL HTTPS công khai");
+        });
+
+        var result = await queue.EnqueueAsync(new AlertChannelSettings(), Event(11));
+        Assert.Contains("đã gửi", result, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
     public async Task Queue_RetriesTransientResult()
     {
         var calls = 0;
