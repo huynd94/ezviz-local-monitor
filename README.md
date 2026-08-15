@@ -1,6 +1,11 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.11**
+**Phiên bản phát hành hiện tại: v0.9.12**
+
+## Bản cập nhật v0.9.12 — làm rõ updater và panel Phân tích AI
+
+Bản v0.9.12 làm nổi bật ba nút `Kiểm tra bản mới`, `Cập nhật ngay` và `Đóng` trong cửa sổ updater bằng màu nền, chữ trắng, viền, hover và trạng thái disabled riêng. Panel Phân tích AI dùng foreground nâu đậm cố định trên nền cảnh báo sáng, nên không bị theme tối ghi đè làm chữ biến mất.
+
 
 ## Bản cập nhật v0.9.11 — chống gửi lặp Telegram/Zalo
 

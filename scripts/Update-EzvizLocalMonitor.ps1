@@ -161,6 +161,35 @@ $closeButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
 $form.Controls.Add($closeButton)
 $form.CancelButton = $closeButton
 
+function Set-ActionButtonStyle([System.Windows.Forms.Button]$button, [System.Drawing.Color]$backColor, [System.Drawing.Color]$foreColor) {
+    $button.BackColor = $backColor
+    $button.ForeColor = $foreColor
+    $button.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+    $button.FlatAppearance.BorderColor = [System.Drawing.Color]::FromArgb(4, 45, 65)
+    $button.FlatAppearance.BorderSize = 1
+    $button.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 9)
+    $button.UseVisualStyleBackColor = $false
+    $button.Cursor = [System.Windows.Forms.Cursors]::Hand
+}
+
+$primaryButtonColor = [System.Drawing.Color]::FromArgb(7, 89, 133)
+$primaryButtonHoverColor = [System.Drawing.Color]::FromArgb(14, 116, 144)
+$secondaryButtonColor = [System.Drawing.Color]::FromArgb(31, 41, 55)
+$disabledButtonColor = [System.Drawing.Color]::FromArgb(148, 163, 184)
+$buttonTextColor = [System.Drawing.Color]::White
+Set-ActionButtonStyle $checkButton $primaryButtonColor $buttonTextColor
+Set-ActionButtonStyle $updateButton $primaryButtonColor $buttonTextColor
+Set-ActionButtonStyle $closeButton $secondaryButtonColor $buttonTextColor
+$updateButton.BackColor = $disabledButtonColor
+$updateButton.ForeColor = [System.Drawing.Color]::FromArgb(55, 65, 81)
+
+$checkButton.Add_MouseEnter({ if ($checkButton.Enabled) { $checkButton.BackColor = $primaryButtonHoverColor } })
+$checkButton.Add_MouseLeave({ if ($checkButton.Enabled) { $checkButton.BackColor = $primaryButtonColor } })
+$updateButton.Add_MouseEnter({ if ($updateButton.Enabled) { $updateButton.BackColor = $primaryButtonHoverColor } })
+$updateButton.Add_MouseLeave({ if ($updateButton.Enabled) { $updateButton.BackColor = $primaryButtonColor } })
+$closeButton.Add_MouseEnter({ if ($closeButton.Enabled) { $closeButton.BackColor = [System.Drawing.Color]::FromArgb(55, 65, 81) } })
+$closeButton.Add_MouseLeave({ if ($closeButton.Enabled) { $closeButton.BackColor = $secondaryButtonColor } })
+
 $state = [hashtable]::Synchronized(@{ Busy = $false; CheckOnly = [bool]$CheckOnly; Process = $null; TempRoot = $null; ProgressFile = $null; ResultFile = $null })
 $updateTimer = New-Object System.Windows.Forms.Timer
 $updateTimer.Interval = 250
@@ -203,6 +232,7 @@ function Finish-Worker {
         $versionLabel.Text = "Đang cài: $installedText    |    Mới nhất: $($result.latest)"
         if ([bool]$result.isNewer) {
             $updateButton.Enabled = -not $state.CheckOnly
+            if ($updateButton.Enabled) { $updateButton.BackColor = $primaryButtonColor; $updateButton.ForeColor = $buttonTextColor }
             $statusLabel.Text = "Có bản mới. Nhấn Cập nhật ngay để bắt đầu."
             $progress.Value = 0
         } else {
@@ -214,6 +244,8 @@ function Finish-Worker {
         $versionLabel.Text = "Đã cập nhật: $($result.updated)"
         $statusLabel.Text = "Cập nhật thành công."
         $updateButton.Enabled = $false
+        $updateButton.BackColor = $disabledButtonColor
+        $updateButton.ForeColor = [System.Drawing.Color]::FromArgb(55, 65, 81)
         [System.Windows.Forms.MessageBox]::Show($form, "Đã cập nhật lên phiên bản $($result.updated).", "Hoàn tất", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
     }
     Clear-WorkerFiles
@@ -236,6 +268,8 @@ function Start-Check([bool]$doUpdate) {
     $state.Busy = $true
     $checkButton.Enabled = $false
     $updateButton.Enabled = $false
+    $updateButton.BackColor = $disabledButtonColor
+    $updateButton.ForeColor = [System.Drawing.Color]::FromArgb(55, 65, 81)
     $closeButton.Enabled = $false
     $progress.Value = 0
     $temp = Join-Path ([System.IO.Path]::GetTempPath()) ("EZVIZ-GUI-" + [guid]::NewGuid().ToString("N"))
