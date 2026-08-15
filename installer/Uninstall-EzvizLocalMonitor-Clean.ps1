@@ -75,8 +75,13 @@ $installDirContainsThisScript = $false
 try { $installDirContainsThisScript = [StringComparer]::OrdinalIgnoreCase.Equals((Split-Path -Parent $SelfPath).TrimEnd('\\'), $InstallDir.TrimEnd('\\')) } catch { }
 if ($installDirContainsThisScript) {
     $deferredCmd = Join-Path ([IO.Path]::GetTempPath()) ("EZVIZ-Uninstall-" + [guid]::NewGuid().ToString('N') + ".cmd")
-    $escapedInstallDir = $InstallDir.Replace('"', '""')
-    @("@echo off", "timeout /t 2 /nobreak >nul", "rmdir /s /q \"$escapedInstallDir\"", "del /f /q \"%~f0\" >nul 2>&1") | Set-Content -LiteralPath $deferredCmd -Encoding ASCII
+    $cmdLines = @(
+        '@echo off'
+        'timeout /t 2 /nobreak >nul'
+        ('rmdir /s /q "' + $InstallDir + '"')
+        'del /f /q "%~f0" >nul 2>&1'
+    )
+    $cmdLines | Set-Content -LiteralPath $deferredCmd -Encoding ASCII
     Start-Process -FilePath "cmd.exe" -ArgumentList @('/c', $deferredCmd) -WindowStyle Hidden
     Write-Host "  Đã lên lịch xóa thư mục sau khi script kết thúc: $InstallDir" -ForegroundColor Green
 } else {

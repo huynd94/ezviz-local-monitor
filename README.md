@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.4.2**
+**Phiên bản phát hành hiện tại: v1.4.3**
+
+## Bản vá v1.4.3 — sửa cú pháp script gỡ sạch PowerShell 5.1
+
+Sửa lỗi parser tại dòng tạo file CMD trì hoãn xóa thư mục cài đặt. Script không còn dùng cú pháp escape `\\\"` kiểu Bash; các dòng CMD được tạo bằng mảng chuỗi PowerShell hợp lệ, tương thích Windows PowerShell 5.1.
 
 ## Bản vá v1.4.2 — Auto-Update an toàn với đường dẫn có khoảng trắng
 
