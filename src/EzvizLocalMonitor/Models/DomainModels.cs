@@ -1,5 +1,17 @@
 namespace EzvizLocalMonitor.Models;
 
+public enum DashboardViewMode
+{
+    Monitoring,
+    Operations
+}
+
+public enum PreviewFitMode
+{
+    KeepAspectRatio,
+    FillFrame
+}
+
 public enum CameraConnectionState
 {
     Stopped,
@@ -81,6 +93,8 @@ public sealed class AppSettings
     public int ConfirmationWindow { get; set; } = 3;
     public bool StartWithWindows { get; set; }
     public int DashboardLayoutMode { get; set; } = 2;
+    public int PreviewFitMode { get; set; } = (int)EzvizLocalMonitor.Models.PreviewFitMode.KeepAspectRatio;
+    public int DashboardViewMode { get; set; } = (int)EzvizLocalMonitor.Models.DashboardViewMode.Monitoring;
     public bool HasCompletedOnboarding { get; set; }
     public int PerformanceProfile { get; set; } = 1;
     public bool DarkTheme { get; set; }

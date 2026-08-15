@@ -32,6 +32,8 @@
     <SolidColorBrush x:Key="InputBorderBrush" Color="#5A6B78" />
     <SolidColorBrush x:Key="InputFocusBrush" Color="#0078B8" />
     <SolidColorBrush x:Key="InputWatermarkBrush" Color="#52606D" />
+    <SolidColorBrush x:Key="CameraStatusBackgroundBrush" Color="#EAF4F9" />
+    <SolidColorBrush x:Key="CameraStatusForegroundBrush" Color="#102A43" />
   </Window.Resources>
   <Window.Styles>
     <Style Selector="TabItem">
@@ -132,55 +134,112 @@
         <Grid Margin="12" RowDefinitions="Auto,*,Auto">
           <Grid Grid.Row="0" RowDefinitions="Auto,Auto" Margin="0,0,0,10">
             <WrapPanel Orientation="Horizontal">
-              <TextBlock Text="Bố cục giám sát:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,6,8" />
-              <Button x:Name="LayoutOneButton" Tag="1" Content="1 màn hình" Click="LayoutMode_Click" Margin="0,0,8,8" ToolTip.Tip="Hiển thị một camera chiếm toàn bộ vùng xem trước." />
-              <Button x:Name="LayoutTwoButton" Tag="2" Content="2 màn hình" Click="LayoutMode_Click" Margin="0,0,8,8" ToolTip.Tip="Chia vùng xem trước thành hai ô camera." />
-              <Button x:Name="LayoutFourButton" Tag="4" Content="4 màn hình" Click="LayoutMode_Click" Margin="0,0,8,8" ToolTip.Tip="Chia vùng xem trước thành tối đa bốn ô camera." />
-              <Button Content="Phóng to camera" Click="FocusSelectedCamera_Click" Margin="0,0,8,8" ToolTip.Tip="Phóng to camera đang chọn hoặc camera đầu tiên" />
-              <Button Content="Sáng/Tối" Click="ToggleTheme_Click" Margin="0,0,8,8" ToolTip.Tip="Chuyển nhanh sáng/tối và đưa lựa chọn về theme Dark/Light" />
-              <TextBlock Text="Theme:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="2,0,6,8" />
-              <ComboBox x:Name="ThemeCombo" Width="150" SelectedIndex="5" SelectionChanged="Theme_SelectionChanged" Margin="0,0,8,8" ToolTip.Tip="Chọn palette màu Orchid, Ocean, Midnight, Lavender, Crimson hoặc Dark/Light. Lựa chọn được lưu vào cấu hình." >
-                <ComboBoxItem Content="Orchid" />
-                <ComboBoxItem Content="Ocean" />
-                <ComboBoxItem Content="Midnight" />
-                <ComboBoxItem Content="Lavender" />
-                <ComboBoxItem Content="Crimson" />
-                <ComboBoxItem Content="Dark/Light" />
-              </ComboBox>
-              <TextBlock Text="Hiệu năng:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="2,0,6,8" />
-              <ComboBox x:Name="PerformanceProfileCombo" Width="190" SelectedIndex="1" SelectionChanged="PerformanceProfile_Changed" Margin="0,0,8,8" ToolTip.Tip="Chọn cân bằng giữa mức dùng CPU, tốc độ nhận diện và độ trễ. Máy i7-7500U nên bắt đầu với Cân bằng." >
-                <ComboBoxItem Content="Tiết kiệm CPU" />
-                <ComboBoxItem Content="Cân bằng" />
-                <ComboBoxItem Content="Phản hồi nhanh" />
-                <ComboBoxItem Content="Ưu tiên ONVIF" />
-              </ComboBox>
+              <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="8" Margin="0,0,8,8">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Bố cục" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,8,0" />
+                  <Button x:Name="LayoutOneButton" Tag="1" Content="1 màn hình" Click="LayoutMode_Click" Margin="0,0,6,0" ToolTip.Tip="Hiển thị một camera chiếm toàn bộ vùng xem trước." />
+                  <Button x:Name="LayoutTwoButton" Tag="2" Content="2 màn hình" Click="LayoutMode_Click" Margin="0,0,6,0" ToolTip.Tip="Chia vùng xem trước thành hai ô camera." />
+                  <Button x:Name="LayoutFourButton" Tag="4" Content="4 màn hình" Click="LayoutMode_Click" Margin="0,0,6,0" ToolTip.Tip="Chia vùng xem trước thành tối đa bốn ô camera." />
+                  <Button Content="Phóng to" Click="FocusSelectedCamera_Click" ToolTip.Tip="Phóng to camera đang chọn hoặc camera đầu tiên" />
+                </StackPanel>
+              </Border>
+              <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="8" Margin="0,0,8,8">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Hiển thị" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,8,0" />
+                  <Button Content="Sáng/Tối" Click="ToggleTheme_Click" Margin="0,0,8,0" ToolTip.Tip="Chuyển nhanh sáng/tối và đưa lựa chọn về theme Dark/Light" />
+                  <ComboBox x:Name="PreviewFitCombo" Width="160" SelectedIndex="0" SelectionChanged="PreviewFit_SelectionChanged" Margin="0,0,8,0" ToolTip.Tip="Chọn giữ nguyên tỷ lệ để xem đầy đủ khung hình hoặc lấp đầy khung để tận dụng tối đa diện tích preview.">
+                    <ComboBoxItem Content="Giữ nguyên tỷ lệ" />
+                    <ComboBoxItem Content="Lấp đầy khung" />
+                  </ComboBox>
+                  <TextBlock Text="Theme" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,6,0" />
+                  <ComboBox x:Name="ThemeCombo" Width="150" SelectedIndex="5" SelectionChanged="Theme_SelectionChanged" Margin="0,0,8,0" ToolTip.Tip="Chọn palette màu Orchid, Ocean, Midnight, Lavender, Crimson hoặc Dark/Light. Lựa chọn được lưu vào cấu hình." >
+                    <ComboBoxItem Content="Orchid" />
+                    <ComboBoxItem Content="Ocean" />
+                    <ComboBoxItem Content="Midnight" />
+                    <ComboBoxItem Content="Lavender" />
+                    <ComboBoxItem Content="Crimson" />
+                    <ComboBoxItem Content="Dark/Light" />
+                  </ComboBox>
+                  <TextBlock Text="Chế độ" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,6,0" />
+                  <ComboBox x:Name="DashboardViewModeCombo" Width="130" SelectedIndex="0" SelectionChanged="DashboardViewMode_SelectionChanged" ToolTip.Tip="Giám sát ưu tiên preview lớn và trạng thái ngắn; Vận hành hiển thị thêm thông tin kỹ thuật.">
+                    <ComboBoxItem Content="Giám sát" />
+                    <ComboBoxItem Content="Vận hành" />
+                  </ComboBox>
+                </StackPanel>
+              </Border>
+              <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="8" Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Hiệu năng" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,8,0" />
+                  <ComboBox x:Name="PerformanceProfileCombo" Width="190" SelectedIndex="1" SelectionChanged="PerformanceProfile_Changed" ToolTip.Tip="Chọn cân bằng giữa mức dùng CPU, tốc độ nhận diện và độ trễ. Máy i7-7500U nên bắt đầu với Cân bằng." >
+                    <ComboBoxItem Content="Tiết kiệm CPU" />
+                    <ComboBoxItem Content="Cân bằng" />
+                    <ComboBoxItem Content="Phản hồi nhanh" />
+                    <ComboBoxItem Content="Ưu tiên ONVIF" />
+                  </ComboBox>
+                </StackPanel>
+              </Border>
             </WrapPanel>
             <TextBlock Grid.Row="1" Text="Tối đa 4 camera; ô chưa cấu hình hiển thị trạng thái chờ. Phím tắt: Ctrl+1/2/4, F11, Esc." VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,2" />
           </Grid>
           <Grid x:Name="CameraGrid" Grid.Row="1" Background="#19232D" RowDefinitions="*" ColumnDefinitions="*,*">
             <Border x:Name="CameraTileOne" Background="#19232D" CornerRadius="5" Margin="4">
-              <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewOne" Stretch="Uniform" /><TextBlock x:Name="CameraOneStatus" Grid.Row="1" Text="Camera 1 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+              <Grid RowDefinitions="*,Auto">
+                <Image x:Name="PreviewOne" Stretch="Uniform" />
+                <Border Background="#B0101720" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" Padding="8,4" CornerRadius="4"><TextBlock x:Name="CameraOneOverlay" Text="Camera 1" Foreground="White" FontWeight="SemiBold" /></Border>
+                <Button x:Name="CameraOneFocusButton" Grid.Row="0" Tag="0" Content="Phóng to" Click="FocusCameraTile_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8,4" ToolTip.Tip="Phóng to camera này" />
+                <TextBlock x:Name="CameraOneStatus" Grid.Row="1" Text="Camera 1 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="8" />
+              </Grid>
             </Border>
             <Border x:Name="CameraTileTwo" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="4">
-              <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewTwo" Stretch="Uniform" /><TextBlock x:Name="CameraTwoStatus" Grid.Row="1" Text="Camera 2 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+              <Grid RowDefinitions="*,Auto">
+                <Image x:Name="PreviewTwo" Stretch="Uniform" />
+                <Border Background="#B0101720" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" Padding="8,4" CornerRadius="4"><TextBlock x:Name="CameraTwoOverlay" Text="Camera 2" Foreground="White" FontWeight="SemiBold" /></Border>
+                <Button x:Name="CameraTwoFocusButton" Grid.Row="0" Tag="1" Content="Phóng to" Click="FocusCameraTile_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8,4" ToolTip.Tip="Phóng to camera này" />
+                <TextBlock x:Name="CameraTwoStatus" Grid.Row="1" Text="Camera 2 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="8" />
+              </Grid>
             </Border>
             <Border x:Name="CameraTileThree" Background="#19232D" CornerRadius="5" Margin="4" IsVisible="False">
-              <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewThree" Stretch="Uniform" /><TextBlock x:Name="CameraThreeStatus" Grid.Row="1" Text="Camera 3 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+              <Grid RowDefinitions="*,Auto">
+                <Image x:Name="PreviewThree" Stretch="Uniform" />
+                <Border Background="#B0101720" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" Padding="8,4" CornerRadius="4"><TextBlock x:Name="CameraThreeOverlay" Text="Camera 3" Foreground="White" FontWeight="SemiBold" /></Border>
+                <Button x:Name="CameraThreeFocusButton" Grid.Row="0" Tag="2" Content="Phóng to" Click="FocusCameraTile_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8,4" ToolTip.Tip="Phóng to camera này" />
+                <TextBlock x:Name="CameraThreeStatus" Grid.Row="1" Text="Camera 3 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="8" />
+              </Grid>
             </Border>
             <Border x:Name="CameraTileFour" Grid.Column="1" Background="#19232D" CornerRadius="5" Margin="4" IsVisible="False">
-              <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewFour" Stretch="Uniform" /><TextBlock x:Name="CameraFourStatus" Grid.Row="1" Text="Camera 4 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
+              <Grid RowDefinitions="*,Auto">
+                <Image x:Name="PreviewFour" Stretch="Uniform" />
+                <Border Background="#B0101720" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" Padding="8,4" CornerRadius="4"><TextBlock x:Name="CameraFourOverlay" Text="Camera 4" Foreground="White" FontWeight="SemiBold" /></Border>
+                <Button x:Name="CameraFourFocusButton" Grid.Row="0" Tag="3" Content="Phóng to" Click="FocusCameraTile_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8,4" ToolTip.Tip="Phóng to camera này" />
+                <TextBlock x:Name="CameraFourStatus" Grid.Row="1" Text="Camera 4 chưa cấu hình" Background="{DynamicResource CameraStatusBackgroundBrush}" Foreground="{DynamicResource CameraStatusForegroundBrush}" TextWrapping="Wrap" Padding="8" />
+              </Grid>
             </Border>
           </Grid>
           <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,14,0,0">
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,Auto,Auto,*">
-              <Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" />
-              <Button Grid.Column="1" Content="Dừng" Click="StopMonitoring_Click" Margin="8,0,0,0" />
-              <Button Grid.Column="2" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="8,0,0,0" />
-              <TextBlock x:Name="RuntimeInfoText" Grid.Column="3" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" />
-              <TextBlock x:Name="SystemHealthText" Grid.Row="1" Grid.ColumnSpan="4" Text="Hệ thống: đang khởi tạo…" Margin="0,10,0,0" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
-              <TextBlock x:Name="CameraHealthText" Grid.Row="2" Grid.ColumnSpan="4" Text="Camera: đang khởi tạo…" Margin="0,5,0,0" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
-              <TextBlock x:Name="AlertHealthText" Grid.Row="3" Grid.ColumnSpan="4" Text="Cảnh báo: đang khởi tạo…" Margin="0,5,0,0" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
-              <TextBlock x:Name="LastEventHealthText" Grid.Row="4" Grid.ColumnSpan="4" Text="Sự kiện gần nhất: chưa có" Margin="0,5,0,0" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+              <WrapPanel Grid.Column="0" Orientation="Horizontal">
+                <Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" Margin="0,0,8,8" />
+                <Button Content="Dừng" Click="StopMonitoring_Click" Margin="0,0,8,8" />
+                <Button x:Name="OpenEventsFolderButton" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="0,0,8,8" />
+              </WrapPanel>
+              <TextBlock x:Name="RuntimeInfoText" Grid.Column="1" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="8,0,0,8" />
+              <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal">
+                <Border Width="150" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,8,0">
+                  <StackPanel><TextBlock Text="CAMERA" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="SystemHealthText" Text="Đang khởi tạo…" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                </Border>
+                <Border Width="180" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,8,0">
+                  <StackPanel><TextBlock Text="KẾT NỐI" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="CameraHealthText" Text="Đang khởi tạo…" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                </Border>
+                <Border Width="170" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,8,0">
+                  <StackPanel><TextBlock Text="CẢNH BÁO" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="AlertHealthText" Text="Đang khởi tạo…" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                </Border>
+                <Border Width="120" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,8,0">
+                  <StackPanel><TextBlock Text="AI" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="AiHealthText" Text="Đang tắt" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                </Border>
+                <Border Width="180" Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10">
+                  <StackPanel><TextBlock Text="SỰ KIỆN GẦN NHẤT" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" /><TextBlock x:Name="LastEventHealthText" Text="Chưa có" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" TextWrapping="Wrap" /></StackPanel>
+                </Border>
+              </WrapPanel>
             </Grid>
           </Border>
         </Grid>

@@ -24,6 +24,8 @@ public partial class MainWindow : Avalonia.Controls.Window
     private MonitorCoordinator? _coordinator;
     private Image[] _previews = Array.Empty<Image>();
     private TextBlock[] _cameraStatuses = Array.Empty<TextBlock>();
+    private TextBlock[] _cameraOverlayLabels = Array.Empty<TextBlock>();
+    private Button[] _cameraFocusButtons = Array.Empty<Button>();
     private Border[] _cameraTiles = Array.Empty<Border>();
     private readonly AppUpdateService _updateService = new();
     private readonly WatchdogService _watchdog = new();
@@ -58,6 +60,8 @@ public partial class MainWindow : Avalonia.Controls.Window
         InitializeComponent();
         _previews = new[] { PreviewOne, PreviewTwo, PreviewThree, PreviewFour };
         _cameraStatuses = new[] { CameraOneStatus, CameraTwoStatus, CameraThreeStatus, CameraFourStatus };
+        _cameraOverlayLabels = new[] { CameraOneOverlay, CameraTwoOverlay, CameraThreeOverlay, CameraFourOverlay };
+        _cameraFocusButtons = new[] { CameraOneFocusButton, CameraTwoFocusButton, CameraThreeFocusButton, CameraFourFocusButton };
         _cameraTiles = new[] { CameraTileOne, CameraTileTwo, CameraTileThree, CameraTileFour };
         var version = typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "không xác định";
         VersionText.Text = $"Bản {version} · Nhận diện người cục bộ · Ảnh sự kiện chỉ rời LAN khi Telegram/Zalo được bật.";
@@ -69,8 +73,12 @@ public partial class MainWindow : Avalonia.Controls.Window
         RefreshScheduleGrid();
         ApplyTheme();
         PerformanceProfileCombo.SelectedIndex = Math.Clamp(_settings.PerformanceProfile, 0, 3);
+        PreviewFitCombo.SelectedIndex = Math.Clamp(_settings.PreviewFitMode, 0, 1);
+        DashboardViewModeCombo.SelectedIndex = Math.Clamp(_settings.DashboardViewMode, 0, 1);
         _loadingSettings = false;
         ApplyLayoutMode(_settings.DashboardLayoutMode, false);
+        ApplyPreviewFit();
+        ApplyDashboardViewMode();
         RefreshEvents();
         ConfidenceSlider.PropertyChanged += (_, args) =>
         {
@@ -119,6 +127,8 @@ public partial class MainWindow : Avalonia.Controls.Window
         WatchdogEnabledCheck.IsChecked = _settings.WatchdogEnabled;
         RuntimeInfoText.Text =
  $"Hồ sơ: {PerformanceProfileName(_settings.PerformanceProfile)} · {_settings.InferenceFpsPerCamera} lần suy luận/giây/camera · xác nhận {_settings.ConfirmationsRequired}/{_settings.ConfirmationWindow} khung";
+        PreviewFitCombo.SelectedIndex = Math.Clamp(_settings.PreviewFitMode, 0, 1);
+        DashboardViewModeCombo.SelectedIndex = Math.Clamp(_settings.DashboardViewMode, 0, 1);
 
         if (_settings.Cameras.Count > 0) CameraList.SelectedIndex = 0;
     }
@@ -140,7 +150,9 @@ public partial class MainWindow : Avalonia.Controls.Window
         var warning = _cameraRuntimeStatuses.Values.Count(x => x.Contains("lỗi", StringComparison.OrdinalIgnoreCase) || x.Contains("mất", StringComparison.OrdinalIgnoreCase));
         var telegram = _settings.Alerts.TelegramEnabled ? "Telegram bật" : "Telegram tắt";
         var zalo = _settings.Alerts.ZaloEnabled ? "Zalo bật" : "Zalo tắt";
-        SystemHealthText.Text = $"Hệ thống: {active}/{enabled} camera đang hoạt động · {warning} cảnh báo kết nối · {telegram} · {zalo}";
+        var systemDetails = $"Hệ thống: {active}/{enabled} camera đang hoạt động · {warning} cảnh báo kết nối · {telegram} · {zalo}";
+        SystemHealthText.Text = $"{active}/{enabled} hoạt động";
+        ToolTip.SetTip(SystemHealthText, systemDetails);
 
         var cameraDetails = _settings.Cameras.Count == 0
             ? "Camera: chưa cấu hình"
@@ -154,16 +166,25 @@ public partial class MainWindow : Avalonia.Controls.Window
                     : string.Empty;
                 return $"{camera.Name}: {status}{reconnect}{preview}";
             }));
-        CameraHealthText.Text = cameraDetails;
+        var connectionSummary = enabled == 0 ? "Chưa cấu hình" : warning > 0 ? $"{warning} cảnh báo" : active == enabled ? "Ổn định" : $"{active}/{enabled} hoạt động";
+        CameraHealthText.Text = connectionSummary;
+        ToolTip.SetTip(CameraHealthText, cameraDetails);
 
         var alertParts = new List<string>();
         alertParts.Add(_settings.Alerts.TelegramEnabled ? "Telegram đã bật" : "Telegram tắt");
         alertParts.Add(_settings.Alerts.ZaloEnabled ? "Zalo đã bật" : "Zalo tắt");
-        if (_settings.Ai.Enabled) alertParts.Add($"AI bật ({_settings.Ai.Model})");
-        AlertHealthText.Text = "Cảnh báo: " + string.Join(" · ", alertParts);
-        LastEventHealthText.Text = _lastRecordedEvent is null
+        var alertDetails = "Cảnh báo: " + string.Join(" · ", alertParts);
+        AlertHealthText.Text = _settings.Alerts.TelegramEnabled || _settings.Alerts.ZaloEnabled ? "Kênh đã bật" : "Chưa bật";
+        ToolTip.SetTip(AlertHealthText, alertDetails);
+
+        AiHealthText.Text = _settings.Ai.Enabled ? "Đang bật" : "Đang tắt";
+        ToolTip.SetTip(AiHealthText, _settings.Ai.Enabled ? $"AI bật: {_settings.Ai.Model}" : "Phân tích AI đang tắt.");
+
+        var lastEventDetails = _lastRecordedEvent is null
             ? "Sự kiện gần nhất: chưa có"
             : $"Sự kiện gần nhất: {_lastRecordedEvent.CameraName} · {_lastRecordedEvent.DetectedAt:HH:mm:ss} · {_lastRecordedEvent.DeliveryStatus}";
+        LastEventHealthText.Text = _lastRecordedEvent is null ? "Chưa có" : _lastRecordedEvent.DetectedAt.ToString("HH:mm:ss");
+        ToolTip.SetTip(LastEventHealthText, lastEventDetails);
         var process = Process.GetCurrentProcess();
         var now = DateTimeOffset.Now;
         var cpu = 0d;
@@ -654,6 +675,8 @@ public partial class MainWindow : Avalonia.Controls.Window
         SetBrush("InputForegroundBrush", palette.InputForeground);
         SetBrush("InputBorderBrush", palette.InputBorder);
         SetBrush("InputFocusBrush", palette.InputFocus);
+        SetBrush("CameraStatusBackgroundBrush", dark ? "#1E3A5F" : "#E6F6FF");
+        SetBrush("CameraStatusForegroundBrush", dark ? "#F8FAFC" : "#102A43");
     }
 
     private void SetBrush(string key, string color)
@@ -697,6 +720,40 @@ public partial class MainWindow : Avalonia.Controls.Window
             ApplyLayoutMode(mode, true);
     }
 
+    private void PreviewFit_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_uiInitialized || _loadingSettings || sender is not ComboBox combo || combo.SelectedIndex < 0) return;
+        _settings.PreviewFitMode = Math.Clamp(combo.SelectedIndex, 0, 1);
+        ApplyPreviewFit();
+        SaveSettings();
+    }
+
+    private void DashboardViewMode_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_uiInitialized || _loadingSettings || sender is not ComboBox combo || combo.SelectedIndex < 0) return;
+        _settings.DashboardViewMode = Math.Clamp(combo.SelectedIndex, 0, 1);
+        ApplyDashboardViewMode();
+        SaveSettings();
+    }
+
+    private void ApplyDashboardViewMode()
+    {
+        var operations = _settings.DashboardViewMode == (int)DashboardViewMode.Operations;
+        OpenEventsFolderButton.IsVisible = operations;
+        RuntimeInfoText.IsVisible = operations;
+        ToolTip.SetTip(RuntimeInfoText, operations
+            ? "Chế độ Vận hành: hiển thị hồ sơ, tốc độ suy luận và thông tin kỹ thuật."
+            : "Chế độ Giám sát: thông tin kỹ thuật được ẩn để ưu tiên vùng preview.");
+    }
+
+    private void ApplyPreviewFit()
+    {
+        var stretch = _settings.PreviewFitMode == (int)PreviewFitMode.FillFrame
+            ? Stretch.UniformToFill
+            : Stretch.Uniform;
+        foreach (var preview in _previews) preview.Stretch = stretch;
+    }
+
     private void ApplyLayoutMode(int mode, bool persist)
     {
         mode = mode is 1 or 2 or 4 ? mode : 2;
@@ -721,9 +778,26 @@ public partial class MainWindow : Avalonia.Controls.Window
     private void RefreshOverviewStatuses()
     {
         for (var i = 0; i < _cameraStatuses.Length; i++)
-            _cameraStatuses[i].Text = i < _settings.Cameras.Count
+        {
+            var configured = i < _settings.Cameras.Count;
+            var text = configured
                 ? $"{_settings.Cameras[i].Name} · Đang chờ giám sát"
                 : $"Camera {i + 1} chưa cấu hình";
+            _cameraStatuses[i].Text = text;
+            _cameraOverlayLabels[i].Text = configured ? _settings.Cameras[i].Name : $"Camera {i + 1}";
+            _cameraFocusButtons[i].IsVisible = configured;
+            ToolTip.SetTip(_cameraOverlayLabels[i], text);
+        }
+    }
+
+    private void FocusCameraTile_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && int.TryParse(button.Tag?.ToString(), out var index) && index >= 0 && index < _settings.Cameras.Count)
+        {
+            CameraList.SelectedIndex = index;
+            ApplyLayoutMode(1, true);
+            SetStatus($"Đã phóng to {_settings.Cameras[index].Name}.");
+        }
     }
 
     private void UpdateCameraStatus(Guid id, string status)
@@ -733,7 +807,12 @@ public partial class MainWindow : Avalonia.Controls.Window
             _cameraRuntimeStatuses[id] = status;
             var index = _settings.Cameras.FindIndex(x => x.Id == id);
             if (index >= 0 && index < _cameraStatuses.Length)
-                _cameraStatuses[index].Text = $"{_settings.Cameras[index].Name} · {status}";
+            {
+                var text = $"{_settings.Cameras[index].Name} · {status}";
+                _cameraStatuses[index].Text = text;
+                _cameraOverlayLabels[index].Text = _settings.Cameras[index].Name;
+                ToolTip.SetTip(_cameraOverlayLabels[index], text);
+            }
             RefreshSystemStatus();
         });
     }
@@ -976,6 +1055,8 @@ public partial class MainWindow : Avalonia.Controls.Window
             _loadingSettings = false;
             ApplyTheme();
             ApplyLayoutMode(_settings.DashboardLayoutMode, false);
+            ApplyPreviewFit();
+            ApplyDashboardViewMode();
             if (wasRunning) await StartMonitoringAsync(false);
             AppLogger.Info(LogChannel.App, $"settings backup restored; file={Path.GetFileName(path)}");
             SetStatus("Đã khôi phục cấu hình và mã hóa lại bằng Windows DPAPI.");

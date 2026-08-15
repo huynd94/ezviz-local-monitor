@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.15**
+**Phiên bản phát hành hiện tại: v0.9.16**
+
+## Bản cập nhật v0.9.16 — tối ưu trang Tổng quan
+
+Bản v0.9.16 triển khai đợt tối ưu trang Tổng quan theo hướng video là trung tâm và trạng thái dễ quét. Thanh trạng thái camera có màu chữ tương phản theo theme; preview hỗ trợ `Giữ nguyên tỷ lệ` và `Lấp đầy khung`; trạng thái hệ thống được trình bày thành các thẻ CAMERA, KẾT NỐI, CẢNH BÁO, AI và SỰ KIỆN GẦN NHẤT. Thông tin kỹ thuật đầy đủ vẫn có trong tooltip.
+
+Thanh điều khiển được gom thành các nhóm Bố cục, Hiển thị và Hiệu năng. Mỗi tile camera có overlay tên camera cùng nút Phóng to; nút chỉ hiện với camera đã cấu hình. Dashboard có hai chế độ `Giám sát` và `Vận hành`: chế độ Giám sát ưu tiên preview lớn, còn chế độ Vận hành hiển thị thêm thông tin kỹ thuật và nút mở thư mục sự kiện. Các lựa chọn mới được lưu trong cấu hình cục bộ.
 
 ## Bản vá v0.9.15 — rà soát chống tràn giao diện
 

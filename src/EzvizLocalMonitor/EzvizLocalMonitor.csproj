@@ -7,7 +7,7 @@
     <AssemblyName>EzvizLocalMonitor</AssemblyName>
     <RootNamespace>EzvizLocalMonitor</RootNamespace>
     <ApplicationIcon>Assets\ezviz-local-monitor.ico</ApplicationIcon>
-    <Version>0.9.15</Version>
+    <Version>0.9.16</Version>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
