@@ -131,6 +131,11 @@ public partial class MainWindow : Avalonia.Controls.Window
                 AiRequireConfirmationCheck.IsChecked = _settings.Ai.RequireConfirmationBeforeAlert;
         StartWithWindowsCheck.IsChecked = _settings.StartWithWindows;
         WatchdogEnabledCheck.IsChecked = _settings.WatchdogEnabled;
+        LoggingEnabledCheck.IsChecked = _settings.LoggingEnabled;
+        AlertLoggingEnabledCheck.IsChecked = _settings.AlertLoggingEnabled;
+        AutoUpdateEnabledCheck.IsChecked = _settings.AutoUpdateEnabled;
+        AppLogger.Configure(_settings.LoggingEnabled, _settings.AlertLoggingEnabled);
+        ZaloDiagnostics.Configure(_settings.AlertLoggingEnabled);
         RuntimeInfoText.Text =
  $"Hồ sơ: {PerformanceProfileName(_settings.PerformanceProfile)} · {_settings.InferenceFpsPerCamera} lần suy luận/giây/camera · xác nhận {_settings.ConfirmationsRequired}/{_settings.ConfirmationWindow} khung";
         PreviewFitCombo.SelectedIndex = Math.Clamp(_settings.PreviewFitMode, 0, 1);
@@ -545,12 +550,24 @@ public partial class MainWindow : Avalonia.Controls.Window
         _settings.Ai.ApiKey = AiApiKeyText.Text?.Trim() ?? string.Empty;
         _settings.Ai.TimeoutSeconds = int.TryParse(AiTimeoutText.Text, out var timeout) ? Math.Clamp(timeout, 5, 90) : 25;
         _settings.Ai.RequireConfirmationBeforeAlert = AiRequireConfirmationCheck.IsChecked == true;
-        _settings.StartWithWindows = StartWithWindowsCheck.IsChecked == true;
-        _settings.WatchdogEnabled = WatchdogEnabledCheck.IsChecked == true;
-        WindowsStartupService.Apply(_settings.StartWithWindows);
-        if (_settings.WatchdogEnabled) _watchdog.Start(); else _watchdog.Stop();
         SaveSettings();
         RefreshSystemStatus();
+    }
+
+    private void SaveSystemSettings_Click(object? sender, RoutedEventArgs e)
+    {
+        _settings.StartWithWindows = StartWithWindowsCheck.IsChecked == true;
+        _settings.WatchdogEnabled = WatchdogEnabledCheck.IsChecked == true;
+        _settings.LoggingEnabled = LoggingEnabledCheck.IsChecked == true;
+        _settings.AlertLoggingEnabled = AlertLoggingEnabledCheck.IsChecked == true;
+        _settings.AutoUpdateEnabled = AutoUpdateEnabledCheck.IsChecked == true;
+        AppLogger.Configure(_settings.LoggingEnabled, _settings.AlertLoggingEnabled);
+        ZaloDiagnostics.Configure(_settings.AlertLoggingEnabled);
+        WindowsStartupService.Apply(_settings.StartWithWindows);
+        if (_settings.WatchdogEnabled) _watchdog.Start(Program.LaunchInTray); else _watchdog.Stop();
+        SaveSettings();
+        RefreshSystemStatus();
+        SetStatus("Đã lưu cài đặt hệ thống.");
     }
 
     private void ValidateAlerts_Click(object? sender, RoutedEventArgs e)
@@ -1217,6 +1234,71 @@ public partial class MainWindow : Avalonia.Controls.Window
         Process.Start(new ProcessStartInfo { FileName = DataPaths.ZaloLogFile, UseShellExecute = true });
     }
 
+    private static string? ResolveSystemLogPath(string? key) => key?.ToLowerInvariant() switch
+    {
+        "app" => DataPaths.AppLogFile,
+        "camera" => DataPaths.CameraLogFile,
+        "alerts" => DataPaths.AlertsLogFile,
+        "ai" => DataPaths.AiLogFile,
+        "zalo" => DataPaths.ZaloLogFile,
+        "startup" => StartupDiagnostics.LogFilePath,
+        _ => null
+    };
+
+    private void OpenSystemLog_Click(object? sender, RoutedEventArgs e)
+    {
+        var key = (sender as Control)?.Tag?.ToString();
+        var path = ResolveSystemLogPath(key);
+        if (path is null) return;
+        try
+        {
+            DataPaths.EnsureCreated();
+            if (!File.Exists(path)) File.WriteAllText(path, $"Chưa có log {key}.\\n");
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Không mở được log: {ex.Message}");
+        }
+    }
+
+    private async void ClearSystemLogs_Click(object? sender, RoutedEventArgs e)
+    {
+        var confirm = new CleanupConfirmWindow("log vận hành", "Thao tác này sẽ xóa app.log, camera.log, alerts.log, ai.log, zalo-send.log và startup-crash.log cùng các file xoay .1. Không xóa nhật ký sự kiện hoặc ảnh camera.");
+        if (!await confirm.ShowDialog<bool>(this)) return;
+        var paths = new[]
+        {
+            DataPaths.AppLogFile, DataPaths.CameraLogFile, DataPaths.AlertsLogFile, DataPaths.AiLogFile,
+            DataPaths.ZaloLogFile, StartupDiagnostics.LogFilePath
+        };
+        var deleted = 0;
+        foreach (var path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            foreach (var candidate in new[] { path, path + ".1" })
+            {
+                try
+                {
+                    if (File.Exists(candidate)) { File.Delete(candidate); deleted++; }
+                }
+                catch (Exception ex) { AppLogger.Error(LogChannel.App, $"system log delete failed; file={Path.GetFileName(candidate)}", ex); }
+            }
+        }
+        SetStatus($"Đã xóa {deleted} file log vận hành.");
+    }
+
+    private void OpenDataFolder_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            DataPaths.EnsureCreated();
+            Process.Start(new ProcessStartInfo { FileName = DataPaths.Root, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Không mở được thư mục dữ liệu: {ex.Message}");
+        }
+    }
+
     private async void BackupSettings_Click(object? sender, RoutedEventArgs e)
     {
         try
@@ -1331,6 +1413,12 @@ public partial class MainWindow : Avalonia.Controls.Window
         {
             await monitoringTask;
             HideToTray();
+            return;
+        }
+
+        if (!_settings.AutoUpdateEnabled)
+        {
+            await monitoringTask;
             return;
         }
 

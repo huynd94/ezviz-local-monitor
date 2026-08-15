@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.4.4**
+**Phiên bản phát hành hiện tại: v1.5.0**
+
+## Bản cập nhật v1.5.0 — tách Cảnh báo và Cài đặt hệ thống
+
+Tab `Cảnh báo` chỉ còn Kênh thông báo, Phân tích AI, kiểm tra cấu hình và xuất gói chẩn đoán. Tab `Cài đặt hệ thống` quản lý khởi động cùng Windows, watchdog, Auto-Update, công tắc log vận hành, log Telegram/Zalo, mở/xóa log, backup/khôi phục cấu hình và mở thư mục dữ liệu. Theme, bố cục, chế độ dashboard và hồ sơ hiệu năng vẫn nằm ở `Tổng quan`; lọc và dọn sự kiện/ảnh vẫn nằm ở `Nhật ký sự kiện` để giữ đúng ngữ cảnh.
+
+Các tùy chọn `Bật log vận hành hệ thống` và `Bật log cảnh báo Telegram/Zalo` có tác dụng thật ở runtime. Khi tắt, AppLogger và ZaloDiagnostics không ghi thêm file tương ứng; việc xóa log luôn yêu cầu xác nhận. Tùy chọn `Tự động kiểm tra bản cập nhật` cho phép tắt kiểm tra release khi mở giao diện chính.
 
 ## Bản vá v1.4.4 — sửa hiển thị tiếng Việt trong PowerShell 5.1
 

@@ -25,6 +25,14 @@ public static class AppLogger
         [LogChannel.Ai] = DataPaths.AiLogFile
     };
     private const long MaxBytes = 4 * 1024 * 1024;
+    private static volatile bool _loggingEnabled = true;
+    private static volatile bool _alertLoggingEnabled = true;
+
+    public static void Configure(bool loggingEnabled, bool alertLoggingEnabled)
+    {
+        _loggingEnabled = loggingEnabled;
+        _alertLoggingEnabled = alertLoggingEnabled;
+    }
 
     public static void Info(LogChannel channel, string message) => Write(channel, "INFO", message);
     public static void Error(LogChannel channel, string message, Exception? exception = null)
@@ -35,6 +43,7 @@ public static class AppLogger
 
     public static void Write(LogChannel channel, string level, string message)
     {
+        if (!_loggingEnabled || (channel == LogChannel.Alerts && !_alertLoggingEnabled)) return;
         try
         {
             DataPaths.EnsureCreated();

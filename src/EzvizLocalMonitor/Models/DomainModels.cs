@@ -119,6 +119,9 @@ public sealed class AppSettings
     public string ThemeName { get; set; } = "Dark/Light";
     public List<MonitorSchedule> MonitorSchedules { get; set; } = new();
     public bool WatchdogEnabled { get; set; }
+    public bool LoggingEnabled { get; set; } = true;
+    public bool AlertLoggingEnabled { get; set; } = true;
+    public bool AutoUpdateEnabled { get; set; } = true;
 }
 
 public sealed record PersonDetection(double Confidence, int Left, int Top, int Right, int Bottom)

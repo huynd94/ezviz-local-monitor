@@ -70,7 +70,10 @@ public sealed class SettingsSerializationTests
             {
                 new() { Id = scheduleId, Name = "Ban đêm", Days = "Mon-Fri", StartTime = "22:00", EndTime = "06:00", PerformanceProfile = 3 }
             },
-            WatchdogEnabled = true
+            WatchdogEnabled = true,
+            LoggingEnabled = false,
+            AlertLoggingEnabled = false,
+            AutoUpdateEnabled = false
         };
 
         var json = JsonSerializer.Serialize(settings);
@@ -90,6 +93,9 @@ public sealed class SettingsSerializationTests
         Assert.Equal(settings.MonitorSchedules.Single().StartTime, restored.MonitorSchedules.Single().StartTime);
         Assert.Equal(settings.ThemeName, restored.ThemeName);
         Assert.Equal(settings.WatchdogEnabled, restored.WatchdogEnabled);
+        Assert.Equal(settings.LoggingEnabled, restored.LoggingEnabled);
+        Assert.Equal(settings.AlertLoggingEnabled, restored.AlertLoggingEnabled);
+        Assert.Equal(settings.AutoUpdateEnabled, restored.AutoUpdateEnabled);
     }
 }
 

@@ -8,8 +8,11 @@ public static class ZaloDiagnostics
     private static int PendingWrites;
     private const int MaxPendingWrites = 128;
     private const long MaxLogBytes = 2 * 1024 * 1024;
+    private static volatile bool _enabled = true;
 
     public static string LogFilePath => DataPaths.ZaloLogFile;
+
+    public static void Configure(bool enabled) => _enabled = enabled;
 
     public static void Info(string message) => Write("INFO", SanitizeResponse(message));
 
@@ -38,6 +41,7 @@ public static class ZaloDiagnostics
 
     private static void Write(string level, string message)
     {
+        if (!_enabled) return;
         AppLogger.Write(LogChannel.Alerts, level, message);
         if (Interlocked.Increment(ref PendingWrites) > MaxPendingWrites)
         {
