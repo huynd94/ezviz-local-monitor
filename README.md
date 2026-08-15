@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.19**
+**Phiên bản phát hành hiện tại: v0.9.20**
+
+## Bản cập nhật v0.9.20 — sửa chồng nội dung thẻ trạng thái
+
+Bản v0.9.20 chuyển các thẻ CAMERA, KẾT NỐI, CẢNH BÁO, AI và SỰ KIỆN sang bố cục một hàng cố định: label ở bên trái, giá trị ở bên phải. Giá trị không tự xuống dòng; khi cửa sổ hẹp, nội dung dài được rút gọn bằng dấu ba chấm thay vì chồng lên label. Tooltip vẫn giữ thông tin đầy đủ cho trạng thái kỹ thuật và sự kiện gần nhất.
 
 ## Bản cập nhật v0.9.19 — sửa timeout gửi ảnh Telegram
 
