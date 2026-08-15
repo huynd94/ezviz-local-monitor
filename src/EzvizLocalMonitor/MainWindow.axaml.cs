@@ -50,6 +50,7 @@ public partial class MainWindow : Avalonia.Controls.Window
     private bool _updateCheckStarted;
     private bool _exitRequested;
     private bool _shutdownStarted;
+    private bool _liveViewEnabled = true;
     private DetectionEvent? _lastRecordedEvent;
     private bool? _lastScheduleAllowed;
     private int? _lastScheduleProfile;
@@ -207,7 +208,9 @@ public partial class MainWindow : Avalonia.Controls.Window
         }
         _lastPreviewMetricAt = now;
         _lastPreviewFramesApplied = _previewFramesApplied;
-        SystemMetricsText.Text = $"CPU {cpu:0}% · RAM {memoryMb:0} MB · Preview {fps:0.0} FPS";
+        SystemMetricsText.Text = _liveViewEnabled
+            ? $"CPU {cpu:0}% · RAM {memoryMb:0} MB · Preview {fps:0.0} FPS"
+            : $"CPU {cpu:0}% · RAM {memoryMb:0} MB · Preview tạm dừng (tray)";
     }
 
     private void SaveSettings()
@@ -555,7 +558,10 @@ public partial class MainWindow : Avalonia.Controls.Window
             _coordinator.PreviewReady += UpdatePreview;
             _coordinator.EventRecorded += HandleEventRecorded;
             await _coordinator.StartAsync(_settings);
-            SetStatus("Đang giám sát cục bộ — ONVIF event hoặc YOLO fallback");
+            _coordinator.SetPreviewEnabled(_liveViewEnabled);
+            SetStatus(_liveViewEnabled
+                ? "Đang giám sát cục bộ — ONVIF event hoặc YOLO fallback"
+                : "Đang chạy nền — giám sát vẫn hoạt động, live view tạm dừng");
         }
         catch (Exception ex)
         {
@@ -831,6 +837,12 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private void UpdatePreview(Guid id, Mat image)
     {
+        if (!_liveViewEnabled)
+        {
+            image.Dispose();
+            return;
+        }
+
         lock (_previewSync)
         {
             if (_pendingPreviewMats.TryGetValue(id, out var oldPending)) oldPending.Dispose();
@@ -1232,15 +1244,32 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     public void HideToTray()
     {
+        _liveViewEnabled = false;
+        _coordinator?.SetPreviewEnabled(false);
+        ClearPendingPreviewFrames();
         Hide();
-        SetStatus("Đang chạy nền và tiếp tục giám sát — mở lại từ biểu tượng khay thông báo.");
+        SetStatus("Đang chạy nền — live view tạm dừng, giám sát và cảnh báo vẫn hoạt động.");
     }
 
     public void ShowFromTray()
     {
+        _liveViewEnabled = true;
+        _coordinator?.SetPreviewEnabled(true);
         Show();
         WindowState = WindowState.Normal;
         Activate();
+        SetStatus("Đã mở ứng dụng — live view đang khôi phục, giám sát vẫn hoạt động.");
+    }
+
+    private void ClearPendingPreviewFrames()
+    {
+        lock (_previewSync)
+        {
+            foreach (var pending in _pendingPreviewMats.Values) pending.Dispose();
+            foreach (var pending in _pendingPreviewBitmaps.Values) pending.Dispose();
+            _pendingPreviewMats.Clear();
+            _pendingPreviewBitmaps.Clear();
+        }
     }
 
     public async void StopFromTray()
@@ -1296,12 +1325,9 @@ public partial class MainWindow : Avalonia.Controls.Window
             return;
         }
 
+        ClearPendingPreviewFrames();
         lock (_previewSync)
         {
-            foreach (var pending in _pendingPreviewMats.Values) pending.Dispose();
-            foreach (var pending in _pendingPreviewBitmaps.Values) pending.Dispose();
-            _pendingPreviewMats.Clear();
-            _pendingPreviewBitmaps.Clear();
             _previewEncodeScheduled.Clear();
             _previewDispatchScheduled.Clear();
         }

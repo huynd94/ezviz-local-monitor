@@ -28,8 +28,11 @@ public sealed class CameraMonitor : IAsyncDisposable
     private Mat? _pendingInferenceFrame;
     private Task? _inferenceWorker;
     private bool _inferenceWorkerRunning;
+    private bool _previewEnabled = true;
 
     public Guid CameraId => _camera.Id;
+
+    public void SetPreviewEnabled(bool enabled) => Volatile.Write(ref _previewEnabled, enabled);
 
     public event Action<CameraDefinition, Mat, Mat?, PersonDetection>? PersonConfirmed;
     public event Action<CameraDefinition, string>? StatusChanged;
@@ -80,7 +83,7 @@ public sealed class CameraMonitor : IAsyncDisposable
                     // Chỉ clone theo nhịp preview; resize và JPEG encode thực hiện ở
                     // worker UI để thread đọc RTSP không bị chặn.
                     var now = DateTimeOffset.UtcNow;
-                    if (now - _lastPreviewAt >= _previewInterval)
+                    if (Volatile.Read(ref _previewEnabled) && now - _lastPreviewAt >= _previewInterval)
                     {
                         _lastPreviewAt = now;
                         PreviewReady?.Invoke(_camera, frame.Clone());

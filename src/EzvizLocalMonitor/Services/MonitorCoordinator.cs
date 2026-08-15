@@ -18,6 +18,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
     private YoloPersonDetector? _detector;
     private AppSettings? _settings;
     private bool _started;
+    private volatile bool _previewEnabled = true;
 
     public event Action<Guid, string>? CameraStatusChanged;
     public event Action<Guid, CameraRuntimeSnapshot>? CameraRuntimeChanged;
@@ -29,6 +30,12 @@ public sealed class MonitorCoordinator : IAsyncDisposable
         _eventStore = eventStore;
         _alerts = alerts;
         _alertQueue = new AlertQueueService(alerts);
+    }
+
+    public void SetPreviewEnabled(bool enabled)
+    {
+        _previewEnabled = enabled;
+        foreach (var monitor in _monitors) monitor.SetPreviewEnabled(enabled);
     }
 
     public async Task StartAsync(AppSettings settings)
@@ -66,6 +73,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
             _settings?.ConfirmationsRequired ?? 2, _settings?.ConfirmationWindow ?? 3);
         monitor.StatusChanged += (definition, status) => CameraStatusChanged?.Invoke(definition.Id, status);
         monitor.RuntimeChanged += (definition, runtime) => CameraRuntimeChanged?.Invoke(definition.Id, runtime);
+        monitor.SetPreviewEnabled(_previewEnabled);
         monitor.PreviewReady += (definition, image) => PreviewReady?.Invoke(definition.Id, image);
         monitor.PersonConfirmed += OnPersonConfirmed;
         _monitors.Add(monitor);
@@ -89,7 +97,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                     return;
                 }
 
-                PreviewReady?.Invoke(camera.Id, frame.Clone());
+                if (_previewEnabled) PreviewReady?.Invoke(camera.Id, frame.Clone());
                 var snapshot = frame.Clone();
                 var confidence = onvifEvent.IsHuman ? 0.95 : 0.75;
                 var detection = new PersonDetection(confidence, 0, 0, frame.Width, frame.Height);

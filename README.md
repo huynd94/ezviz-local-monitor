@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.0.0**
+**Phiên bản phát hành hiện tại: v1.1.0**
+
+## Bản cập nhật v1.1.0 — tiết kiệm CPU khi chạy nền
+
+Khi ứng dụng được ẩn vào khay thông báo, live view sẽ tạm dừng: CameraMonitor không clone frame preview, MonitorCoordinator không phát snapshot ONVIF lên UI, và worker encode không giữ frame chờ. Giám sát RTSP/ONVIF, YOLO, tracking hiện diện, ghi sự kiện và cảnh báo Telegram/Zalo vẫn tiếp tục hoạt động.
+
+Khi người dùng mở lại cửa sổ từ khay, live view được bật lại và nhận frame mới nhất; ứng dụng không phát lại hàng loạt frame cũ. Footer hiển thị `Preview tạm dừng (tray)` khi chạy nền để người dùng dễ xác nhận trạng thái.
 
 ## Bản phát hành 1.0.0 — ổn định giao diện Tổng quan
 
