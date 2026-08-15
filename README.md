@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.21**
+**Phiên bản phát hành hiện tại: v1.0.0**
+
+## Bản phát hành 1.0.0 — ổn định giao diện Tổng quan
+
+Bản 1.0.0 sửa triệt để lỗi chồng nội dung ở footer trạng thái Tổng quan. Năm thẻ CAMERA, KẾT NỐI, CẢNH BÁO, AI và SỰ KIỆN dùng Grid hai cột cố định: label ở cột 0 bên trái và giá trị ở cột 1 bên phải. Giá trị không tự xuống dòng; nếu thiếu chiều rộng sẽ dùng dấu ba chấm, còn tooltip vẫn giữ nội dung đầy đủ. Mỗi thẻ có chiều cao tối thiểu để label và giá trị không thể vẽ chồng lên nhau.
+
+Đợt phát hành này giữ các tối ưu live view RTSP của v0.9.21, gồm preview mới nhất, worker encode riêng và worker YOLO tách khỏi vòng đọc RTSP.
 
 ## Bản cập nhật v0.9.21 — tối ưu live view RTSP
 
