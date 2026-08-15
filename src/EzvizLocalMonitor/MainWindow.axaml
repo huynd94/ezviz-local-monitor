@@ -402,12 +402,36 @@
 
       <TabItem Header="Nhật ký sự kiện">
         <Grid Margin="12" RowDefinitions="Auto,*" ColumnDefinitions="*,340">
-          <WrapPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,10">
-            <Button Content="Làm mới" Click="RefreshEvents_Click" Margin="0,0,4,4" />
-            <TextBox x:Name="EventSearchText" Width="280" Watermark="Tìm camera, nguồn, trạng thái…" TextChanged="EventSearch_Changed" Margin="0,0,8,8" ToolTip.Tip="Lọc nhật ký theo tên camera, nguồn phát hiện hoặc trạng thái gửi cảnh báo." />
-            <ComboBox x:Name="EventCameraFilter" Width="220" PlaceholderText="Tất cả camera" SelectionChanged="EventCameraFilter_Changed" Margin="0,0,8,8" ToolTip.Tip="Chỉ hiển thị sự kiện của một camera hoặc chọn tất cả camera." />
-            <TextBlock x:Name="EventLogSummaryText" Text="Chưa tải nhật ký" Width="340" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,8" />
-          </WrapPanel>
+          <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Spacing="3" Margin="0,0,0,10">
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="Làm mới" Click="RefreshEvents_Click" Margin="0,0,4,4" />
+              <TextBox x:Name="EventSearchText" Width="280" Watermark="Tìm camera, nguồn, trạng thái…" TextChanged="EventSearch_Changed" Margin="0,0,8,4" ToolTip.Tip="Lọc nhật ký theo tên camera, nguồn phát hiện hoặc trạng thái gửi cảnh báo." />
+              <ComboBox x:Name="EventCameraFilter" Width="220" PlaceholderText="Tất cả camera" SelectionChanged="EventCameraFilter_Changed" Margin="0,0,8,4" ToolTip.Tip="Chỉ hiển thị sự kiện của một camera hoặc chọn tất cả camera." />
+              <TextBlock Text="Thời gian" VerticalAlignment="Center" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,6,4" />
+              <ComboBox x:Name="EventTimeFilterCombo" Width="155" SelectedIndex="0" SelectionChanged="EventTimeFilter_Changed" Margin="0,0,6,4" ToolTip.Tip="Lọc tất cả, 1 ngày, 2 ngày, 7 ngày gần nhất hoặc ngày chỉ định.">
+                <ComboBoxItem Content="Tất cả thời gian" />
+                <ComboBoxItem Content="1 ngày gần nhất" />
+                <ComboBoxItem Content="2 ngày gần nhất" />
+                <ComboBoxItem Content="7 ngày gần nhất" />
+                <ComboBoxItem Content="Ngày chỉ định" />
+              </ComboBox>
+              <TextBox x:Name="EventSpecificDateText" Width="112" Watermark="yyyy-MM-dd" Margin="0,0,6,4" ToolTip.Tip="Nhập ngày theo dạng yyyy-MM-dd, ví dụ 2026-08-15, rồi bấm Áp dụng ngày." />
+              <Button Content="Áp dụng ngày" Click="ApplyEventDate_Click" Margin="0,0,8,4" ToolTip.Tip="Áp dụng ngày chỉ định đang nhập." />
+              <TextBlock x:Name="EventLogSummaryText" Text="Chưa tải nhật ký" Width="250" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" />
+            </WrapPanel>
+            <WrapPanel Orientation="Horizontal">
+              <TextBlock Text="Dọn dữ liệu" VerticalAlignment="Center" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,6,4" />
+              <ComboBox x:Name="CleanupRetentionCombo" Width="150" SelectedIndex="0" Margin="0,0,6,4" ToolTip.Tip="Chọn dữ liệu cần giữ lại. Thao tác sẽ xóa sự kiện, ảnh và phần log cũ hơn mốc đã chọn.">
+                <ComboBoxItem Content="Giữ lại 1 ngày" />
+                <ComboBoxItem Content="Giữ lại 2 ngày" />
+                <ComboBoxItem Content="Giữ lại 1 tuần" />
+                <ComboBoxItem Content="Giữ lại 1 tháng" />
+                <ComboBoxItem Content="Xóa tất cả" />
+              </ComboBox>
+              <Button Content="Dọn log/sự kiện" Click="CleanupEventData_Click" Margin="0,0,8,4" ToolTip.Tip="Xóa sự kiện, ảnh và log theo chính sách giữ lại. Luôn hỏi xác nhận trước khi thực hiện." />
+              <TextBlock x:Name="CleanupSummaryText" Text="Chưa dọn dữ liệu" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" />
+            </WrapPanel>
+          </StackPanel>
           <DataGrid x:Name="EventsGrid" Grid.Row="1" Grid.Column="0" AutoGenerateColumns="False" IsReadOnly="True" CanUserResizeColumns="True" GridLinesVisibility="All" SelectionChanged="EventsGrid_SelectionChanged" Margin="0,0,10,0">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Thời gian" Binding="{Binding DetectedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" Width="190" />

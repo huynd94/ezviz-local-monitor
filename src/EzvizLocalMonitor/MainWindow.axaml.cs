@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -18,6 +19,7 @@ public partial class MainWindow : Avalonia.Controls.Window
 {
     private readonly SettingsStore _settingsStore = new();
     private readonly EventStore _eventStore = new();
+    private readonly EventLogMaintenanceService _eventMaintenance;
     private readonly AlertDispatcher _alerts = new();
     private readonly LanCameraDiscovery _lanDiscovery = new();
     private AppSettings _settings = new();
@@ -71,6 +73,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         AuthorVersionText.Text = $"Bản {version}";
         DataPaths.EnsureCreated();
         _eventStore.Initialize();
+        _eventMaintenance = new EventLogMaintenanceService(_eventStore);
         _loadingSettings = true;
         LoadSettings();
         RefreshScheduleGrid();
@@ -960,11 +963,23 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private void EventCameraFilter_Changed(object? sender, SelectionChangedEventArgs e) => ApplyEventFilters();
 
+    private void EventTimeFilter_Changed(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_uiInitialized) ApplyEventFilters();
+    }
+
+    private void ApplyEventDate_Click(object? sender, RoutedEventArgs e)
+    {
+        if (EventTimeFilterCombo.SelectedIndex != (int)EventTimeFilterMode.SpecificDate)
+            EventTimeFilterCombo.SelectedIndex = (int)EventTimeFilterMode.SpecificDate;
+        ApplyEventFilters();
+    }
+
     private void RefreshEvents()
     {
         try
         {
-            _eventCache = _eventStore.Recent();
+            _eventCache = _eventStore.Recent(10_000);
             var cameraNames = new[] { "Tất cả camera" }.Concat(_eventCache.Select(x => x.CameraName).Distinct(StringComparer.OrdinalIgnoreCase)).ToList();
             var previousCamera = EventCameraFilter.SelectedItem as string;
             EventCameraFilter.ItemsSource = cameraNames;
@@ -987,12 +1002,93 @@ public partial class MainWindow : Avalonia.Controls.Window
         if (EventsGrid is null) return;
         var search = EventSearchText?.Text?.Trim() ?? string.Empty;
         var selectedCamera = EventCameraFilter?.SelectedItem as string;
+        var mode = (EventTimeFilterMode)Math.Clamp(EventTimeFilterCombo?.SelectedIndex ?? 0, 0, 4);
+        var range = GetEventTimeRange(mode);
+        if (!range.IsValid)
+        {
+            EventsGrid.ItemsSource = Array.Empty<DetectionEvent>();
+            if (EventLogSummaryText is not null) EventLogSummaryText.Text = range.ErrorMessage!;
+            return;
+        }
+
         var filtered = _eventCache.Where(x =>
+            (!range.From.HasValue || x.DetectedAt >= range.From.Value) &&
+            (!range.To.HasValue || x.DetectedAt < range.To.Value) &&
             (string.IsNullOrWhiteSpace(selectedCamera) || selectedCamera == "Tất cả camera" || x.CameraName.Equals(selectedCamera, StringComparison.OrdinalIgnoreCase)) &&
             (string.IsNullOrWhiteSpace(search) || $"{x.CameraName} {x.DetectionSource} {x.DeliveryStatus} {x.AiStatus} {x.AiSummary}".Contains(search, StringComparison.OrdinalIgnoreCase))).ToList();
         EventsGrid.ItemsSource = filtered;
         if (EventLogSummaryText is not null)
-            EventLogSummaryText.Text = $"Hiển thị {filtered.Count}/{_eventCache.Count} sự kiện";
+        {
+            var rangeText = mode switch
+            {
+                EventTimeFilterMode.LastDay => " · 1 ngày",
+                EventTimeFilterMode.LastTwoDays => " · 2 ngày",
+                EventTimeFilterMode.LastSevenDays => " · 7 ngày",
+                EventTimeFilterMode.SpecificDate => $" · {EventSpecificDateText.Text?.Trim()}",
+                _ => string.Empty
+            };
+            EventLogSummaryText.Text = $"Hiển thị {filtered.Count}/{_eventCache.Count} sự kiện{rangeText}";
+        }
+    }
+
+    private (DateTimeOffset? From, DateTimeOffset? To, bool IsValid, string? ErrorMessage) GetEventTimeRange(EventTimeFilterMode mode)
+    {
+        var now = DateTimeOffset.Now;
+        return mode switch
+        {
+            EventTimeFilterMode.LastDay => (now.AddDays(-1), null, true, null),
+            EventTimeFilterMode.LastTwoDays => (now.AddDays(-2), null, true, null),
+            EventTimeFilterMode.LastSevenDays => (now.AddDays(-7), null, true, null),
+            EventTimeFilterMode.SpecificDate => ParseSpecificEventDate(),
+            _ => (null, null, true, null)
+        };
+    }
+
+    private (DateTimeOffset? From, DateTimeOffset? To, bool IsValid, string? ErrorMessage) ParseSpecificEventDate()
+    {
+        if (!DateTime.TryParseExact(EventSpecificDateText?.Text?.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            return (null, null, false, "Ngày không hợp lệ · dùng yyyy-MM-dd");
+        var localDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Local);
+        var from = new DateTimeOffset(localDate);
+        return (from, from.AddDays(1), true, null);
+    }
+
+    private async void CleanupEventData_Click(object? sender, RoutedEventArgs e)
+    {
+        var policy = (CleanupRetentionPolicy)Math.Clamp(CleanupRetentionCombo?.SelectedIndex ?? 0, 0, 4);
+        var policyText = CleanupRetentionCombo?.SelectedItem is ComboBoxItem item ? item.Content?.ToString() : "chính sách đã chọn";
+        var warning = policy == CleanupRetentionPolicy.DeleteAll
+            ? "Thao tác này sẽ xóa toàn bộ sự kiện trong cơ sở dữ liệu, ảnh sự kiện và các file log của ứng dụng. Không thể hoàn tác."
+            : $"Thao tác này sẽ xóa sự kiện, ảnh và nội dung log cũ hơn mốc {policyText?.ToLowerInvariant()}. Dữ liệu mới hơn sẽ được giữ lại.";
+        var confirmed = await new CleanupConfirmWindow(policyText ?? "Dọn dữ liệu", warning).ShowDialog<bool>(this);
+        if (!confirmed) return;
+
+        try
+        {
+            SetStatus("Đang dọn log, sự kiện và ảnh; vui lòng chờ...");
+            var result = await Task.Run(() => _eventMaintenance.Cleanup(policy));
+            _eventDetailBitmap?.Dispose();
+            _eventDetailBitmap = null;
+            EventDetailImage.Source = null;
+            EventDetailText.Text = "Chọn một dòng để xem chi tiết.";
+            RefreshEvents();
+            CleanupSummaryText.Text = $"Đã xóa {result.DeletedEvents} sự kiện · giải phóng {FormatBytes(result.FreedBytes)} · {result.ProcessedLogFiles} log" + (result.FailedFiles > 0 ? $" · lỗi {result.FailedFiles} file" : string.Empty);
+            SetStatus("Đã dọn dữ liệu theo chính sách lưu giữ.");
+        }
+        catch (Exception ex)
+        {
+            CleanupSummaryText.Text = $"Dọn dữ liệu lỗi: {ex.Message}";
+            SetStatus("Không thể hoàn tất dọn dữ liệu; xem log ứng dụng.");
+            AppLogger.Error(LogChannel.App, "event/log cleanup failed", ex);
+        }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024d:0.0} KB";
+        if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024d * 1024d):0.0} MB";
+        return $"{bytes / (1024d * 1024d * 1024d):0.0} GB";
     }
 
     private void EventsGrid_SelectionChanged(object? sender, SelectionChangedEventArgs e)

@@ -3,6 +3,8 @@ using Microsoft.Data.Sqlite;
 
 namespace EzvizLocalMonitor.Services;
 
+public sealed record EventPurgeResult(int DeletedEvents, long FreedBytes);
+
 public sealed class EventStore
 {
     private readonly string _connectionString;
@@ -118,13 +120,17 @@ public sealed class EventStore
         command.ExecuteNonQuery();
     }
 
-    public IReadOnlyList<DetectionEvent> Recent(int take = 50)
+    public IReadOnlyList<DetectionEvent> Recent(int take = 50) => Query(null, null, take);
+
+    public IReadOnlyList<DetectionEvent> Query(DateTimeOffset? fromInclusive, DateTimeOffset? toExclusive, int take = 50)
     {
         var results = new List<DetectionEvent>();
         using var connection = new SqliteConnection(_connectionString);
         connection.Open();
         using var command = connection.CreateCommand();
-        command.CommandText = "SELECT id, camera_id, camera_name, detected_at, confidence, image_path, delivery_status, detection_source, is_human_detection, ai_status, ai_motion_detected, ai_person_present, ai_confidence, ai_summary FROM detection_events ORDER BY detected_at DESC LIMIT $take";
+        command.CommandText = "SELECT id, camera_id, camera_name, detected_at, confidence, image_path, delivery_status, detection_source, is_human_detection, ai_status, ai_motion_detected, ai_person_present, ai_confidence, ai_summary FROM detection_events WHERE ($from IS NULL OR detected_at >= $from) AND ($to IS NULL OR detected_at < $to) ORDER BY detected_at DESC LIMIT $take";
+        command.Parameters.AddWithValue("$from", fromInclusive is null ? DBNull.Value : fromInclusive.Value.ToString("O"));
+        command.Parameters.AddWithValue("$to", toExclusive is null ? DBNull.Value : toExclusive.Value.ToString("O"));
         command.Parameters.AddWithValue("$take", take);
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -150,11 +156,14 @@ public sealed class EventStore
         return results;
     }
 
-    public void PurgeBefore(DateTimeOffset cutoff)
+    public EventPurgeResult PurgeBefore(DateTimeOffset cutoff)
     {
-        foreach (var item in Recent(10_000).Where(x => x.DetectedAt < cutoff))
+        var items = Query(null, cutoff, 1_000_000);
+        long bytes = 0;
+        foreach (var item in items)
         {
-            if (File.Exists(item.ImagePath)) File.Delete(item.ImagePath);
+            bytes += DeleteFile(item.ImagePath);
+            bytes += DeleteFile(BeforeImagePath(item.ImagePath));
         }
 
         using var connection = new SqliteConnection(_connectionString);
@@ -163,5 +172,39 @@ public sealed class EventStore
         command.CommandText = "DELETE FROM detection_events WHERE detected_at < $cutoff";
         command.Parameters.AddWithValue("$cutoff", cutoff.ToString("O"));
         command.ExecuteNonQuery();
+        return new EventPurgeResult(items.Count, bytes);
+    }
+
+    public EventPurgeResult PurgeAll()
+    {
+        var items = Recent(1_000_000);
+        long bytes = 0;
+        foreach (var item in items)
+        {
+            bytes += DeleteFile(item.ImagePath);
+            bytes += DeleteFile(BeforeImagePath(item.ImagePath));
+        }
+
+        using var connection = new SqliteConnection(_connectionString);
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM detection_events";
+        command.ExecuteNonQuery();
+        return new EventPurgeResult(items.Count, bytes);
+    }
+
+    private static string BeforeImagePath(string imagePath)
+        => Path.Combine(Path.GetDirectoryName(imagePath) ?? string.Empty, Path.GetFileNameWithoutExtension(imagePath) + "_before.jpg");
+
+    private static long DeleteFile(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return 0;
+            var bytes = new FileInfo(path).Length;
+            File.Delete(path);
+            return bytes;
+        }
+        catch { return 0; }
     }
 }

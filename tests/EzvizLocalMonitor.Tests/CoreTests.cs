@@ -33,6 +33,36 @@ public sealed class EventStoreTests : IDisposable
         Assert.Equal("Có người", result.AiSummary);
     }
 
+    [Fact]
+    public void EventStore_QueryAndPurgeBefore_RemovesOldEventAndImageOnly()
+    {
+        var store = new EventStore(_database);
+        store.Initialize();
+        var root = Path.Combine(Path.GetTempPath(), $"ezviz-event-images-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var oldImage = Path.Combine(root, "old.jpg");
+        var oldBefore = Path.Combine(root, "old_before.jpg");
+        var newImage = Path.Combine(root, "new.jpg");
+        File.WriteAllBytes(oldImage, new byte[32]);
+        File.WriteAllBytes(oldBefore, new byte[16]);
+        File.WriteAllBytes(newImage, new byte[24]);
+        var now = DateTimeOffset.Now;
+        var old = new DetectionEvent { CameraId = Guid.NewGuid(), CameraName = "Old", DetectedAt = now.AddDays(-3), ImagePath = oldImage, DeliveryStatus = "Chưa gửi" };
+        var recent = new DetectionEvent { CameraId = Guid.NewGuid(), CameraName = "Recent", DetectedAt = now.AddHours(-2), ImagePath = newImage, DeliveryStatus = "Chưa gửi" };
+        old.Id = store.Add(old);
+        recent.Id = store.Add(recent);
+
+        Assert.Single(store.Query(now.AddDays(-1), null, 50));
+        var result = store.PurgeBefore(now.AddDays(-1));
+
+        Assert.Equal(1, result.DeletedEvents);
+        Assert.False(File.Exists(oldImage));
+        Assert.False(File.Exists(oldBefore));
+        Assert.True(File.Exists(newImage));
+        Assert.Single(store.Recent(50));
+        try { Directory.Delete(root, true); } catch { }
+    }
+
     public void Dispose()
     {
         try { File.Delete(_database); } catch { }

@@ -12,6 +12,24 @@ public enum PreviewFitMode
     FillFrame
 }
 
+public enum EventTimeFilterMode
+{
+    All,
+    LastDay,
+    LastTwoDays,
+    LastSevenDays,
+    SpecificDate
+}
+
+public enum CleanupRetentionPolicy
+{
+    KeepOneDay,
+    KeepTwoDays,
+    KeepOneWeek,
+    KeepOneMonth,
+    DeleteAll
+}
+
 public enum CameraConnectionState
 {
     Stopped,

@@ -1,6 +1,14 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.2.0**
+**Phiên bản phát hành hiện tại: v1.3.0**
+
+## Bản cập nhật v1.3.0 — lọc và dọn nhật ký sự kiện
+
+Tab Nhật ký sự kiện có bộ lọc thời gian gồm tất cả thời gian, 1 ngày, 2 ngày, 7 ngày gần nhất và ngày chỉ định theo dạng `yyyy-MM-dd`. Bộ lọc thời gian kết hợp được với tìm kiếm camera/nguồn/trạng thái và bộ lọc camera.
+
+Khu vực Dọn dữ liệu cho phép giữ lại 1 ngày, 2 ngày, 1 tuần, 1 tháng hoặc xóa tất cả. Thao tác có hộp thoại xác nhận, xóa các event SQLite cũ, ảnh chính và ảnh `_before` tương ứng, đồng thời cắt phần log cũ theo timestamp. Sau khi thực hiện, giao diện hiển thị số sự kiện đã xóa, số log đã xử lý, dung lượng giải phóng và file lỗi nếu có.
+
+Khi chọn Xóa tất cả, toàn bộ event, ảnh sự kiện và các log ứng dụng được xóa; thao tác không thể hoàn tác. File đang bị tiến trình khác sử dụng có thể được giữ lại và báo trong kết quả.
 
 ## Bản cập nhật v1.2.0 — AI trong cảnh báo và startup nền
 
