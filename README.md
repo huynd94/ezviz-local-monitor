@@ -1,6 +1,11 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.9**
+**Phiên bản phát hành hiện tại: v0.9.10**
+
+## Bản cập nhật v0.9.10 — sửa bố cục tab Camera
+
+Bản v0.9.10 bọc panel cấu hình Camera bằng vùng cuộn dọc. Khi cửa sổ toàn màn hình có chiều cao thấp hoặc Windows dùng scaling lớn, các nút `Lưu camera` và `Kiểm tra RTSP` vẫn có thể truy cập bằng cách cuộn thay vì bị nằm ngoài viewport. Khu vực danh sách camera và các nút `Thêm`/`Xóa` tiếp tục co giãn theo cửa sổ.
+
 
 ## Bản cập nhật v0.9.9 — dọn thư mục updater legacy
 
