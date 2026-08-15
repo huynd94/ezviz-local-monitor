@@ -18,9 +18,7 @@ public sealed class AlertDispatcher
 
     public async Task<string> SendAsync(AlertChannelSettings settings, DetectionEvent item, CancellationToken cancellationToken = default)
     {
-        var aiCaption = string.IsNullOrWhiteSpace(item.AiSummary) ? string.Empty : $"\nAI: {item.AiSummary}";
-        var label = item.IsHumanDetection ? "PHÁT HIỆN NGƯỜI" : "PHÁT HIỆN CHUYỂN ĐỘNG";
-        var caption = $"{label} | {item.CameraName} | {item.DetectedAt:yyyy-MM-dd HH:mm:ss} | Tin cậy: {item.Confidence:P0} | Nguồn: {item.DetectionSource}{aiCaption}";
+        var caption = AlertMessagePolicy.CaptionForAlert(item);
         if (settings.ZaloEnabled)
         {
             var imageMetadata = ReadImageMetadata(item.ImagePath);

@@ -1164,10 +1164,17 @@ public partial class MainWindow : Avalonia.Controls.Window
         }
 
         WindowsStartupService.Apply(_settings.StartWithWindows);
-        if (_settings.WatchdogEnabled) _watchdog.Start();
+        if (_settings.WatchdogEnabled) _watchdog.Start(Program.LaunchInTray);
         var monitoringTask = MonitorScheduleService.IsMonitoringAllowed(_settings)
             ? StartMonitoringAsync(false)
             : Task.CompletedTask;
+
+        if (Program.LaunchInTray)
+        {
+            await monitoringTask;
+            HideToTray();
+            return;
+        }
 
         try
         {

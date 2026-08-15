@@ -154,8 +154,11 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                 AppLogger.Info(LogChannel.Alerts, $"event recorded; eventId={item.Id}; camera={camera.Name}; source={detectionSource}; human={isHumanDetection}");
                 EventRecorded?.Invoke(item);
 
-                var requiresAiConfirmation = _settings?.Ai.Enabled == true && _settings.Ai.RequireConfirmationBeforeAlert;
-                AiMovementAnalysis? analysis = requiresAiConfirmation ? await AnalyzeAndUpdateAsync(item, previousImagePath) : null;
+                var aiEnabled = _settings?.Ai.Enabled == true;
+                var requiresAiConfirmation = aiEnabled && _settings!.Ai.RequireConfirmationBeforeAlert;
+                // Phân tích phải hoàn tất trước khi enqueue để caption Telegram/Zalo
+                // nhận được AiSummary; tùy chọn confirmation chỉ quyết định có lọc cảnh báo hay không.
+                AiMovementAnalysis? analysis = aiEnabled ? await AnalyzeAndUpdateAsync(item, previousImagePath) : null;
                 var shouldSend = !requiresAiConfirmation || analysis?.ShouldSendAlert == true;
                 var status = !shouldSend
                     ? "Không gửi: AI không thấy chuyển động/người"
@@ -165,9 +168,6 @@ public sealed class MonitorCoordinator : IAsyncDisposable
                 _eventStore.UpdateDeliveryStatus(item.Id, status);
                 EventRecorded?.Invoke(item);
 
-                // Chế độ AI thông thường không chặn cảnh báo: phân tích bổ sung chạy sau khi Telegram/Zalo đã nhận ảnh.
-                if (_settings?.Ai.Enabled == true && !requiresAiConfirmation)
-                    await AnalyzeAndUpdateAsync(item, previousImagePath);
             }
             catch (Exception ex)
             {
@@ -228,6 +228,7 @@ public sealed class MonitorCoordinator : IAsyncDisposable
         {
             AppLogger.Error(LogChannel.Ai, $"analysis failed; eventId={item.Id}; camera={item.CameraName}", ex);
             item.AiStatus = "Lỗi AI: " + SafeMessage(ex);
+            item.AiSummary = "Không nhận được kết quả phân tích AI.";
             _eventStore.UpdateAiStatus(item.Id, item.AiStatus);
             EventRecorded?.Invoke(item);
             return null;

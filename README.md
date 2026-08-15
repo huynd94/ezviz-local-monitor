@@ -1,6 +1,14 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.1.0**
+**Phiên bản phát hành hiện tại: v1.2.0**
+
+## Bản cập nhật v1.2.0 — AI trong cảnh báo và startup nền
+
+Khi bật Phân tích AI, ứng dụng hiện chờ kết quả AI trước khi enqueue cảnh báo. `AiSummary` được ghi vào DetectionEvent và được ghép vào caption văn bản gửi Telegram/Zalo; nếu AI lỗi, cảnh báo vẫn có thể gửi trong chế độ không bắt buộc xác nhận và nội dung sẽ ghi rõ không nhận được kết quả AI. Tùy chọn `Chỉ gửi cảnh báo khi AI xác nhận` chỉ dùng để lọc cảnh báo, không còn quyết định việc có chạy AI hay không.
+
+Panel Phân tích AI dùng cùng resource PanelBrush, ControlForegroundBrush, InputBackgroundBrush và InputForegroundBrush với các thành phần khác trong tab. Checkbox AI có style hover/pressed/focus riêng, giữ màu chữ tương phản theo theme.
+
+Tùy chọn khởi động cùng Windows hiện tạo Task Scheduler chạy với tham số `--background`. Sau khi đăng nhập Windows, ứng dụng tự khởi động nền trong khay thông báo; giám sát và cảnh báo vẫn chạy, còn live view tạm dừng cho đến khi người dùng mở cửa sổ từ tray. Watchdog cũng giữ chế độ nền khi khởi động lại sau crash.
 
 ## Bản cập nhật v1.1.0 — tiết kiệm CPU khi chạy nền
 

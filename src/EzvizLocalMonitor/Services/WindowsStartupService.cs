@@ -20,7 +20,7 @@ public static class WindowsStartupService
 
             var executable = Environment.ProcessPath;
             if (string.IsNullOrWhiteSpace(executable)) return;
-            var command = $"/Create /TN \"{TaskName}\" /TR \"\\\"{executable}\"\" /SC ONLOGON /RL LIMITED /F";
+            var command = $"/Create /TN \"{TaskName}\" /TR \"\\\"{executable}\\\" --background\" /SC ONLOGON /RL LIMITED /F";
             RunSchtasks(command);
             AppLogger.Info(LogChannel.App, "startup task configured without registry");
         }
@@ -52,7 +52,7 @@ public sealed class WatchdogService : IDisposable
     private readonly string _stopMarker = Path.Combine(DataPaths.Root, "watchdog.stop");
     private Process? _watchdogProcess;
 
-    public void Start()
+    public void Start(bool restartInTray = false)
     {
         if (!OperatingSystem.IsWindows() || _watchdogProcess is { HasExited: false }) return;
         DataPaths.EnsureCreated();
@@ -71,6 +71,7 @@ public sealed class WatchdogService : IDisposable
         };
         process.StartInfo.ArgumentList.Add("--watchdog");
         process.StartInfo.ArgumentList.Add(Environment.ProcessId.ToString());
+        if (restartInTray) process.StartInfo.ArgumentList.Add("--restart-in-tray");
         if (process.Start())
         {
             _watchdogProcess = process;
@@ -91,7 +92,7 @@ public sealed class WatchdogService : IDisposable
         _watchdogProcess = null;
     }
 
-    public static void RunExternal(int parentPid)
+    public static void RunExternal(int parentPid, bool restartInTray)
     {
         DataPaths.EnsureCreated();
         var marker = Path.Combine(DataPaths.Root, "watchdog.stop");
@@ -113,7 +114,9 @@ public sealed class WatchdogService : IDisposable
             var executable = Environment.ProcessPath;
             if (!string.IsNullOrWhiteSpace(executable))
             {
-                Process.Start(new ProcessStartInfo { FileName = executable, UseShellExecute = false, WorkingDirectory = AppContext.BaseDirectory });
+                var restart = new ProcessStartInfo { FileName = executable, UseShellExecute = false, WorkingDirectory = AppContext.BaseDirectory };
+                if (restartInTray) restart.ArgumentList.Add("--background");
+                Process.Start(restart);
                 AppLogger.Info(LogChannel.App, "external watchdog restarted parent after unexpected exit");
             }
         }

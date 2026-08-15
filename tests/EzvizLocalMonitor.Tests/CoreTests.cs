@@ -161,6 +161,25 @@ public sealed class AlertMessagePolicyTests
         var result = AlertMessagePolicy.CaptionForPhotoAfterText("caption text", "Telegram: lỗi timeout");
         Assert.Equal("caption text", result);
     }
+
+    [Fact]
+    public void CaptionForAlert_IncludesAiSummary_WhenAnalysisCompleted()
+    {
+        var item = new DetectionEvent
+        {
+            CameraName = "EZVIZ 192.168.2.2",
+            Confidence = 0.84,
+            DetectionSource = "YOLO cục bộ",
+            IsHumanDetection = true,
+            DetectedAt = new DateTimeOffset(2026, 8, 15, 15, 39, 14, TimeSpan.FromHours(7)),
+            AiSummary = "Có người đứng cạnh xe máy, cảnh gần như không đổi."
+        };
+
+        var caption = AlertMessagePolicy.CaptionForAlert(item);
+
+        Assert.Contains("AI: Có người đứng cạnh xe máy, cảnh gần như không đổi.", caption);
+        Assert.Equal(1, caption.Split("AI: ", StringSplitOptions.None).Length - 1);
+    }
 }
 
 public sealed class MonitorScheduleTests
