@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.4.3**
+**Phiên bản phát hành hiện tại: v1.4.4**
+
+## Bản vá v1.4.4 — sửa hiển thị tiếng Việt trong PowerShell 5.1
+
+Các script `Uninstall-EzvizLocalMonitor-Clean.ps1` và `Repair-EzvizLocalMonitorStartup.ps1` hiện tự đặt `Console.InputEncoding`, `Console.OutputEncoding`, `$OutputEncoding` và code page `65001` trước khi in thông báo. Điều này sửa hiện tượng tiếng Việt thành ký tự `�`, ô vuông hoặc chữ bị sai dấu trong Windows PowerShell 5.1.
 
 ## Bản vá v1.4.3 — sửa cú pháp script gỡ sạch PowerShell 5.1
 

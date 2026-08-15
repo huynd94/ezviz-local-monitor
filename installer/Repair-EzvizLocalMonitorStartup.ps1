@@ -7,6 +7,13 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+try {
+    $utf8 = New-Object System.Text.UTF8Encoding($false)
+    [Console]::InputEncoding = $utf8
+    [Console]::OutputEncoding = $utf8
+    $OutputEncoding = $utf8
+    chcp 65001 | Out-Null
+} catch { }
 $TaskName = "EZVIZ Local Monitor"
 if ([string]::IsNullOrWhiteSpace($InstallDir)) { $InstallDir = $PSScriptRoot }
 $InstallDir = [IO.Path]::GetFullPath($InstallDir)
