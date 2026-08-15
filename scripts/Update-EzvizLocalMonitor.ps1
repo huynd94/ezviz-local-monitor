@@ -70,8 +70,10 @@ $form.Text = "EZVIZ Local Monitor — Cập nhật"
 $form.StartPosition = "CenterScreen"
 $form.Size = New-Object System.Drawing.Size(680, 430)
 $form.MinimumSize = New-Object System.Drawing.Size(680, 430)
-$form.MaximizeBox = $false
-$form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+$form.MaximizeBox = $true
+$form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::Dpi
+$form.AutoScroll = $true
+$form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::Sizable
 $form.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 
 $title = New-Object System.Windows.Forms.Label
@@ -131,6 +133,7 @@ $statusLabel.Text = "Sẵn sàng."
 $statusLabel.Location = New-Object System.Drawing.Point(26, 264)
 $statusLabel.Size = New-Object System.Drawing.Size(604, 42)
 $statusLabel.AutoEllipsis = $true
+$statusLabel.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
 $form.Controls.Add($statusLabel)
 
 $startCheck = New-Object System.Windows.Forms.CheckBox
@@ -144,12 +147,14 @@ $checkButton = New-Object System.Windows.Forms.Button
 $checkButton.Text = "Kiểm tra bản mới"
 $checkButton.Location = New-Object System.Drawing.Point(250, 350)
 $checkButton.Size = New-Object System.Drawing.Size(120, 32)
+$checkButton.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Right
 $form.Controls.Add($checkButton)
 
 $updateButton = New-Object System.Windows.Forms.Button
 $updateButton.Text = "Cập nhật ngay"
 $updateButton.Location = New-Object System.Drawing.Point(380, 350)
 $updateButton.Size = New-Object System.Drawing.Size(120, 32)
+$updateButton.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Right
 $updateButton.Enabled = $false
 $form.Controls.Add($updateButton)
 
@@ -157,6 +162,7 @@ $closeButton = New-Object System.Windows.Forms.Button
 $closeButton.Text = "Đóng"
 $closeButton.Location = New-Object System.Drawing.Point(510, 350)
 $closeButton.Size = New-Object System.Drawing.Size(120, 32)
+$closeButton.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Right
 $closeButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
 $form.Controls.Add($closeButton)
 $form.CancelButton = $closeButton

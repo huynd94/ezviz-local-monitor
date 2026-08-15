@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="EzvizLocalMonitor.MainWindow"
-        Title="EZVIZ Local Monitor" Icon="/Assets/ezviz-local-monitor.ico" Width="1220" Height="810" MinWidth="980" MinHeight="650"
+        Title="EZVIZ Local Monitor" Icon="/Assets/ezviz-local-monitor.ico" Width="1220" Height="810" MinWidth="860" MinHeight="560"
         Background="{DynamicResource AppBackgroundBrush}" Closing="Window_Closing" KeyDown="Window_KeyDown">
   <Window.Resources>
     <SolidColorBrush x:Key="AppBackgroundBrush" Color="#F5F7FA" />
@@ -130,31 +130,33 @@
     <TabControl Grid.Row="1">
       <TabItem Header="Tổng quan">
         <Grid Margin="12" RowDefinitions="Auto,*,Auto">
-          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
-            <TextBlock Text="Bố cục giám sát:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" />
-            <Button x:Name="LayoutOneButton" Tag="1" Content="1 màn hình" Click="LayoutMode_Click" ToolTip.Tip="Hiển thị một camera chiếm toàn bộ vùng xem trước." />
-            <Button x:Name="LayoutTwoButton" Tag="2" Content="2 màn hình" Click="LayoutMode_Click" ToolTip.Tip="Chia vùng xem trước thành hai ô camera." />
-            <Button x:Name="LayoutFourButton" Tag="4" Content="4 màn hình" Click="LayoutMode_Click" ToolTip.Tip="Chia vùng xem trước thành tối đa bốn ô camera." />
-            <Button Content="Phóng to camera" Click="FocusSelectedCamera_Click" ToolTip.Tip="Phóng to camera đang chọn hoặc camera đầu tiên" />
-            <Button Content="Sáng/Tối" Click="ToggleTheme_Click" ToolTip.Tip="Chuyển nhanh sáng/tối và đưa lựa chọn về theme Dark/Light" />
-            <TextBlock Text="Theme:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="10,0,0,0" />
-            <ComboBox x:Name="ThemeCombo" Width="150" SelectedIndex="5" SelectionChanged="Theme_SelectionChanged" ToolTip.Tip="Chọn palette màu Orchid, Ocean, Midnight, Lavender, Crimson hoặc Dark/Light. Lựa chọn được lưu vào cấu hình." >
-              <ComboBoxItem Content="Orchid" />
-              <ComboBoxItem Content="Ocean" />
-              <ComboBoxItem Content="Midnight" />
-              <ComboBoxItem Content="Lavender" />
-              <ComboBoxItem Content="Crimson" />
-              <ComboBoxItem Content="Dark/Light" />
-            </ComboBox>
-            <TextBlock Text="Hiệu năng:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="10,0,0,0" />
-            <ComboBox x:Name="PerformanceProfileCombo" Width="190" SelectedIndex="1" SelectionChanged="PerformanceProfile_Changed" ToolTip.Tip="Chọn cân bằng giữa mức dùng CPU, tốc độ nhận diện và độ trễ. Máy i7-7500U nên bắt đầu với Cân bằng." >
-              <ComboBoxItem Content="Tiết kiệm CPU" />
-              <ComboBoxItem Content="Cân bằng" />
-              <ComboBoxItem Content="Phản hồi nhanh" />
-              <ComboBoxItem Content="Ưu tiên ONVIF" />
-            </ComboBox>
-            <TextBlock Text="Tối đa 4 camera; ô chưa cấu hình hiển thị trạng thái chờ. Phím tắt: Ctrl+1/2/4, F11, Esc." VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" Margin="8,0,0,0" />
-          </StackPanel>
+          <Grid Grid.Row="0" RowDefinitions="Auto,Auto" Margin="0,0,0,10">
+            <WrapPanel Orientation="Horizontal">
+              <TextBlock Text="Bố cục giám sát:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,0,6,8" />
+              <Button x:Name="LayoutOneButton" Tag="1" Content="1 màn hình" Click="LayoutMode_Click" Margin="0,0,8,8" ToolTip.Tip="Hiển thị một camera chiếm toàn bộ vùng xem trước." />
+              <Button x:Name="LayoutTwoButton" Tag="2" Content="2 màn hình" Click="LayoutMode_Click" Margin="0,0,8,8" ToolTip.Tip="Chia vùng xem trước thành hai ô camera." />
+              <Button x:Name="LayoutFourButton" Tag="4" Content="4 màn hình" Click="LayoutMode_Click" Margin="0,0,8,8" ToolTip.Tip="Chia vùng xem trước thành tối đa bốn ô camera." />
+              <Button Content="Phóng to camera" Click="FocusSelectedCamera_Click" Margin="0,0,8,8" ToolTip.Tip="Phóng to camera đang chọn hoặc camera đầu tiên" />
+              <Button Content="Sáng/Tối" Click="ToggleTheme_Click" Margin="0,0,8,8" ToolTip.Tip="Chuyển nhanh sáng/tối và đưa lựa chọn về theme Dark/Light" />
+              <TextBlock Text="Theme:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="2,0,6,8" />
+              <ComboBox x:Name="ThemeCombo" Width="150" SelectedIndex="5" SelectionChanged="Theme_SelectionChanged" Margin="0,0,8,8" ToolTip.Tip="Chọn palette màu Orchid, Ocean, Midnight, Lavender, Crimson hoặc Dark/Light. Lựa chọn được lưu vào cấu hình." >
+                <ComboBoxItem Content="Orchid" />
+                <ComboBoxItem Content="Ocean" />
+                <ComboBoxItem Content="Midnight" />
+                <ComboBoxItem Content="Lavender" />
+                <ComboBoxItem Content="Crimson" />
+                <ComboBoxItem Content="Dark/Light" />
+              </ComboBox>
+              <TextBlock Text="Hiệu năng:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="2,0,6,8" />
+              <ComboBox x:Name="PerformanceProfileCombo" Width="190" SelectedIndex="1" SelectionChanged="PerformanceProfile_Changed" Margin="0,0,8,8" ToolTip.Tip="Chọn cân bằng giữa mức dùng CPU, tốc độ nhận diện và độ trễ. Máy i7-7500U nên bắt đầu với Cân bằng." >
+                <ComboBoxItem Content="Tiết kiệm CPU" />
+                <ComboBoxItem Content="Cân bằng" />
+                <ComboBoxItem Content="Phản hồi nhanh" />
+                <ComboBoxItem Content="Ưu tiên ONVIF" />
+              </ComboBox>
+            </WrapPanel>
+            <TextBlock Grid.Row="1" Text="Tối đa 4 camera; ô chưa cấu hình hiển thị trạng thái chờ. Phím tắt: Ctrl+1/2/4, F11, Esc." VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,2" />
+          </Grid>
           <Grid x:Name="CameraGrid" Grid.Row="1" Background="#19232D" RowDefinitions="*" ColumnDefinitions="*,*">
             <Border x:Name="CameraTileOne" Background="#19232D" CornerRadius="5" Margin="4">
               <Grid RowDefinitions="*,Auto"><Image x:Name="PreviewOne" Stretch="Uniform" /><TextBlock x:Name="CameraOneStatus" Grid.Row="1" Text="Camera 1 chưa cấu hình" Background="#EAF1F5" Padding="8" /></Grid>
@@ -174,7 +176,7 @@
               <Button Content="Bắt đầu giám sát" Click="StartMonitoring_Click" />
               <Button Grid.Column="1" Content="Dừng" Click="StopMonitoring_Click" Margin="8,0,0,0" />
               <Button Grid.Column="2" Content="Mở thư mục sự kiện" Click="OpenEventsFolder_Click" Margin="8,0,0,0" />
-              <TextBlock x:Name="RuntimeInfoText" Grid.Column="3" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" />
+              <TextBlock x:Name="RuntimeInfoText" Grid.Column="3" Text="1 lần suy luận/giây/camera" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" />
               <TextBlock x:Name="SystemHealthText" Grid.Row="1" Grid.ColumnSpan="4" Text="Hệ thống: đang khởi tạo…" Margin="0,10,0,0" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
               <TextBlock x:Name="CameraHealthText" Grid.Row="2" Grid.ColumnSpan="4" Text="Camera: đang khởi tạo…" Margin="0,5,0,0" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
               <TextBlock x:Name="AlertHealthText" Grid.Row="3" Grid.ColumnSpan="4" Text="Cảnh báo: đang khởi tạo…" Margin="0,5,0,0" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
@@ -226,7 +228,7 @@
               <DataGridTextColumn Header="Hồ sơ (0-3)" Binding="{Binding PerformanceProfile}" Width="130" />
             </DataGrid.Columns>
           </DataGrid>
-          <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"><Button Content="Thêm lịch" Click="AddSchedule_Click" ToolTip.Tip="Thêm một dòng lịch mẫu để chỉnh sửa trực tiếp trong bảng." /><Button Content="Xóa lịch chọn" Click="RemoveSchedule_Click" ToolTip.Tip="Xóa dòng lịch đang chọn khỏi danh sách hiện tại." /><Button Content="Lưu lịch" Click="SaveSchedules_Click" ToolTip.Tip="Lưu các dòng lịch vào cấu hình mã hóa. Lịch có hiệu lực khi có ít nhất một dòng được bật." /></StackPanel>
+          <WrapPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Thêm lịch" Click="AddSchedule_Click" Margin="0,0,8,8" ToolTip.Tip="Thêm một dòng lịch mẫu để chỉnh sửa trực tiếp trong bảng." /><Button Content="Xóa lịch chọn" Click="RemoveSchedule_Click" Margin="0,0,8,8" ToolTip.Tip="Xóa dòng lịch đang chọn khỏi danh sách hiện tại." /><Button Content="Lưu lịch" Click="SaveSchedules_Click" Margin="0,0,0,8" ToolTip.Tip="Lưu các dòng lịch vào cấu hình mã hóa. Lịch có hiệu lực khi có ít nhất một dòng được bật." /></WrapPanel>
         </Grid>
       </TabItem>
 
@@ -242,7 +244,7 @@
           <TextBlock Text="Khi AI bật, tối đa hai ảnh JPEG của sự kiện (trước/sau) được gửi tới endpoint đã cấu hình; video RTSP không được gửi." TextWrapping="Wrap" Foreground="{DynamicResource WarningTextBrush}" />
           <TextBlock Text="Chẩn đoán và lưu cấu hình" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource HeadingBrush}" Margin="0,4,0,0" />
           <Border Background="{DynamicResource SoftPanelBrush}" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="12"><StackPanel Spacing="6"><CheckBox x:Name="StartWithWindowsCheck" Content="Khởi động cùng Windows bằng Task Scheduler (không dùng Registry)" ToolTip.Tip="Tạo task chạy ứng dụng khi đăng nhập Windows; không ghi khóa Registry và chỉ hoạt động trên Windows." /><CheckBox x:Name="WatchdogEnabledCheck" Content="Bật watchdog: tự khởi động lại sau khi tiến trình thoát bất thường" ToolTip.Tip="Tiến trình phụ theo dõi ứng dụng và khởi động lại sau crash. Không khởi động lại khi bạn chọn Thoát hoàn toàn." /><TextBlock Text="Watchdog không khởi động lại khi bạn chọn Thoát hoàn toàn." Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" /></StackPanel></Border>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"><Button Content="Mở log Zalo" Click="OpenZaloLog_Click" ToolTip.Tip="Mở log gửi Zalo đã che token và Chat ID để kiểm tra lỗi HTTP/JSON." /><Button Content="Xuất gói chẩn đoán" Click="ExportDiagnostics_Click" ToolTip.Tip="Tạo ZIP chẩn đoán gồm log và metadata đã che token, API key, Chat ID, IP LAN và mã xác thực." /><Button Content="Sao lưu cấu hình" Click="BackupSettings_Click" ToolTip.Tip="Lưu bản sao cấu hình đã mã hóa bằng DPAPI; chỉ tài khoản Windows hiện tại mới khôi phục được." /><Button Content="Khôi phục cấu hình" Click="RestoreSettings_Click" ToolTip.Tip="Nạp một file backup DPAPI đã tạo trước đó. Nên dừng giám sát trước khi khôi phục." /><Button Content="Lưu cấu hình cảnh báo và AI" Click="SaveAlerts_Click" ToolTip.Tip="Lưu token, endpoint, lịch và tùy chọn cảnh báo vào cấu hình mã hóa." /></StackPanel>
+          <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Mở log Zalo" Click="OpenZaloLog_Click" Margin="0,0,8,8" ToolTip.Tip="Mở log gửi Zalo đã che token và Chat ID để kiểm tra lỗi HTTP/JSON." /><Button Content="Xuất gói chẩn đoán" Click="ExportDiagnostics_Click" Margin="0,0,8,8" ToolTip.Tip="Tạo ZIP chẩn đoán gồm log và metadata đã che token, API key, Chat ID, IP LAN và mã xác thực." /><Button Content="Sao lưu cấu hình" Click="BackupSettings_Click" Margin="0,0,8,8" ToolTip.Tip="Lưu bản sao cấu hình đã mã hóa bằng DPAPI; chỉ tài khoản Windows hiện tại mới khôi phục được." /><Button Content="Khôi phục cấu hình" Click="RestoreSettings_Click" Margin="0,0,8,8" ToolTip.Tip="Nạp một file backup DPAPI đã tạo trước đó. Nên dừng giám sát trước khi khôi phục." /><Button Content="Lưu cấu hình cảnh báo và AI" Click="SaveAlerts_Click" Margin="0,0,0,8" ToolTip.Tip="Lưu token, endpoint, lịch và tùy chọn cảnh báo vào cấu hình mã hóa." /></WrapPanel>
         </StackPanel></ScrollViewer>
       </TabItem>
 
@@ -320,12 +322,12 @@
 
       <TabItem Header="Nhật ký sự kiện">
         <Grid Margin="12" RowDefinitions="Auto,*" ColumnDefinitions="*,340">
-          <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
-            <Button Content="Làm mới" Click="RefreshEvents_Click" />
-            <TextBox x:Name="EventSearchText" Width="280" Watermark="Tìm camera, nguồn, trạng thái…" TextChanged="EventSearch_Changed" ToolTip.Tip="Lọc nhật ký theo tên camera, nguồn phát hiện hoặc trạng thái gửi cảnh báo." />
-            <ComboBox x:Name="EventCameraFilter" Width="220" PlaceholderText="Tất cả camera" SelectionChanged="EventCameraFilter_Changed" ToolTip.Tip="Chỉ hiển thị sự kiện của một camera hoặc chọn tất cả camera." />
-            <TextBlock x:Name="EventLogSummaryText" Text="Chưa tải nhật ký" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" />
-          </StackPanel>
+          <WrapPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Content="Làm mới" Click="RefreshEvents_Click" Margin="0,0,8,8" />
+            <TextBox x:Name="EventSearchText" Width="280" Watermark="Tìm camera, nguồn, trạng thái…" TextChanged="EventSearch_Changed" Margin="0,0,8,8" ToolTip.Tip="Lọc nhật ký theo tên camera, nguồn phát hiện hoặc trạng thái gửi cảnh báo." />
+            <ComboBox x:Name="EventCameraFilter" Width="220" PlaceholderText="Tất cả camera" SelectionChanged="EventCameraFilter_Changed" Margin="0,0,8,8" ToolTip.Tip="Chỉ hiển thị sự kiện của một camera hoặc chọn tất cả camera." />
+            <TextBlock x:Name="EventLogSummaryText" Text="Chưa tải nhật ký" Width="340" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,8" />
+          </WrapPanel>
           <DataGrid x:Name="EventsGrid" Grid.Row="1" Grid.Column="0" AutoGenerateColumns="False" IsReadOnly="True" CanUserResizeColumns="True" GridLinesVisibility="All" SelectionChanged="EventsGrid_SelectionChanged" Margin="0,0,10,0">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Thời gian" Binding="{Binding DetectedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" Width="190" />

@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.14**
+**Phiên bản phát hành hiện tại: v0.9.15**
+
+## Bản vá v0.9.15 — rà soát chống tràn giao diện
+
+Bản v0.9.15 rà soát các cửa sổ và panel có nút chức năng. Thanh công cụ Tổng quan, bộ lọc Nhật ký sự kiện, nhóm nút Lịch giám sát và nhóm nút chẩn đoán trong tab Cảnh báo đã chuyển sang bố cục tự xuống dòng để không làm mất nút khi cửa sổ hẹp. Cửa sổ chính giữ ngưỡng kích thước tối thiểu an toàn; các tab Camera, Cảnh báo, Hướng dẫn và Chi tiết sự kiện tiếp tục có vùng cuộn phù hợp.
+
+Updater PowerShell được bổ sung DPI scaling, tự cuộn, cho phép phóng to và neo các nút ở cạnh dưới/phải. Onboarding đã có ScrollViewer và hộp thoại cập nhật Avalonia đã được gia cố từ v0.9.14 bằng hàng nút riêng cùng màu tương phản rõ ràng.
 
 ## Bản vá v0.9.14 — hiển thị đầy đủ hộp thoại cập nhật
 
