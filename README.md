@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.3.0**
+**Phiên bản phát hành hiện tại: v1.3.1**
+
+## Bản vá v1.3.1 — hiển thị nút hộp thoại xác nhận
+
+Hộp thoại xác nhận dọn dữ liệu đã được sửa bằng Grid có hàng riêng cho nút thao tác. Hai nút `Hủy` và `Đồng ý dọn` được neo ở hàng cuối, có chiều cao, màu nền, foreground và hover riêng để luôn nhìn thấy trên Windows. Lỗi trước đây xảy ra vì nhóm nút chưa được gán `Grid.Row`, khiến chúng bị đặt chồng vào vùng nội dung.
 
 ## Bản cập nhật v1.3.0 — lọc và dọn nhật ký sự kiện
 
