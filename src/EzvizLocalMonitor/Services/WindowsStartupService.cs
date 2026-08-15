@@ -14,15 +14,30 @@ public static class WindowsStartupService
         {
             if (!enabled)
             {
-                RunSchtasks($"/Delete /TN \"{TaskName}\" /F");
+                RunSchtasks("/Delete", "/TN", TaskName, "/F");
+                AppLogger.Info(LogChannel.App, "startup task disabled");
                 return;
             }
 
             var executable = Environment.ProcessPath;
-            if (string.IsNullOrWhiteSpace(executable)) return;
-            var command = $"/Create /TN \"{TaskName}\" /TR \"\\\"{executable}\\\" --background\" /SC ONLOGON /RL LIMITED /F";
-            RunSchtasks(command);
-            AppLogger.Info(LogChannel.App, "startup task configured without registry");
+            if (string.IsNullOrWhiteSpace(executable) || !File.Exists(executable))
+            {
+                AppLogger.Error(LogChannel.App, $"startup task skipped; executable missing; path={executable}");
+                return;
+            }
+
+            // ArgumentList avoids nested-quote parsing problems when the install path contains spaces.
+            var taskCommand = $"\"{executable}\" --background";
+            var created = RunSchtasks(
+                "/Create",
+                "/TN", TaskName,
+                "/TR", taskCommand,
+                "/SC", "ONLOGON",
+                "/DELAY", "0000:10",
+                "/RL", "LIMITED",
+                "/IT",
+                "/F");
+            AppLogger.Info(LogChannel.App, $"startup task configured; success={created}; executable={Path.GetFileName(executable)}; trigger=ONLOGON+10s; interactive=true");
         }
         catch (Exception ex)
         {
@@ -30,20 +45,31 @@ public static class WindowsStartupService
         }
     }
 
-    private static void RunSchtasks(string arguments)
+    private static bool RunSchtasks(params string[] arguments)
     {
-        using var process = Process.Start(new ProcessStartInfo
+        var info = new ProcessStartInfo
         {
             FileName = "schtasks.exe",
-            Arguments = arguments,
-            CreateNoWindow = true,
             UseShellExecute = false,
+            CreateNoWindow = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8
-        });
-        process?.WaitForExit(5000);
+        };
+        foreach (var argument in arguments) info.ArgumentList.Add(argument);
+
+        using var process = Process.Start(info);
+        if (process is null) return false;
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit(5000);
+        if (process.ExitCode != 0)
+        {
+            AppLogger.Error(LogChannel.App, $"schtasks failed; exitCode={process.ExitCode}; output={output.Trim()}; error={error.Trim()}");
+            return false;
+        }
+        return true;
     }
 }
 

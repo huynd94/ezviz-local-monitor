@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.4.0**
+**Phiên bản phát hành hiện tại: v1.4.1**
+
+## Bản vá v1.4.1 — gỡ sạch và khởi động nền cùng Windows
+
+Bộ cài hiện tạo thêm `Uninstall-EzvizLocalMonitor-Clean.ps1` để dừng tiến trình, xóa Task Scheduler, shortcut, thư mục chương trình, dữ liệu `%LOCALAPPDATA%\\EZVIZ Local Monitor` và thư mục tạm updater. Chạy không có `-Force` sẽ yêu cầu nhập `REMOVE`; thêm `-KeepData` nếu muốn gỡ chương trình nhưng giữ cấu hình, token mã hóa, log, database và ảnh sự kiện.
+
+Cơ chế khởi động cùng Windows được sửa để tạo lại Task Scheduler bằng tham số an toàn, chạy `--background` sau khi đăng nhập 10 giây, ở chế độ tương tác với quyền người dùng thường và ghi kết quả `schtasks` vào log. Bộ cài có thêm `Repair-EzvizLocalMonitorStartup.ps1` để tạo lại, kiểm tra hoặc chạy thử task ngay.
 
 ## Bản cập nhật v1.4.0 — quản lý camera và backup cấu hình
 
