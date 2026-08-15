@@ -23,6 +23,11 @@ function Write-Result($object) {
     }
 }
 
+function Quote-ProcessArgument([string]$value) {
+    if ($value.Contains('"')) { throw "Đường dẫn/tham số chứa dấu ngoặc kép không hợp lệ: $value" }
+    return '"' + $value + '"'
+}
+
 function Convert-ToVersion([string]$value) {
     $clean = ($value -replace '^v', '') -replace '[^0-9\.].*$', ''
     try { return [version]$clean } catch { return [version]'0.0.0' }
@@ -117,7 +122,12 @@ try {
         if ($null -eq $installer) { throw "Không tìm thấy bộ cài trong ZIP." }
         Write-ProgressState 80 "Đang đóng ứng dụng cũ và cập nhật file..."
         Get-Process -Name "EzvizLocalMonitor" -ErrorAction SilentlyContinue | Stop-Process -Force
-        $installerArgs = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$($installer.FullName)`" -InstallDir `"$InstallDir`" -NoShortcut -NoLaunch -ForceUpdate"
+        $installerArgs = @(
+            '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', (Quote-ProcessArgument $installer.FullName),
+            '-InstallDir', (Quote-ProcessArgument $InstallDir),
+            '-NoShortcut', '-NoLaunch', '-ForceUpdate'
+        )
         $installerStdout = Join-Path $tempRoot "installer.stdout.log"
         $installerStderr = Join-Path $tempRoot "installer.stderr.log"
         $process = Start-Process -FilePath "powershell.exe" -ArgumentList $installerArgs -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $installerStdout -RedirectStandardError $installerStderr

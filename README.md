@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.4.1**
+**Phiên bản phát hành hiện tại: v1.4.2**
+
+## Bản vá v1.4.2 — Auto-Update an toàn với đường dẫn có khoảng trắng
+
+Updater GUI và worker hiện truyền đường dẫn script, thư mục cài đặt, file tiến độ và file kết quả bằng tham số riêng có quote an toàn cho Windows PowerShell 5.1. Các đường dẫn như `D:\\EZVIZ Local Monitor` không còn bị tách thành nhiều tham số. Cơ chế tải release, kiểm tra ZIP, xác minh SHA-256 và gọi installer vẫn được giữ nguyên.
 
 ## Bản vá v1.4.1 — gỡ sạch và khởi động nền cùng Windows
 

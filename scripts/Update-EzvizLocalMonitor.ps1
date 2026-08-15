@@ -17,6 +17,11 @@ try { chcp 65001 | Out-Null } catch { }
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+function Quote-ProcessArgument([string]$value) {
+    if ($value.Contains('"')) { throw "Đường dẫn/tham số chứa dấu ngoặc kép không hợp lệ: $value" }
+    return '"' + $value + '"'
+}
+
 function Convert-ToVersion([string]$value) {
     $clean = ($value -replace '^v', '') -replace '[^0-9\.].*$', ''
     try { return [version]$clean } catch { return [version]'0.0.0' }
@@ -285,9 +290,17 @@ function Start-Check([bool]$doUpdate) {
     $state.ResultFile = Join-Path $temp "result.json"
     $workerScript = Join-Path $PSScriptRoot "Update-EzvizLocalMonitor-Worker.ps1"
     $mode = if ($doUpdate) { "Update" } else { "Check" }
-    $workerArgs = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$workerScript`" -InstallDir `"$($installBox.Text.Trim())`" -Repository `"$($repoBox.Text.Trim())`" -Mode $mode -ProgressFile `"$($state.ProgressFile)`" -ResultFile `"$($state.ResultFile)`""
+    $workerArgs = @(
+        '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+        '-File', (Quote-ProcessArgument $workerScript),
+        '-InstallDir', (Quote-ProcessArgument $installBox.Text.Trim()),
+        '-Repository', (Quote-ProcessArgument $repoBox.Text.Trim()),
+        '-Mode', $mode,
+        '-ProgressFile', (Quote-ProcessArgument $state.ProgressFile),
+        '-ResultFile', (Quote-ProcessArgument $state.ResultFile)
+    )
     if (-not [string]::IsNullOrWhiteSpace($tokenBox.Text)) { $env:EZVIZ_GITHUB_TOKEN = $tokenBox.Text.Trim() }
-    if ($startCheck.Checked -and $doUpdate) { $workerArgs += " -StartAfter" }
+    if ($startCheck.Checked -and $doUpdate) { $workerArgs += '-StartAfter' }
     $state.Process = Start-Process -FilePath "powershell.exe" -ArgumentList $workerArgs -WindowStyle Hidden -PassThru
     $updateTimer.Start()
 }
