@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v0.9.18**
+**Phiên bản phát hành hiện tại: v0.9.19**
+
+## Bản cập nhật v0.9.19 — sửa timeout gửi ảnh Telegram
+
+Bản v0.9.19 tách client upload ảnh Telegram khỏi client gửi văn bản và tăng timeout upload ảnh từ 10 lên 45 giây. Ảnh được gửi bằng stream file bất đồng bộ thay vì đọc toàn bộ file vào bộ nhớ trước khi upload. Khi upload ảnh timeout hoặc lỗi, văn bản đã gửi thành công không bị gửi lại; hàng đợi chỉ retry thao tác ảnh nhờ idempotency theo EventId và thao tác. Log `alerts.log` ghi tên file, dung lượng và timeout nhưng không ghi token, Chat ID hoặc dữ liệu ảnh.
 
 ## Bản cập nhật v0.9.18 — thu gọn footer trạng thái
 

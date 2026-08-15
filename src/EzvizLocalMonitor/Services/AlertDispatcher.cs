@@ -9,6 +9,9 @@ namespace EzvizLocalMonitor.Services;
 public sealed class AlertDispatcher
 {
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(10) };
+    // Upload ảnh multipart có thể chậm hơn sendMessage, đặc biệt khi mạng LAN/WAN
+    // đang bận. Tách client để không làm tăng timeout của các tin nhắn văn bản.
+    private static readonly HttpClient TelegramPhotoClient = new() { Timeout = TimeSpan.FromSeconds(45) };
     private static readonly TimeSpan ZaloOperationTimeout = TimeSpan.FromSeconds(12);
     private readonly ImageRelayService _imageRelay = new();
     private readonly ConcurrentDictionary<string, byte> _successfulOperations = new();
@@ -69,7 +72,21 @@ public sealed class AlertDispatcher
             var photoCaption = AlertMessagePolicy.CaptionForPhotoAfterText(caption, textResult);
             photoResult = await SendIdempotentAsync(eventId, "Telegram photo", () => SendTelegramPhotoAsync(token, chatId, imagePath, photoCaption, ct));
         }
-        catch (Exception ex) { photoResult = "Telegram ảnh: lỗi " + SafeException(ex); }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            var metadata = ReadImageMetadata(imagePath);
+            AppLogger.Error(LogChannel.Alerts, $"telegram photo timeout; image={SafeFileName(imagePath)}; bytes={metadata.Bytes}; timeoutSeconds=45", ex);
+            photoResult = "Telegram ảnh: lỗi timeout upload (45 giây)";
+        }
+        catch (OperationCanceledException)
+        {
+            photoResult = "Telegram ảnh: đã hủy";
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(LogChannel.Alerts, $"telegram photo exception; image={SafeFileName(imagePath)}", ex);
+            photoResult = "Telegram ảnh: lỗi " + SafeException(ex);
+        }
         return $"{textResult} + {photoResult}";
     }
 
@@ -125,7 +142,9 @@ public sealed class AlertDispatcher
         form.Add(new StringContent(chatId), "chat_id");
         form.Add(new StringContent(caption), "caption");
         form.Add(CreateImageContent(imagePath), "photo", Path.GetFileName(imagePath));
-        using var response = await Client.PostAsync($"https://api.telegram.org/bot{token}/sendPhoto", form, ct);
+        var metadata = ReadImageMetadata(imagePath);
+        AppLogger.Info(LogChannel.Alerts, $"telegram photo upload start; image={SafeFileName(imagePath)}; bytes={metadata.Bytes}; timeoutSeconds=45");
+        using var response = await TelegramPhotoClient.PostAsync($"https://api.telegram.org/bot{token}/sendPhoto", form, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
         return FormatApiResult("Telegram", response, body);
     }
@@ -273,15 +292,19 @@ public sealed class AlertDispatcher
         catch { return "<invalid>"; }
     }
 
-    private static ByteArrayContent CreateImageContent(string imagePath)
+    private static HttpContent CreateImageContent(string imagePath)
     {
         if (!File.Exists(imagePath)) throw new FileNotFoundException("Không tìm thấy ảnh sự kiện để gửi.", imagePath);
-        var bytes = File.ReadAllBytes(imagePath);
-        if (bytes.Length == 0) throw new InvalidDataException("Ảnh sự kiện rỗng, không thể gửi Zalo.");
+        var stream = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        if (stream.Length == 0)
+        {
+            stream.Dispose();
+            throw new InvalidDataException("Ảnh sự kiện rỗng, không thể gửi Telegram.");
+        }
 
-        var content = new ByteArrayContent(bytes);
+        var content = new StreamContent(stream);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
-        content.Headers.ContentLength = bytes.Length;
+        content.Headers.ContentLength = stream.Length;
         return content;
     }
 

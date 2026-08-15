@@ -111,6 +111,24 @@ public sealed class AlertQueueTests
     }
 
     [Fact]
+    public async Task Queue_RetriesTelegramPhotoTimeoutWithoutTreatingTextAsFailed()
+    {
+        var calls = 0;
+        await using var queue = new AlertQueueService((_, _, _) =>
+        {
+            var attempt = Interlocked.Increment(ref calls);
+            return Task.FromResult(attempt == 1
+                ? "Telegram text: đã gửi + Telegram ảnh: lỗi timeout upload (45 giây)"
+                : "Telegram text: đã gửi (idempotent) + Telegram ảnh: đã gửi");
+        });
+
+        var result = await queue.EnqueueAsync(new AlertChannelSettings(), Event(12));
+
+        Assert.Contains("Telegram ảnh: đã gửi", result, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
     public async Task Queue_ShutdownCompletesPendingWorkSafely()
     {
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
