@@ -122,6 +122,8 @@ public sealed class AppSettings
     public bool LoggingEnabled { get; set; } = true;
     public bool AlertLoggingEnabled { get; set; } = true;
     public bool AutoUpdateEnabled { get; set; } = true;
+    /// <summary>Idle lock timeout in minutes; 0 disables automatic locking.</summary>
+    public int IdleLockTimeoutMinutes { get; set; }
 }
 
 public sealed record PersonDetection(double Confidence, int Left, int Top, int Right, int Bottom)

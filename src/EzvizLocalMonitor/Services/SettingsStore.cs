@@ -245,6 +245,9 @@ public sealed class SettingsStore
         settings.PreviewFitMode = Math.Clamp(settings.PreviewFitMode, 0, 1);
         settings.DashboardViewMode = Math.Clamp(settings.DashboardViewMode, 0, 1);
         settings.PerformanceProfile = Math.Clamp(settings.PerformanceProfile, 0, 3);
+        settings.IdleLockTimeoutMinutes = settings.IdleLockTimeoutMinutes is 0 or 5 or 10 or 15 or 30 or 60
+            ? settings.IdleLockTimeoutMinutes
+            : 0;
         settings.MonitorSchedules = (settings.MonitorSchedules ?? new List<MonitorSchedule>())
             .Where(schedule => schedule is not null)
             .ToList();

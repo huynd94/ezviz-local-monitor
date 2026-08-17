@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.7.0**
+**Phiên bản phát hành hiện tại: v1.8.0**
+
+## Bản cập nhật v1.8.0 — tự động khóa khi không hoạt động
+
+Tab `Cài đặt hệ thống → Bảo mật ứng dụng` có thêm tùy chọn `Tự động khóa khi không thao tác` với các mức tắt, 5, 10, 15, 30 hoặc 60 phút. Bộ đếm được đặt lại khi có thao tác chuột hoặc bàn phím trong cửa sổ. Khi hết thời gian, ứng dụng chỉ khóa/ẩn giao diện; camera, ONVIF/YOLO, watchdog và cảnh báo vẫn tiếp tục hoạt động nền.
+
+Hàng tab có nút `Khóa ứng dụng` ở bên phải để khóa thủ công nhanh. Khi mở lại từ khay thông báo, ứng dụng yêu cầu mật khẩu/PIN. Giá trị idle timeout được lưu trong AppSettings và đi cùng backup DPAPI/backup chuyển máy.
 
 ## Bản cập nhật v1.7.0 — khóa ứng dụng bằng mật khẩu hoặc mã PIN
 

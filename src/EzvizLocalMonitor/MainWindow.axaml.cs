@@ -41,6 +41,9 @@ public partial class MainWindow : Avalonia.Controls.Window
     private readonly Dictionary<Guid, CameraRuntimeSnapshot> _cameraRuntimeSnapshots = new();
     private readonly Dictionary<Guid, DateTimeOffset> _lastPreviewAt = new();
     private readonly DispatcherTimer _systemStatusTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    private readonly DispatcherTimer _idleLockTimer = new() { Interval = TimeSpan.FromSeconds(5) };
+    private DateTimeOffset _lastUserActivity = DateTimeOffset.UtcNow;
+    private int _idleLockInProgress;
     private IReadOnlyList<DetectionEvent> _eventCache = Array.Empty<DetectionEvent>();
     private TimeSpan _lastProcessCpu;
     private DateTimeOffset _lastProcessCpuAt;
@@ -65,6 +68,9 @@ public partial class MainWindow : Avalonia.Controls.Window
     {
         InitializeComponent();
         if (_appLock.IsEnabled && !Program.LaunchInTray) Opacity = 0;
+        AddHandler(InputElement.PointerPressedEvent, (_, _) => MarkUserActivity(), RoutingStrategies.Tunnel);
+        AddHandler(InputElement.KeyDownEvent, (_, _) => MarkUserActivity(), RoutingStrategies.Tunnel);
+        _idleLockTimer.Tick += (_, _) => EvaluateIdleLock();
         _previews = new[] { PreviewOne, PreviewTwo, PreviewThree, PreviewFour };
         _cameraStatuses = new[] { CameraOneStatus, CameraTwoStatus, CameraThreeStatus, CameraFourStatus };
         _cameraOverlayLabels = new[] { CameraOneOverlay, CameraTwoOverlay, CameraThreeOverlay, CameraFourOverlay };
@@ -99,7 +105,12 @@ public partial class MainWindow : Avalonia.Controls.Window
             _ = ApplyScheduleAsync();
         };
         _systemStatusTimer.Start();
-        Closed += (_, _) => _systemStatusTimer.Stop();
+        _idleLockTimer.Start();
+        Closed += (_, _) =>
+        {
+            _systemStatusTimer.Stop();
+            _idleLockTimer.Stop();
+        };
         _uiInitialized = true;
     }
 
@@ -136,6 +147,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         LoggingEnabledCheck.IsChecked = _settings.LoggingEnabled;
         AlertLoggingEnabledCheck.IsChecked = _settings.AlertLoggingEnabled;
         AutoUpdateEnabledCheck.IsChecked = _settings.AutoUpdateEnabled;
+        IdleLockTimeoutCombo.SelectedIndex = _settings.IdleLockTimeoutMinutes switch { 0 => 0, 5 => 1, 10 => 2, 15 => 3, 30 => 4, 60 => 5, _ => 0 };
         AppLogger.Configure(_settings.LoggingEnabled, _settings.AlertLoggingEnabled);
         ZaloDiagnostics.Configure(_settings.AlertLoggingEnabled);
         RuntimeInfoText.Text =
@@ -652,6 +664,10 @@ public partial class MainWindow : Avalonia.Controls.Window
         _settings.LoggingEnabled = LoggingEnabledCheck.IsChecked == true;
         _settings.AlertLoggingEnabled = AlertLoggingEnabledCheck.IsChecked == true;
         _settings.AutoUpdateEnabled = AutoUpdateEnabledCheck.IsChecked == true;
+        _settings.IdleLockTimeoutMinutes = IdleLockTimeoutCombo.SelectedItem is ComboBoxItem item && int.TryParse(item.Tag?.ToString(), out var minutes)
+            ? minutes
+            : 0;
+        MarkUserActivity();
         AppLogger.Configure(_settings.LoggingEnabled, _settings.AlertLoggingEnabled);
         ZaloDiagnostics.Configure(_settings.AlertLoggingEnabled);
         WindowsStartupService.Apply(_settings.StartWithWindows);
@@ -880,8 +896,33 @@ public partial class MainWindow : Avalonia.Controls.Window
         private const string _warning = "#FFF8E8";
     }
 
+    private void MarkUserActivity()
+    {
+        _lastUserActivity = DateTimeOffset.UtcNow;
+    }
+
+    private void EvaluateIdleLock()
+    {
+        if (_idleLockInProgress != 0 || !_uiInitialized || Program.LaunchInTray || !_appLock.IsEnabled) return;
+        var timeoutMinutes = _settings.IdleLockTimeoutMinutes;
+        if (timeoutMinutes <= 0 || !IsVisible) return;
+        if (DateTimeOffset.UtcNow - _lastUserActivity < TimeSpan.FromMinutes(timeoutMinutes)) return;
+        if (Interlocked.Exchange(ref _idleLockInProgress, 1) != 0) return;
+        try
+        {
+            MarkUserActivity();
+            HideToTray();
+            SetStatus($"Đã tự động khóa sau {timeoutMinutes} phút không hoạt động; camera và cảnh báo vẫn tiếp tục.");
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _idleLockInProgress, 0);
+        }
+    }
+
     private void Window_KeyDown(object? sender, KeyEventArgs e)
     {
+        MarkUserActivity();
         if (e.Key == Key.F11)
         {
             WindowState = WindowState == WindowState.FullScreen ? WindowState.Normal : WindowState.FullScreen;
@@ -1700,6 +1741,7 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     public async void ShowFromTray()
     {
+        MarkUserActivity();
         Show();
         WindowState = WindowState.Normal;
         Activate();

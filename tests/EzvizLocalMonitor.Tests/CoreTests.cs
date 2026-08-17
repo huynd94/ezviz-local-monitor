@@ -73,7 +73,8 @@ public sealed class SettingsSerializationTests
             WatchdogEnabled = true,
             LoggingEnabled = false,
             AlertLoggingEnabled = false,
-            AutoUpdateEnabled = false
+            AutoUpdateEnabled = false,
+            IdleLockTimeoutMinutes = 15
         };
 
         var json = JsonSerializer.Serialize(settings);
@@ -96,6 +97,7 @@ public sealed class SettingsSerializationTests
         Assert.Equal(settings.LoggingEnabled, restored.LoggingEnabled);
         Assert.Equal(settings.AlertLoggingEnabled, restored.AlertLoggingEnabled);
         Assert.Equal(settings.AutoUpdateEnabled, restored.AutoUpdateEnabled);
+        Assert.Equal(settings.IdleLockTimeoutMinutes, restored.IdleLockTimeoutMinutes);
     }
 }
 
