@@ -93,11 +93,15 @@ Remove-Item -LiteralPath `$target -Recurse -Force
 Set-Content -LiteralPath (Join-Path $InstallDir "Uninstall-EzvizLocalMonitor.ps1") -Value $uninstaller -Encoding UTF8
 $cleanUninstallerSource = Join-Path $PackageRoot "installer\Uninstall-EzvizLocalMonitor-Clean.ps1"
 $startupRepairSource = Join-Path $PackageRoot "installer\Repair-EzvizLocalMonitorStartup.ps1"
+$lockResetSource = Join-Path $PackageRoot "installer\Reset-EzvizLocalMonitorAppLock.ps1"
 if (Test-Path -LiteralPath $cleanUninstallerSource) {
     Copy-Item -LiteralPath $cleanUninstallerSource -Destination (Join-Path $InstallDir "Uninstall-EzvizLocalMonitor-Clean.ps1") -Force
 }
 if (Test-Path -LiteralPath $startupRepairSource) {
     Copy-Item -LiteralPath $startupRepairSource -Destination (Join-Path $InstallDir "Repair-EzvizLocalMonitorStartup.ps1") -Force
+}
+if (Test-Path -LiteralPath $lockResetSource) {
+    Copy-Item -LiteralPath $lockResetSource -Destination (Join-Path $InstallDir "Reset-EzvizLocalMonitorAppLock.ps1") -Force
 }
 
 if (-not $NoShortcut) {

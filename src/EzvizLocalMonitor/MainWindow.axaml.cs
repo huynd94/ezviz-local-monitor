@@ -44,6 +44,8 @@ public partial class MainWindow : Avalonia.Controls.Window
     private readonly DispatcherTimer _idleLockTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     private DateTimeOffset _lastUserActivity = DateTimeOffset.UtcNow;
     private int _idleLockInProgress;
+    private int _trayUnlockInProgress;
+    private DateTimeOffset _lastTrayShowRequest = DateTimeOffset.MinValue;
     private IReadOnlyList<DetectionEvent> _eventCache = Array.Empty<DetectionEvent>();
     private TimeSpan _lastProcessCpu;
     private DateTimeOffset _lastProcessCpuAt;
@@ -1739,20 +1741,33 @@ public partial class MainWindow : Avalonia.Controls.Window
         SetStatus("Đang chạy nền — live view tạm dừng, giám sát và cảnh báo vẫn hoạt động.");
     }
 
-    public async void ShowFromTray()
+    public void ShowFromTray() => _ = ShowFromTrayAsync();
+
+    private async Task ShowFromTrayAsync()
     {
-        MarkUserActivity();
-        Show();
-        WindowState = WindowState.Normal;
-        Activate();
-        if (!await RequestAppUnlockAsync("Nhập mật khẩu hoặc PIN để xem giao diện ứng dụng."))
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastTrayShowRequest < TimeSpan.FromMilliseconds(750)) return;
+        _lastTrayShowRequest = now;
+        if (Interlocked.Exchange(ref _trayUnlockInProgress, 1) != 0) return;
+        try
         {
-            Hide();
-            return;
+            MarkUserActivity();
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+            if (!await RequestAppUnlockAsync("Nhập mật khẩu hoặc PIN để xem giao diện ứng dụng."))
+            {
+                Hide();
+                return;
+            }
+            _liveViewEnabled = true;
+            _coordinator?.SetPreviewEnabled(true);
+            SetStatus("Đã mở ứng dụng — live view đang khôi phục, giám sát vẫn hoạt động.");
         }
-        _liveViewEnabled = true;
-        _coordinator?.SetPreviewEnabled(true);
-        SetStatus("Đã mở ứng dụng — live view đang khôi phục, giám sát vẫn hoạt động.");
+        finally
+        {
+            Interlocked.Exchange(ref _trayUnlockInProgress, 0);
+        }
     }
 
     private void ClearPendingPreviewFrames()

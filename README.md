@@ -1,6 +1,24 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.8.0**
+**Phiên bản phát hành hiện tại: v1.8.1**
+
+## Bản vá v1.8.1 — sửa double-click tray và khôi phục khóa
+
+Khi nhấn đúp biểu tượng tray, các sự kiện mở cửa sổ liên tiếp trước đây có thể tạo nhiều hộp thoại nhập mật khẩu/PIN. v1.8.1 thêm khóa re-entrancy và debounce 750 ms, bảo đảm mỗi lần mở từ tray chỉ có một hộp thoại xác thực.
+
+Nếu biết mật khẩu/PIN hiện tại, vào `Cài đặt hệ thống → Bảo mật ứng dụng`, chọn loại khóa mới rồi bấm `Đặt/đổi khóa`. Ứng dụng yêu cầu nhập hai lần secret mới và giữ nguyên cấu hình camera, token, log, sự kiện và ảnh.
+
+Nếu quên mật khẩu/PIN, đóng ứng dụng hoàn toàn rồi chạy `Reset-EzvizLocalMonitorAppLock.ps1` trong thư mục cài đặt. Script chỉ xóa `app-lock.protected`, không xóa `settings.protected`, camera, token, log, database hoặc ảnh. Sau đó mở ứng dụng và đặt secret mới trong `Cài đặt hệ thống → Bảo mật ứng dụng`.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\EZVIZ-Local-Monitor\Reset-EzvizLocalMonitorAppLock.ps1"
+```
+
+Script yêu cầu nhập `RESET`. Chỉ dùng `-Force` khi chắc chắn muốn reset:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\EZVIZ-Local-Monitor\Reset-EzvizLocalMonitorAppLock.ps1" -Force -NoPause
+```
 
 ## Bản cập nhật v1.8.0 — tự động khóa khi không hoạt động
 

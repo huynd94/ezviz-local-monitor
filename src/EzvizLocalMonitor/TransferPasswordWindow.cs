@@ -16,6 +16,7 @@ public sealed class TransferPasswordWindow : Window
     {
         _minimumLength = minimumLength;
         _digitsOnly = digitsOnly;
+        _passwordBox.Watermark = digitsOnly ? "4–12 chữ số" : "Ít nhất 8 ký tự";
         Title = title;
         Width = 520;
         Height = confirmPassword ? 330 : 285;
