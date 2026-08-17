@@ -672,11 +672,13 @@ public partial class MainWindow : Avalonia.Controls.Window
         MarkUserActivity();
         AppLogger.Configure(_settings.LoggingEnabled, _settings.AlertLoggingEnabled);
         ZaloDiagnostics.Configure(_settings.AlertLoggingEnabled);
-        WindowsStartupService.Apply(_settings.StartWithWindows);
+        var startupOk = WindowsStartupService.Apply(_settings.StartWithWindows);
         if (_settings.WatchdogEnabled) _watchdog.Start(Program.LaunchInTray); else _watchdog.Stop();
         SaveSettings();
         RefreshSystemStatus();
-        SetStatus("Đã lưu cài đặt hệ thống.");
+        SetStatus(_settings.StartWithWindows && !startupOk
+            ? "Đã lưu cấu hình nhưng chưa tạo được Task Scheduler. Mở app.log hoặc chạy Repair-EzvizLocalMonitorStartup.ps1."
+            : "Đã lưu cài đặt hệ thống.");
     }
 
     private void ValidateAlerts_Click(object? sender, RoutedEventArgs e)

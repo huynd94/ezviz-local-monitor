@@ -7,23 +7,23 @@ public static class WindowsStartupService
 {
     private const string TaskName = "EZVIZ Local Monitor";
 
-    public static void Apply(bool enabled)
+    public static bool Apply(bool enabled)
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindows()) return false;
         try
         {
             if (!enabled)
             {
-                RunSchtasks("/Delete", "/TN", TaskName, "/F");
-                AppLogger.Info(LogChannel.App, "startup task disabled");
-                return;
+                var deleted = RunSchtasks("/Delete", "/TN", TaskName, "/F");
+                AppLogger.Info(LogChannel.App, $"startup task disabled; success={deleted}");
+                return deleted;
             }
 
             var executable = Environment.ProcessPath;
             if (string.IsNullOrWhiteSpace(executable) || !File.Exists(executable))
             {
                 AppLogger.Error(LogChannel.App, $"startup task skipped; executable missing; path={executable}");
-                return;
+                return false;
             }
 
             // ArgumentList avoids nested-quote parsing problems when the install path contains spaces.
@@ -37,11 +37,13 @@ public static class WindowsStartupService
                 "/RL", "LIMITED",
                 "/IT",
                 "/F");
-            AppLogger.Info(LogChannel.App, $"startup task configured; success={created}; executable={Path.GetFileName(executable)}; trigger=ONLOGON+10s; interactive=true");
+            AppLogger.Info(LogChannel.App, $"startup task configured; success={created}; taskName={TaskName}; executable={executable}; trigger=ONLOGON+10s; interactive=true");
+            return created;
         }
         catch (Exception ex)
         {
             AppLogger.Error(LogChannel.App, "startup task configuration failed", ex);
+            return false;
         }
     }
 

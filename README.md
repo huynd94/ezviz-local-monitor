@@ -1,6 +1,22 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.8.1**
+**Phiên bản phát hành hiện tại: v1.8.2**
+
+## Bản vá v1.8.2 — sửa tạo Task Scheduler và đường dẫn cài đặt
+
+Nếu `schtasks /Query /TN "EZVIZ Local Monitor"` báo `The system cannot find the file specified`, nghĩa là task chưa được tạo trong tài khoản Windows hiện tại. v1.8.2 làm cho giao diện báo thất bại thật sự khi `schtasks` không tạo được task, ghi đầy đủ executable/path vào `app.log`, và cập nhật script Repair để ưu tiên Windows ScheduledTasks API. API truyền executable, argument `--background`, working directory và tài khoản đăng nhập bằng thuộc tính riêng, không ghép chuỗi đường dẫn.
+
+Để tạo lại task với bản v1.8.2, chạy PowerShell bằng đúng tài khoản sử dụng ứng dụng:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\EZVIZ-Local-Monitor\Repair-EzvizLocalMonitorStartup.ps1" -InstallDir "D:\EZVIZ-Local-Monitor" -RunNow
+```
+
+Sau đó kiểm tra:
+
+```powershell
+schtasks.exe /Query /TN "EZVIZ Local Monitor" /V /FO LIST
+```
 
 ## Bản vá v1.8.1 — sửa double-click tray và khôi phục khóa
 
