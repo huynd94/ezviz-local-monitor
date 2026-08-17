@@ -9,9 +9,13 @@ public sealed class TransferPasswordWindow : Window
 {
     private readonly TextBox _passwordBox = new() { PasswordChar = '●', Watermark = "Ít nhất 8 ký tự" };
     private readonly TextBox? _confirmBox;
+    private readonly int _minimumLength;
+    private readonly bool _digitsOnly;
 
-    public TransferPasswordWindow(string title, string description, bool confirmPassword)
+    public TransferPasswordWindow(string title, string description, bool confirmPassword, int minimumLength = 8, bool digitsOnly = false)
     {
+        _minimumLength = minimumLength;
+        _digitsOnly = digitsOnly;
         Title = title;
         Width = 520;
         Height = confirmPassword ? 330 : 285;
@@ -62,9 +66,11 @@ public sealed class TransferPasswordWindow : Window
         accept.Click += (_, _) =>
         {
             var password = _passwordBox.Text ?? string.Empty;
-            if (password.Length < 8)
+            if (password.Length < _minimumLength || (_digitsOnly && password.Any(c => c < '0' || c > '9')))
             {
-                status.Text = "Mật khẩu phải có ít nhất 8 ký tự.";
+                status.Text = _digitsOnly
+                    ? $"PIN phải gồm ít nhất {_minimumLength} chữ số."
+                    : $"Mật khẩu phải có ít nhất {_minimumLength} ký tự.";
                 return;
             }
             if (confirmPassword && !string.Equals(password, _confirmBox?.Text, StringComparison.Ordinal))

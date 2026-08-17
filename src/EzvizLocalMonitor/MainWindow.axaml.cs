@@ -18,6 +18,7 @@ namespace EzvizLocalMonitor;
 public partial class MainWindow : Avalonia.Controls.Window
 {
     private readonly SettingsStore _settingsStore = new();
+    private readonly AppLockService _appLock = new();
     private readonly EventStore _eventStore = new();
     private readonly EventLogMaintenanceService _eventMaintenance;
     private readonly AlertDispatcher _alerts = new();
@@ -63,6 +64,7 @@ public partial class MainWindow : Avalonia.Controls.Window
     public MainWindow()
     {
         InitializeComponent();
+        if (_appLock.IsEnabled && !Program.LaunchInTray) Opacity = 0;
         _previews = new[] { PreviewOne, PreviewTwo, PreviewThree, PreviewFour };
         _cameraStatuses = new[] { CameraOneStatus, CameraTwoStatus, CameraThreeStatus, CameraFourStatus };
         _cameraOverlayLabels = new[] { CameraOneOverlay, CameraTwoOverlay, CameraThreeOverlay, CameraFourOverlay };
@@ -142,6 +144,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         DashboardViewModeCombo.SelectedIndex = Math.Clamp(_settings.DashboardViewMode, 0, 1);
 
         if (_settings.Cameras.Count > 0) CameraList.SelectedIndex = 0;
+        RefreshAppLockUi();
     }
 
     private void RefreshCameraList()
@@ -552,6 +555,94 @@ public partial class MainWindow : Avalonia.Controls.Window
         _settings.Ai.RequireConfirmationBeforeAlert = AiRequireConfirmationCheck.IsChecked == true;
         SaveSettings();
         RefreshSystemStatus();
+    }
+
+    private void RefreshAppLockUi()
+    {
+        if (AppLockStatusText is null || AppLockModeCombo is null) return;
+        if (!_appLock.IsEnabled)
+        {
+            AppLockStatusText.Text = "Ứng dụng chưa khóa.";
+            return;
+        }
+        var mode = _appLock.GetMode();
+        AppLockModeCombo.SelectedIndex = mode == AppLockMode.Pin ? 1 : 0;
+        AppLockStatusText.Text = mode == AppLockMode.Pin
+            ? "Đang khóa bằng mã PIN."
+            : "Đang khóa bằng mật khẩu.";
+    }
+
+    private async void SetAppLock_Click(object? sender, RoutedEventArgs e)
+    {
+        var mode = AppLockModeCombo.SelectedIndex == 1 ? AppLockMode.Pin : AppLockMode.Password;
+        var minimum = mode == AppLockMode.Pin ? 4 : 8;
+        var secret = await new TransferPasswordWindow(
+            mode == AppLockMode.Pin ? "Đặt mã PIN vào ứng dụng" : "Đặt mật khẩu vào ứng dụng",
+            mode == AppLockMode.Pin
+                ? "PIN gồm 4–12 chữ số. PIN không được lưu dạng plaintext."
+                : "Mật khẩu gồm ít nhất 8 ký tự. Mật khẩu không được lưu dạng plaintext.",
+            confirmPassword: true,
+            minimumLength: minimum,
+            digitsOnly: mode == AppLockMode.Pin).ShowDialog<string?>(this);
+        if (string.IsNullOrEmpty(secret)) return;
+        try
+        {
+            _appLock.Set(mode, secret);
+            RefreshAppLockUi();
+            SetStatus("Đã bật khóa ứng dụng. Lần mở giao diện tiếp theo sẽ yêu cầu xác thực.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Không thể bật khóa ứng dụng: {ex.Message}");
+        }
+    }
+
+    private async void DisableAppLock_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!_appLock.IsEnabled)
+        {
+            SetStatus("Khóa ứng dụng đang tắt.");
+            return;
+        }
+        if (!await RequestAppUnlockAsync("Xác thực để tắt khóa ứng dụng.")) return;
+        _appLock.Disable();
+        RefreshAppLockUi();
+        SetStatus("Đã tắt khóa ứng dụng.");
+    }
+
+    private void LockNow_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!_appLock.IsEnabled)
+        {
+            SetStatus("Hãy đặt mật khẩu hoặc PIN trước khi khóa ứng dụng.");
+            return;
+        }
+        HideToTray();
+        SetStatus("Ứng dụng đã khóa và tiếp tục giám sát nền. Mở lại từ khay để nhập mật khẩu/PIN.");
+    }
+
+    private async Task<bool> RequestAppUnlockAsync(string description)
+    {
+        if (!_appLock.IsEnabled) return true;
+        Opacity = 0;
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            var mode = _appLock.GetMode();
+            var secret = await new TransferPasswordWindow(
+                mode == AppLockMode.Pin ? "Mở khóa bằng mã PIN" : "Mở khóa bằng mật khẩu",
+                description,
+                confirmPassword: false,
+                minimumLength: mode == AppLockMode.Pin ? 4 : 8,
+                digitsOnly: mode == AppLockMode.Pin).ShowDialog<string?>(this);
+            if (string.IsNullOrEmpty(secret)) return false;
+            if (_appLock.Verify(secret))
+            {
+                Opacity = 1;
+                return true;
+            }
+            SetStatus($"Thông tin mở khóa không đúng. Còn {3 - attempt} lần thử.");
+        }
+        return false;
     }
 
     private void SaveSystemSettings_Click(object? sender, RoutedEventArgs e)
@@ -1489,6 +1580,12 @@ public partial class MainWindow : Avalonia.Controls.Window
     {
         if (_updateCheckStarted) return;
         _updateCheckStarted = true;
+        if (!Program.LaunchInTray && !await RequestAppUnlockAsync("Nhập mật khẩu hoặc PIN để vào ứng dụng."))
+        {
+            _exitRequested = true;
+            Close();
+            return;
+        }
         if (!_settings.HasCompletedOnboarding)
         {
             var onboarding = new OnboardingWindow();
@@ -1601,13 +1698,18 @@ public partial class MainWindow : Avalonia.Controls.Window
         SetStatus("Đang chạy nền — live view tạm dừng, giám sát và cảnh báo vẫn hoạt động.");
     }
 
-    public void ShowFromTray()
+    public async void ShowFromTray()
     {
-        _liveViewEnabled = true;
-        _coordinator?.SetPreviewEnabled(true);
         Show();
         WindowState = WindowState.Normal;
         Activate();
+        if (!await RequestAppUnlockAsync("Nhập mật khẩu hoặc PIN để xem giao diện ứng dụng."))
+        {
+            Hide();
+            return;
+        }
+        _liveViewEnabled = true;
+        _coordinator?.SetPreviewEnabled(true);
         SetStatus("Đã mở ứng dụng — live view đang khôi phục, giám sát vẫn hoạt động.");
     }
 

@@ -1,6 +1,14 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.6.3**
+**Phiên bản phát hành hiện tại: v1.7.0**
+
+## Bản cập nhật v1.7.0 — khóa ứng dụng bằng mật khẩu hoặc mã PIN
+
+Tab `Cài đặt hệ thống` có khu vực `Bảo mật ứng dụng` cho phép chọn mật khẩu hoặc PIN, đặt/đổi khóa, khóa ngay và tắt khóa sau khi xác thực. Mật khẩu/PIN không nằm trong `AppSettings`, backup DPAPI, backup chuyển máy hoặc log. Ứng dụng lưu hash PBKDF2 cùng salt trong `app-lock.protected`, sau đó bảo vệ toàn bộ file bằng Windows DPAPI `CurrentUser`.
+
+Khi ứng dụng khởi động bình thường, giao diện yêu cầu mở khóa trước khi vào ứng dụng. Khi khởi động Windows ở chế độ nền, camera và cảnh báo vẫn hoạt động trong tray mà không yêu cầu nhập PIN; khi chọn mở cửa sổ từ tray, người dùng phải xác thực. Có tối đa ba lần thử cho mỗi lần mở khóa.
+
+PIN phải có 4–12 chữ số. Mật khẩu phải có ít nhất 8 ký tự. Nếu quên secret, không thể khôi phục bằng backup chuyển máy; cần tắt/xóa file khóa bằng đúng tài khoản Windows hoặc dùng quy trình hỗ trợ quản trị riêng.
 
 ## Bản vá v1.6.3 — bổ sung Visual C++ Runtime cho ONNX Runtime
 

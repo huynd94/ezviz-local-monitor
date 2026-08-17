@@ -99,6 +99,24 @@ public sealed class SettingsSerializationTests
     }
 }
 
+public sealed class AppLockPolicyTests
+{
+    [Fact]
+    public void PasswordRequiresEightCharacters()
+    {
+        AppLockService.Validate(AppLockMode.Password, "safe-pass");
+        Assert.Throws<ArgumentException>(() => AppLockService.Validate(AppLockMode.Password, "short"));
+    }
+
+    [Fact]
+    public void PinRequiresDigitsAndFourToTwelveCharacters()
+    {
+        AppLockService.Validate(AppLockMode.Pin, "1234");
+        Assert.Throws<ArgumentException>(() => AppLockService.Validate(AppLockMode.Pin, "12ab"));
+        Assert.Throws<ArgumentException>(() => AppLockService.Validate(AppLockMode.Pin, "123"));
+    }
+}
+
 public sealed class TransferBackupTests
 {
     [Fact]
