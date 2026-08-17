@@ -1,12 +1,24 @@
-﻿﻿param(
-    [string]$InstallDir,
-    [switch]$Disable,
-    [switch]$RunNow,
-    [switch]$NoPause
-)
-
+﻿# EZVIZ Local Monitor startup repair - compatible with Windows PowerShell 5.1
 $ErrorActionPreference = 'Stop'
 $TaskName = 'EZVIZ Local Monitor'
+$InstallDir = $null
+$Disable = $false
+$RunNow = $false
+$NoPause = $false
+
+for ($i = 0; $i -lt $args.Count; $i++) {
+    switch ($args[$i].ToLowerInvariant()) {
+        '-installdir' {
+            if ($i + 1 -ge $args.Count) { throw 'Missing value for -InstallDir.' }
+            $i++
+            $InstallDir = $args[$i]
+        }
+        '-disable' { $Disable = $true }
+        '-runnow' { $RunNow = $true }
+        '-nopause' { $NoPause = $true }
+        default { throw ('Unknown argument: {0}' -f $args[$i]) }
+    }
+}
 
 if ([string]::IsNullOrWhiteSpace($InstallDir)) {
     $InstallDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -24,22 +36,15 @@ function Invoke-Schtasks {
 }
 
 function Pause-IfNeeded {
-    if (-not $NoPause) {
-        Read-Host 'Press Enter to close'
-    }
+    if (-not $NoPause) { Read-Host 'Press Enter to close' }
 }
 
 try {
     try { chcp 65001 | Out-Null } catch { }
 
     if ($Disable) {
-        try {
-            Invoke-Schtasks @('/Delete', '/TN', $TaskName, '/F') | Out-Null
-            Write-Host ('Startup task disabled: {0}' -f $TaskName) -ForegroundColor Green
-        }
-        catch {
-            Write-Warning $_.Exception.Message
-        }
+        Invoke-Schtasks @('/Delete', '/TN', $TaskName, '/F') | Out-Null
+        Write-Host ('Startup task disabled: {0}' -f $TaskName) -ForegroundColor Green
         Pause-IfNeeded
         exit 0
     }
@@ -51,14 +56,14 @@ try {
     $taskCommand = '"{0}" --background' -f $Executable
     Write-Host ('Creating startup task: {0}' -f $TaskName) -ForegroundColor Cyan
 
+    # Do not use /IT: it can return Access Denied for a non-elevated PowerShell.
+    # The task is still interactive because ONLOGON runs under the current user.
     Invoke-Schtasks @(
-        '/Create',
-        '/TN', $TaskName,
+        '/Create', '/TN', $TaskName,
         '/TR', $taskCommand,
         '/SC', 'ONLOGON',
         '/DELAY', '0000:10',
         '/RL', 'LIMITED',
-        '/IT',
         '/F'
     ) | Out-Null
 
@@ -75,7 +80,9 @@ try {
 }
 catch {
     Write-Host ('ERROR: {0}' -f $_.Exception.Message) -ForegroundColor Red
-    Write-Host 'Verify that the script is copied from the v1.8.3 release and that InstallDir is correct.' -ForegroundColor Yellow
+    if ($_.Exception.Message -match 'Access is denied|access denied') {
+        Write-Host 'Open PowerShell with Run as administrator, then run this command again.' -ForegroundColor Yellow
+    }
     exit 1
 }
 

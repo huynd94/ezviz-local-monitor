@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.8.3**
+**Phiên bản phát hành hiện tại: v1.8.4**
+
+## Bản vá v1.8.4 — sửa parser và quyền Task Scheduler
+
+v1.8.3 vẫn có thể gặp hai lỗi trên một số máy: file script bị đọc `param` như một lệnh, và `/IT` trả về `Access is denied` khi PowerShell chưa được nâng quyền. v1.8.4 bỏ `param()` ở đầu script, tự đọc tham số từ `$args`, bỏ `/IT`, và hiển thị hướng dẫn mở PowerShell bằng `Run as administrator` nếu Windows vẫn từ chối quyền.
 
 ## Bản vá v1.8.3 — tương thích PowerShell 5.1
 
@@ -10,7 +14,7 @@ v1.8.2 vẫn có thể báo lỗi parser tại `[CmdletBinding()]` trên một s
 
 Nếu `schtasks /Query /TN "EZVIZ Local Monitor"` báo `The system cannot find the file specified`, nghĩa là task chưa được tạo trong tài khoản Windows hiện tại. v1.8.2 làm cho giao diện báo thất bại thật sự khi `schtasks` không tạo được task, ghi đầy đủ executable/path vào `app.log`, và cập nhật script Repair để ưu tiên Windows ScheduledTasks API. API truyền executable, argument `--background`, working directory và tài khoản đăng nhập bằng thuộc tính riêng, không ghép chuỗi đường dẫn.
 
-Để tạo lại task với bản v1.8.3, chạy PowerShell bằng đúng tài khoản sử dụng ứng dụng:
+Để tạo lại task với bản v1.8.4, mở PowerShell bằng `Run as administrator`, sau đó chạy bằng đúng tài khoản sử dụng ứng dụng:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\EZVIZ-Local-Monitor\Repair-EzvizLocalMonitorStartup.ps1" -InstallDir "D:\EZVIZ-Local-Monitor" -RunNow
