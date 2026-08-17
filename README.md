@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.6.1**
+**Phiên bản phát hành hiện tại: v1.6.2**
+
+## Bản vá v1.6.2 — đóng gói model YOLO trong bộ phát hành
+
+Bộ phát hành Windows hiện luôn chứa `app\Models\yolov8n.onnx`. Nguyên nhân v1.6.1 bị thiếu model là file ONNX được `.gitignore` để tải cục bộ, nhưng bước publish vẫn cho phép chạy khi asset chưa tồn tại. Từ v1.6.2, target `ValidateYoloModelForPublish` sẽ dừng publish với thông báo rõ ràng nếu thiếu model. Script `scripts\Get-YoloModel.ps1` tải model đúng phiên bản và kiểm tra SHA-256 trước khi cho phép build.
+
+Khi cài trên máy mới, hãy giải nén/cài toàn bộ bộ phát hành, không chỉ sao chép riêng `EzvizLocalMonitor.exe`. Nếu dùng bản ZIP, phải giữ nguyên thư mục `app\Models` cạnh executable.
 
 ## Bản vá v1.6.1 — sửa lỗi file backup bị khóa khi xuất
 

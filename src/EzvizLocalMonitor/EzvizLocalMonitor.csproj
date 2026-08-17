@@ -7,7 +7,7 @@
     <AssemblyName>EzvizLocalMonitor</AssemblyName>
     <RootNamespace>EzvizLocalMonitor</RootNamespace>
     <ApplicationIcon>Assets\ezviz-local-monitor.ico</ApplicationIcon>
-    <Version>1.6.1</Version>
+    <Version>1.6.2</Version>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
@@ -26,7 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\assets\Models\yolov8n.onnx" Link="Models\yolov8n.onnx" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\assets\Models\yolov8n.onnx')" />
+    <Content Include="..\..\assets\Models\yolov8n.onnx" Link="Models\yolov8n.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('..\..\assets\Models\yolov8n.onnx')" />
     <AvaloniaResource Include="Assets\ezviz-local-monitor.ico" />
   </ItemGroup>
+  <Target Name="ValidateYoloModelForPublish" BeforeTargets="Publish" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Text="Missing assets\Models\yolov8n.onnx. Run scripts\Get-YoloModel.ps1 before publishing." Condition="!Exists('..\..\assets\Models\yolov8n.onnx')" />
+  </Target>
 </Project>
