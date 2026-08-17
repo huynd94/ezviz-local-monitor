@@ -99,6 +99,45 @@ public sealed class SettingsSerializationTests
     }
 }
 
+public sealed class TransferBackupTests
+{
+    [Fact]
+    public void TransferBackup_RoundTripWorks_AndWrongPasswordFails()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"ezviz-transfer-{Guid.NewGuid():N}.ezviztransfer");
+        try
+        {
+            var store = new SettingsStore();
+            var settings = new AppSettings
+            {
+                Cameras = new List<CameraDefinition> { new() { Name = "Camera chuyển máy", RtspUrl = "rtsp://local/stream" } },
+                Alerts = new AlertChannelSettings { TelegramBotToken = "secret-token", TelegramChatId = "chat-id" },
+                Ai = new AiSettings { ApiKey = "secret-ai-key", Model = "vision-model" },
+                StartWithWindows = true,
+                WatchdogEnabled = true,
+                LoggingEnabled = false,
+                AutoUpdateEnabled = false
+            };
+
+            store.ExportTransferBackup(settings, path, "correct-horse-battery");
+            var raw = File.ReadAllBytes(path);
+            Assert.DoesNotContain("secret-token", System.Text.Encoding.UTF8.GetString(raw));
+            var restored = store.ImportTransferBackup(path, "correct-horse-battery");
+
+            Assert.Equal(settings.Cameras[0].Name, restored.Cameras[0].Name);
+            Assert.Equal(settings.Alerts.TelegramBotToken, restored.Alerts.TelegramBotToken);
+            Assert.Equal(settings.Ai.ApiKey, restored.Ai.ApiKey);
+            Assert.True(restored.StartWithWindows);
+            Assert.False(restored.AutoUpdateEnabled);
+            Assert.Throws<InvalidOperationException>(() => store.ImportTransferBackup(path, "wrong-password"));
+        }
+        finally
+        {
+            try { if (File.Exists(path)) File.Delete(path); } catch { }
+        }
+    }
+}
+
 public sealed class EventStoreTests : IDisposable
 {
     private readonly string _database = Path.Combine(Path.GetTempPath(), $"ezviz-test-{Guid.NewGuid():N}.db");

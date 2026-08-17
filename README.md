@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.5.0**
+**Phiên bản phát hành hiện tại: v1.6.0**
+
+## Bản cập nhật v1.6.0 — backup chuyển cấu hình giữa các máy Windows
+
+Backup DPAPI (`.ezvizbackup`) vẫn được giữ cho trường hợp cùng máy và cùng tài khoản Windows. Để chuyển cấu hình sang máy Windows khác, dùng `Cài đặt hệ thống → Xuất chuyển máy`. Ứng dụng tạo file `.ezviztransfer` bằng PBKDF2-SHA256 và AES-GCM, với mật khẩu do người dùng đặt; token, API key, Chat ID và mã xác thực không nằm dạng plaintext trong file. Trên máy đích, chọn `Nhập chuyển máy` và nhập đúng mật khẩu. Sau khi giải mã thành công, cấu hình được lưu lại bằng DPAPI của tài khoản Windows trên máy đích.
+
+Mật khẩu chuyển máy không được lưu trong ứng dụng, backup hoặc log. Nếu quên mật khẩu, không thể khôi phục file; cần xuất lại từ máy nguồn. Backup chuyển máy chỉ chứa cấu hình, không chứa SQLite nhật ký sự kiện hoặc thư mục ảnh sự kiện.
 
 ## Bản cập nhật v1.5.0 — tách Cảnh báo và Cài đặt hệ thống
 

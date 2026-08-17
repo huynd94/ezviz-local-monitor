@@ -31,7 +31,13 @@ public sealed class SettingsStore
     private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("EZVIZ-Local-Monitor-v1");
     private static readonly byte[] BackupEntropy = Encoding.UTF8.GetBytes("EZVIZ-Local-Monitor-backup-v1");
     private static readonly byte[] BackupHeader = Encoding.UTF8.GetBytes("EZVIZ-LOCAL-BACKUP-V1\n");
+    private static readonly byte[] TransferHeader = Encoding.UTF8.GetBytes("EZVIZ-LOCAL-TRANSFER-V1\n");
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private const int TransferSaltBytes = 16;
+    private const int TransferNonceBytes = 12;
+    private const int TransferTagBytes = 16;
+    private const int TransferKeyBytes = 32;
+    private const int TransferPbkdf2Iterations = 600_000;
 
     public AppSettings Load()
     {
@@ -87,6 +93,86 @@ public sealed class SettingsStore
         {
             try { if (File.Exists(temporary)) File.Delete(temporary); } catch { }
         }
+    }
+
+    public void ExportTransferBackup(AppSettings settings, string filePath, string password)
+    {
+        ValidateTransferPassword(password);
+        if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("Đường dẫn file backup không được trống.", nameof(filePath));
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+
+        var salt = RandomNumberGenerator.GetBytes(TransferSaltBytes);
+        var nonce = RandomNumberGenerator.GetBytes(TransferNonceBytes);
+        var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, TransferPbkdf2Iterations, HashAlgorithmName.SHA256, TransferKeyBytes);
+        var plain = JsonSerializer.SerializeToUtf8Bytes(Normalize(settings), JsonOptions);
+        var cipher = new byte[plain.Length];
+        var tag = new byte[TransferTagBytes];
+        using (var aes = new AesGcm(key, TransferTagBytes))
+            aes.Encrypt(nonce, plain, cipher, tag, TransferHeader);
+
+        var temporary = filePath + ".tmp";
+        try
+        {
+            using var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None);
+            stream.Write(TransferHeader);
+            stream.Write(salt);
+            stream.Write(nonce);
+            stream.Write(tag);
+            stream.Write(cipher);
+            stream.Flush(true);
+            File.Move(temporary, filePath, true);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(key);
+            CryptographicOperations.ZeroMemory(plain);
+            try { if (File.Exists(temporary)) File.Delete(temporary); } catch { }
+        }
+    }
+
+    public AppSettings ImportTransferBackup(string filePath, string password)
+    {
+        ValidateTransferPassword(password);
+        if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("Đường dẫn file backup không được trống.", nameof(filePath));
+        var bytes = File.ReadAllBytes(filePath);
+        var minimum = TransferHeader.Length + TransferSaltBytes + TransferNonceBytes + TransferTagBytes + 1;
+        if (bytes.Length < minimum || !bytes.AsSpan(0, TransferHeader.Length).SequenceEqual(TransferHeader))
+            throw new InvalidDataException("File không phải backup chuyển máy EZVIZ Local Monitor v1.");
+
+        var offset = TransferHeader.Length;
+        var salt = bytes.AsSpan(offset, TransferSaltBytes).ToArray(); offset += TransferSaltBytes;
+        var nonce = bytes.AsSpan(offset, TransferNonceBytes).ToArray(); offset += TransferNonceBytes;
+        var tag = bytes.AsSpan(offset, TransferTagBytes).ToArray(); offset += TransferTagBytes;
+        var cipher = bytes.AsSpan(offset).ToArray();
+        var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, TransferPbkdf2Iterations, HashAlgorithmName.SHA256, TransferKeyBytes);
+        var plain = new byte[cipher.Length];
+        try
+        {
+            using var aes = new AesGcm(key, TransferTagBytes);
+            aes.Decrypt(nonce, cipher, tag, plain, TransferHeader);
+            return Normalize(JsonSerializer.Deserialize<AppSettings>(plain, JsonOptions)
+                ?? throw new InvalidDataException("Backup chuyển máy không chứa cấu hình hợp lệ."));
+        }
+        catch (CryptographicException)
+        {
+            throw new InvalidOperationException("Không thể giải mã backup chuyển máy. Hãy kiểm tra mật khẩu hoặc chọn đúng file.");
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidDataException("Backup chuyển máy không chứa cấu hình JSON hợp lệ.", ex);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(key);
+            CryptographicOperations.ZeroMemory(plain);
+        }
+    }
+
+    private static void ValidateTransferPassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+            throw new ArgumentException("Mật khẩu backup chuyển máy phải có ít nhất 8 ký tự.", nameof(password));
     }
 
     public AppSettings ImportBackup(string filePath)

@@ -1299,6 +1299,88 @@ public partial class MainWindow : Avalonia.Controls.Window
         }
     }
 
+    private async Task ApplyImportedSettingsAsync(AppSettings imported, string path, string successMessage)
+    {
+        var wasRunning = _coordinator is not null;
+        if (wasRunning) await StopMonitoringAsync();
+        _settings = imported;
+        ClearRuntimeStateForConfigurationChange();
+        _settingsStore.Save(_settings);
+        _loadingSettings = true;
+        LoadSettings();
+        PerformanceProfileCombo.SelectedIndex = Math.Clamp(_settings.PerformanceProfile, 0, 3);
+        _loadingSettings = false;
+        ApplyTheme();
+        ApplyLayoutMode(_settings.DashboardLayoutMode, false);
+        ApplyPreviewFit();
+        ApplyDashboardViewMode();
+        if (wasRunning) await StartMonitoringAsync(false);
+        AppLogger.Info(LogChannel.App, $"settings transfer restored; file={Path.GetFileName(path)}");
+        SetStatus(successMessage);
+    }
+
+    private async void ExportTransferSettings_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (SelectedCamera is not null && !TryApplySelectedCameraFromUi(out var cameraError))
+            {
+                SetStatus($"Không xuất được cấu hình chuyển máy: {cameraError}");
+                return;
+            }
+            if (SelectedCamera is not null) RefreshCameraList();
+            SaveAlerts_Click(sender, e);
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Xuất cấu hình chuyển sang máy khác",
+                SuggestedFileName = $"ezviz-settings-transfer-{DateTime.Now:yyyyMMdd-HHmmss}.ezviztransfer",
+                FileTypeChoices = new[] { new FilePickerFileType("EZVIZ backup chuyển máy") { Patterns = new[] { "*.ezviztransfer" } } }
+            });
+            var path = file?.TryGetLocalPath();
+            if (string.IsNullOrWhiteSpace(path)) { SetStatus("Đã hủy xuất cấu hình chuyển máy."); return; }
+            var password = await new TransferPasswordWindow(
+                "Đặt mật khẩu backup chuyển máy",
+                "Dùng cùng mật khẩu này trên máy đích. Mật khẩu không được lưu trong file, log hoặc gửi qua mạng.",
+                confirmPassword: true).ShowDialog<string?>(this);
+            if (string.IsNullOrEmpty(password)) { SetStatus("Đã hủy xuất cấu hình chuyển máy."); return; }
+            _settingsStore.ExportTransferBackup(_settings, path, password);
+            AppLogger.Info(LogChannel.App, $"settings transfer exported; file={Path.GetFileName(path)}");
+            SetStatus("Đã xuất cấu hình chuyển máy. Hãy giữ mật khẩu để nhập trên máy đích.");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(LogChannel.App, "settings transfer export failed", ex);
+            SetStatus($"Không xuất được cấu hình chuyển máy: {ex.Message}");
+        }
+    }
+
+    private async void ImportTransferSettings_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Nhập cấu hình từ máy khác",
+                AllowMultiple = false,
+                FileTypeFilter = new[] { new FilePickerFileType("EZVIZ backup chuyển máy") { Patterns = new[] { "*.ezviztransfer" } } }
+            });
+            var path = files.FirstOrDefault()?.TryGetLocalPath();
+            if (string.IsNullOrWhiteSpace(path)) { SetStatus("Đã hủy nhập cấu hình chuyển máy."); return; }
+            var password = await new TransferPasswordWindow(
+                "Nhập mật khẩu backup chuyển máy",
+                "Nhập đúng mật khẩu đã đặt khi xuất file. Nếu sai, cấu hình hiện tại sẽ được giữ nguyên.",
+                confirmPassword: false).ShowDialog<string?>(this);
+            if (string.IsNullOrEmpty(password)) { SetStatus("Đã hủy nhập cấu hình chuyển máy."); return; }
+            var imported = _settingsStore.ImportTransferBackup(path, password);
+            await ApplyImportedSettingsAsync(imported, path, "Đã nhập cấu hình chuyển máy và mã hóa lại theo tài khoản Windows của máy này.");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(LogChannel.App, "settings transfer restore failed", ex);
+            SetStatus($"Không khôi phục được cấu hình chuyển máy: {ex.Message}");
+        }
+    }
+
     private async void BackupSettings_Click(object? sender, RoutedEventArgs e)
     {
         try
