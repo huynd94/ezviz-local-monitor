@@ -1,12 +1,16 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.8.2**
+**Phiên bản phát hành hiện tại: v1.8.3**
+
+## Bản vá v1.8.3 — tương thích PowerShell 5.1
+
+v1.8.2 vẫn có thể báo lỗi parser tại `[CmdletBinding()]` trên một số bản Windows PowerShell 5.1. v1.8.3 thay script Repair bằng cú pháp tối giản tương thích PowerShell 5.1, chỉ dùng `schtasks.exe`, vẫn xử lý đúng đường dẫn có khoảng trắng và hiển thị lỗi rõ ràng.
 
 ## Bản vá v1.8.2 — sửa tạo Task Scheduler và đường dẫn cài đặt
 
 Nếu `schtasks /Query /TN "EZVIZ Local Monitor"` báo `The system cannot find the file specified`, nghĩa là task chưa được tạo trong tài khoản Windows hiện tại. v1.8.2 làm cho giao diện báo thất bại thật sự khi `schtasks` không tạo được task, ghi đầy đủ executable/path vào `app.log`, và cập nhật script Repair để ưu tiên Windows ScheduledTasks API. API truyền executable, argument `--background`, working directory và tài khoản đăng nhập bằng thuộc tính riêng, không ghép chuỗi đường dẫn.
 
-Để tạo lại task với bản v1.8.2, chạy PowerShell bằng đúng tài khoản sử dụng ứng dụng:
+Để tạo lại task với bản v1.8.3, chạy PowerShell bằng đúng tài khoản sử dụng ứng dụng:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\EZVIZ-Local-Monitor\Repair-EzvizLocalMonitorStartup.ps1" -InstallDir "D:\EZVIZ-Local-Monitor" -RunNow
