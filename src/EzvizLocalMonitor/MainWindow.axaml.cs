@@ -641,8 +641,23 @@ public partial class MainWindow : Avalonia.Controls.Window
         catch (Exception ex)
         {
             _coordinator = null;
-            SetStatus($"Không thể khởi động: {ex.Message}");
+            AppLogger.Error(LogChannel.App, "monitoring start failed", ex);
+            StartupDiagnostics.Write("StartMonitoring", ex);
+            SetStatus(GetMonitoringStartupError(ex));
         }
+    }
+
+    private static string GetMonitoringStartupError(Exception ex)
+    {
+        var details = ex.ToString();
+        if (details.Contains("Microsoft.ML.OnnxRuntime.NativeMethods", StringComparison.OrdinalIgnoreCase) ||
+            details.Contains("onnxruntime", StringComparison.OrdinalIgnoreCase) ||
+            details.Contains("vcruntime", StringComparison.OrdinalIgnoreCase) ||
+            details.Contains("msvcp", StringComparison.OrdinalIgnoreCase))
+            return "Không thể khởi động AI YOLO: thiếu hoặc không nạp được Microsoft Visual C++ x64 Runtime. Hãy chạy bộ cài đầy đủ để cài vc_redist.x64.exe, sau đó khởi động lại Windows.";
+        if (details.Contains("BadImageFormatException", StringComparison.OrdinalIgnoreCase))
+            return "Không thể khởi động native runtime: gói x64 không tương thích với thành phần Windows đang có. Hãy dùng đúng bộ cài Windows x64 và cài Visual C++ x64 Runtime.";
+        return $"Không thể khởi động: {ex.Message}";
     }
 
     private async void StopMonitoring_Click(object? sender, RoutedEventArgs e) => await StopMonitoringAsync();

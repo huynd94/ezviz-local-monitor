@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.6.2**
+**Phiên bản phát hành hiện tại: v1.6.3**
+
+## Bản vá v1.6.3 — bổ sung Visual C++ Runtime cho ONNX Runtime
+
+Lỗi `Microsoft.ML.OnnxRuntime.NativeMethods` trên một số máy Windows xảy ra khi máy chưa có Microsoft Visual C++ x64 Redistributable mà ONNX Runtime/OpenCV native cần. Bộ cài đầy đủ v1.6.3 chứa `installer\vc_redist.x64.exe` và tự cài prerequisite trước khi sao chép/khởi động ứng dụng. Luồng khởi động cũng ghi đầy đủ inner exception vào `app.log`/`startup-crash.log` và hiển thị hướng dẫn rõ ràng.
+
+Không chạy riêng `EzvizLocalMonitor.exe` bằng cách sao chép file đơn lẻ. Hãy chạy `installer\Install-EzvizLocalMonitor.ps1` từ bộ cài đầy đủ hoặc chạy `vc_redist.x64.exe /install /quiet /norestart` trước.
 
 ## Bản vá v1.6.2 — đóng gói model YOLO trong bộ phát hành
 

@@ -30,6 +30,33 @@ if (-not (Test-Path (Join-Path $ApplicationSource $ExecutableName))) {
     throw "Không tìm thấy gói ứng dụng. Hãy chạy Install-EzvizLocalMonitor.ps1 từ thư mục bộ cài đầy đủ."
 }
 
+function Test-VcRuntimeInstalled {
+    $systemDirectory = Join-Path $env:WINDIR "System32"
+    return (Test-Path (Join-Path $systemDirectory "vcruntime140_1.dll")) -and
+        (Test-Path (Join-Path $systemDirectory "msvcp140.dll"))
+}
+
+function Ensure-VcRuntime {
+    if (Test-VcRuntimeInstalled) {
+        Write-Host "Microsoft Visual C++ x64 Runtime đã sẵn sàng." -ForegroundColor DarkGreen
+        return
+    }
+
+    $redist = Join-Path $InstallerDirectory "vc_redist.x64.exe"
+    if (-not (Test-Path -LiteralPath $redist)) {
+        throw "Thiếu vc_redist.x64.exe. Hãy chạy bộ cài đầy đủ v1.6.3, không chỉ sao chép riêng thư mục app."
+    }
+
+    Write-Host "Đang cài Microsoft Visual C++ x64 Runtime cần cho ONNX Runtime/OpenCV..." -ForegroundColor Cyan
+    $process = Start-Process -FilePath $redist -ArgumentList @("/install", "/quiet", "/norestart") -Wait -PassThru
+    if ($process.ExitCode -notin @(0, 1638, 3010) -or -not (Test-VcRuntimeInstalled)) {
+        throw "Không cài được Microsoft Visual C++ x64 Runtime. ExitCode=$($process.ExitCode). Hãy chạy vc_redist.x64.exe bằng quyền Administrator rồi thử lại."
+    }
+    Write-Host "Đã cài Microsoft Visual C++ x64 Runtime." -ForegroundColor Green
+}
+
+Ensure-VcRuntime
+
 if ($ChooseLocation) {
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
     $dialog.Description = "Chọn thư mục cài đặt $ApplicationName"
