@@ -1,6 +1,10 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.6.0**
+**Phiên bản phát hành hiện tại: v1.6.1**
+
+## Bản vá v1.6.1 — sửa lỗi file backup bị khóa khi xuất
+
+Luồng xuất `.ezviztransfer` đã được sửa để đóng hoàn toàn `FileStream` trước khi thay thế file đích trên Windows. File tạm hiện dùng tên ngẫu nhiên và được tạo bằng `CreateNew`, tránh xung đột với lần xuất trước. Nếu file đích đang mở bởi ứng dụng khác, giao diện sẽ báo rõ cần đóng file hoặc chọn tên mới thay vì báo lỗi chung.
 
 ## Bản cập nhật v1.6.0 — backup chuyển cấu hình giữa các máy Windows
 

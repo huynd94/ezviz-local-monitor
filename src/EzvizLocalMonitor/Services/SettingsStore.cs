@@ -111,17 +111,24 @@ public sealed class SettingsStore
         using (var aes = new AesGcm(key, TransferTagBytes))
             aes.Encrypt(nonce, plain, cipher, tag, TransferHeader);
 
-        var temporary = filePath + ".tmp";
+        var temporary = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            using var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None);
-            stream.Write(TransferHeader);
-            stream.Write(salt);
-            stream.Write(nonce);
-            stream.Write(tag);
-            stream.Write(cipher);
-            stream.Flush(true);
+            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                stream.Write(TransferHeader);
+                stream.Write(salt);
+                stream.Write(nonce);
+                stream.Write(tag);
+                stream.Write(cipher);
+                stream.Flush(true);
+            }
+            // Stream phải được đóng hoàn toàn trước khi thay thế file đích trên Windows.
             File.Move(temporary, filePath, true);
+        }
+        catch (IOException ex)
+        {
+            throw new IOException("Không thể ghi file backup. Hãy đóng file backup đang mở, chọn tên file mới hoặc kiểm tra quyền ghi thư mục đích.", ex);
         }
         finally
         {

@@ -120,6 +120,7 @@ public sealed class TransferBackupTests
             };
 
             store.ExportTransferBackup(settings, path, "correct-horse-battery");
+            store.ExportTransferBackup(settings, path, "correct-horse-battery");
             var raw = File.ReadAllBytes(path);
             Assert.DoesNotContain("secret-token", System.Text.Encoding.UTF8.GetString(raw));
             var restored = store.ImportTransferBackup(path, "correct-horse-battery");
@@ -130,6 +131,11 @@ public sealed class TransferBackupTests
             Assert.True(restored.StartWithWindows);
             Assert.False(restored.AutoUpdateEnabled);
             Assert.Throws<InvalidOperationException>(() => store.ImportTransferBackup(path, "wrong-password"));
+            if (OperatingSystem.IsWindows())
+            {
+                using var locked = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+                Assert.Throws<IOException>(() => store.ExportTransferBackup(settings, path, "correct-horse-battery"));
+            }
         }
         finally
         {
