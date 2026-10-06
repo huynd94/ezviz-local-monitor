@@ -55,10 +55,11 @@ public partial class MainWindow : Avalonia.Controls.Window
     private bool _loadingSettings;
     private bool _uiInitialized;
     private Bitmap? _eventDetailBitmap;
-    private bool _updateCheckStarted;
+    private bool _backgroundInitializationStarted;
+    private bool _interactiveInitializationStarted;
     private bool _exitRequested;
     private bool _shutdownStarted;
-    private bool _liveViewEnabled = true;
+    private bool _liveViewEnabled;
     private DetectionEvent? _lastRecordedEvent;
     private bool? _lastScheduleAllowed;
     private int? _lastScheduleProfile;
@@ -69,7 +70,6 @@ public partial class MainWindow : Avalonia.Controls.Window
     public MainWindow()
     {
         InitializeComponent();
-        if (_appLock.IsEnabled && !Program.LaunchInTray) Opacity = 0;
         AddHandler(InputElement.PointerPressedEvent, (_, _) => MarkUserActivity(), RoutingStrategies.Tunnel);
         AddHandler(InputElement.KeyDownEvent, (_, _) => MarkUserActivity(), RoutingStrategies.Tunnel);
         _idleLockTimer.Tick += (_, _) => EvaluateIdleLock();
@@ -100,14 +100,11 @@ public partial class MainWindow : Avalonia.Controls.Window
         {
             if (args.Property.Name == "Value") ConfidenceText.Text = $"{ConfidenceSlider.Value:P0}";
         };
-        Opened += MainWindow_Opened;
         _systemStatusTimer.Tick += (_, _) =>
         {
             RefreshSystemStatus();
             _ = ApplyScheduleAsync();
         };
-        _systemStatusTimer.Start();
-        _idleLockTimer.Start();
         Closed += (_, _) =>
         {
             _systemStatusTimer.Stop();
@@ -317,7 +314,7 @@ public partial class MainWindow : Avalonia.Controls.Window
                     await StartMonitoringAsync(false);
                 }
             }
-            else if (_coordinator is null && _settings.Cameras.Any(x => x.IsEnabled && !string.IsNullOrWhiteSpace(x.RtspUrl)))
+            if (_coordinator is null && _settings.Cameras.Any(x => x.IsEnabled && !string.IsNullOrWhiteSpace(x.RtspUrl)))
             {
                 await StartMonitoringAsync(false);
             }
@@ -673,7 +670,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         AppLogger.Configure(_settings.LoggingEnabled, _settings.AlertLoggingEnabled);
         ZaloDiagnostics.Configure(_settings.AlertLoggingEnabled);
         var startupOk = WindowsStartupService.Apply(_settings.StartWithWindows);
-        if (_settings.WatchdogEnabled) _watchdog.Start(Program.LaunchInTray); else _watchdog.Stop();
+        if (_settings.WatchdogEnabled) _watchdog.Start(restartInTray: true); else _watchdog.Stop();
         SaveSettings();
         RefreshSystemStatus();
         SetStatus(_settings.StartWithWindows && !startupOk
@@ -739,6 +736,7 @@ public partial class MainWindow : Avalonia.Controls.Window
         try
         {
             _coordinator = new MonitorCoordinator(_eventStore, _alerts);
+            _coordinator.SetPreviewEnabled(_liveViewEnabled);
             _coordinator.CameraStatusChanged += UpdateCameraStatus;
             _coordinator.CameraRuntimeChanged += UpdateCameraRuntime;
             _coordinator.PreviewReady += UpdatePreview;
@@ -907,7 +905,7 @@ public partial class MainWindow : Avalonia.Controls.Window
 
     private void EvaluateIdleLock()
     {
-        if (_idleLockInProgress != 0 || !_uiInitialized || Program.LaunchInTray || !_appLock.IsEnabled) return;
+        if (_idleLockInProgress != 0 || _trayUnlockInProgress != 0 || !_uiInitialized || !_appLock.IsEnabled) return;
         var timeoutMinutes = _settings.IdleLockTimeoutMinutes;
         if (timeoutMinutes <= 0 || !IsVisible) return;
         if (DateTimeOffset.UtcNow - _lastUserActivity < TimeSpan.FromMinutes(timeoutMinutes)) return;
@@ -1621,16 +1619,30 @@ public partial class MainWindow : Avalonia.Controls.Window
         }
     }
 
-    private async void MainWindow_Opened(object? sender, EventArgs e)
+    public async Task InitializeBackgroundAsync()
     {
-        if (_updateCheckStarted) return;
-        _updateCheckStarted = true;
-        if (!Program.LaunchInTray && !await RequestAppUnlockAsync("Nhập mật khẩu hoặc PIN để vào ứng dụng."))
+        if (_backgroundInitializationStarted) return;
+        _backgroundInitializationStarted = true;
+        try
         {
-            _exitRequested = true;
-            Close();
-            return;
+            WindowsStartupService.Apply(_settings.StartWithWindows);
+            if (_settings.WatchdogEnabled) _watchdog.Start(restartInTray: true);
+            await ApplyScheduleAsync();
+            if (_shutdownStarted) return;
+            _systemStatusTimer.Start();
+            _idleLockTimer.Start();
         }
+        catch (Exception ex)
+        {
+            StartupDiagnostics.Write("InitializeBackgroundAsync", ex);
+            SetStatus("Không khởi tạo được giám sát nền; xem startup-crash.log để biết chi tiết.");
+        }
+    }
+
+    private async Task InitializeInteractiveAsync()
+    {
+        if (_interactiveInitializationStarted) return;
+        _interactiveInitializationStarted = true;
         if (!_settings.HasCompletedOnboarding)
         {
             var onboarding = new OnboardingWindow();
@@ -1642,30 +1654,13 @@ public partial class MainWindow : Avalonia.Controls.Window
             }
         }
 
-        WindowsStartupService.Apply(_settings.StartWithWindows);
-        if (_settings.WatchdogEnabled) _watchdog.Start(Program.LaunchInTray);
-        var monitoringTask = MonitorScheduleService.IsMonitoringAllowed(_settings)
-            ? StartMonitoringAsync(false)
-            : Task.CompletedTask;
-
-        if (Program.LaunchInTray)
-        {
-            await monitoringTask;
-            HideToTray();
-            return;
-        }
-
-        if (!_settings.AutoUpdateEnabled)
-        {
-            await monitoringTask;
-            return;
-        }
+        if (!_settings.AutoUpdateEnabled) return;
 
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             var update = await _updateService.CheckAsync(timeout.Token);
-            if (update?.IsNewer != true || string.IsNullOrWhiteSpace(update.PackageUrl)) return;
+            if (!IsVisible || _shutdownStarted || update?.IsNewer != true || string.IsNullOrWhiteSpace(update.PackageUrl)) return;
 
             var prompt = new UpdatePromptWindow(update);
             var choice = await prompt.ShowDialog<UpdatePromptChoice>(this);
@@ -1687,8 +1682,6 @@ public partial class MainWindow : Avalonia.Controls.Window
         {
             SetStatus("Không kiểm tra được bản cập nhật tự động; ứng dụng vẫn hoạt động bình thường.");
         }
-
-        await monitoringTask;
     }
 
     private async Task LaunchUpdaterAsync(AppUpdateInfo update)
@@ -1730,8 +1723,12 @@ public partial class MainWindow : Avalonia.Controls.Window
         process.ArgumentList.Add(AppUpdateService.Repository);
         process.ArgumentList.Add("-Force");
         Process.Start(process);
+        _shutdownStarted = true;
         _exitRequested = true;
-        Close();
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.Shutdown();
+        else
+            Close();
     }
 
     public void HideToTray()
@@ -1754,17 +1751,25 @@ public partial class MainWindow : Avalonia.Controls.Window
         try
         {
             MarkUserActivity();
+            Opacity = _appLock.IsEnabled ? 0 : 1;
             Show();
             WindowState = WindowState.Normal;
             Activate();
             if (!await RequestAppUnlockAsync("Nhập mật khẩu hoặc PIN để xem giao diện ứng dụng."))
             {
-                Hide();
+                HideToTray();
                 return;
             }
+            MarkUserActivity();
             _liveViewEnabled = true;
             _coordinator?.SetPreviewEnabled(true);
             SetStatus("Đã mở ứng dụng — live view đang khôi phục, giám sát vẫn hoạt động.");
+            await InitializeInteractiveAsync();
+        }
+        catch (Exception ex)
+        {
+            StartupDiagnostics.Write("ShowFromTrayAsync", ex);
+            HideToTray();
         }
         finally
         {

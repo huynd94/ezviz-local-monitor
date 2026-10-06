@@ -2,6 +2,14 @@
 
 **Phiên bản phát hành hiện tại: v1.8.4**
 
+## Thay đổi chưa phát hành — khởi động trong tray và xác nhận bằng Enter
+
+Mọi lần mở ứng dụng (executable, shortcut, khởi động cùng Windows hoặc watchdog khởi động lại) đều chạy trực tiếp trong System Tray. Ứng dụng không tự mở cửa sổ chính, hỏi mật khẩu/PIN, hiện onboarding hoặc popup cập nhật khi khởi động. Giám sát theo lịch và cảnh báo camera vẫn hoạt động nền; live view chỉ bật khi người dùng mở giao diện.
+
+Để mở giao diện, bấm biểu tượng tray hoặc chọn **Mở EZVIZ Local Monitor**. Nếu bật khóa, nhập mật khẩu/PIN rồi nhấn **Enter** hoặc bấm nút xác nhận. Hủy hoặc sai hết ba lần sẽ giữ ứng dụng trong tray. Hướng dẫn lần đầu và kiểm tra cập nhật tự động được thực hiện khi mở giao diện thành công lần đầu trong phiên chạy. Tự khóa khi không thao tác vẫn hoạt động sau khi mở từ tray.
+
+Các hộp thoại dùng chung cho đặt/đổi khóa và backup chuyển máy cũng hỗ trợ Enter, tự focus ô nhập đầu tiên và giữ nguyên kiểm tra đầu vào. Lỗi khởi động được ghi vào `startup-crash.log` thay vì tự bật hộp thoại Windows.
+
 ## Bản vá v1.8.4 — sửa parser và quyền Task Scheduler
 
 v1.8.3 vẫn có thể gặp hai lỗi trên một số máy: file script bị đọc `param` như một lệnh, và `/IT` trả về `Access is denied` khi PowerShell chưa được nâng quyền. v1.8.4 bỏ `param()` ở đầu script, tự đọc tham số từ `$args`, bỏ `/IT`, và hiển thị hướng dẫn mở PowerShell bằng `Run as administrator` nếu Windows vẫn từ chối quyền.
@@ -54,7 +62,7 @@ Hàng tab có nút `Khóa ứng dụng` ở bên phải để khóa thủ công 
 
 Tab `Cài đặt hệ thống` có khu vực `Bảo mật ứng dụng` cho phép chọn mật khẩu hoặc PIN, đặt/đổi khóa, khóa ngay và tắt khóa sau khi xác thực. Mật khẩu/PIN không nằm trong `AppSettings`, backup DPAPI, backup chuyển máy hoặc log. Ứng dụng lưu hash PBKDF2 cùng salt trong `app-lock.protected`, sau đó bảo vệ toàn bộ file bằng Windows DPAPI `CurrentUser`.
 
-Khi ứng dụng khởi động bình thường, giao diện yêu cầu mở khóa trước khi vào ứng dụng. Khi khởi động Windows ở chế độ nền, camera và cảnh báo vẫn hoạt động trong tray mà không yêu cầu nhập PIN; khi chọn mở cửa sổ từ tray, người dùng phải xác thực. Có tối đa ba lần thử cho mỗi lần mở khóa.
+Ứng dụng hiện luôn khởi động trong tray, kể cả khi mở trực tiếp từ executable hoặc shortcut, không yêu cầu mật khẩu/PIN lúc khởi động. Khi chọn mở cửa sổ từ tray, người dùng phải xác thực nếu đã bật khóa; có thể nhấn Enter để xác nhận. Có tối đa ba lần thử cho mỗi lần mở khóa.
 
 PIN phải có 4–12 chữ số. Mật khẩu phải có ít nhất 8 ký tự. Nếu quên secret, không thể khôi phục bằng backup chuyển máy; cần tắt/xóa file khóa bằng đúng tài khoản Windows hoặc dùng quy trình hỗ trợ quản trị riêng.
 
@@ -309,7 +317,7 @@ Gói hiện tại có updater dạng cửa sổ tại `scripts\Update-EzvizLocal
 
 Mã nguồn vẫn nằm trong repository private. Các gói phát hành được phân phối qua repository public `huyavm/ezviz-local-monitor-releases`, vì vậy updater mặc định không cần GitHub token. Trường Repository chỉ cần thay đổi nếu bạn có kênh phát hành riêng.
 
-Khi mở ứng dụng, Auto-updater sẽ kiểm tra release public ở chế độ nền với thời gian chờ ngắn để không làm chậm giao diện. Nếu có bản mới, ứng dụng hiển thị lựa chọn **Cập nhật ngay**, **Để sau** hoặc **Mở trang release**. Chọn cập nhật sẽ mở updater GUI riêng, dừng giám sát an toàn, tải gói, xác minh SHA-256 và tự mở lại ứng dụng sau khi hoàn tất. Nếu không có mạng hoặc GitHub tạm thời không phản hồi, ứng dụng vẫn mở và giám sát bình thường.
+Khi người dùng mở giao diện thành công lần đầu từ tray, Auto-updater sẽ kiểm tra release public nếu đã bật kiểm tra tự động, với thời gian chờ ngắn để không làm chậm giao diện. Nếu có bản mới và cửa sổ vẫn đang hiển thị, ứng dụng hiển thị lựa chọn **Cập nhật ngay**, **Để sau** hoặc **Mở trang release**. Chọn cập nhật sẽ mở updater GUI riêng, dừng giám sát an toàn, tải gói, xác minh SHA-256 và tự mở lại ứng dụng trong tray sau khi hoàn tất. Nếu không có mạng hoặc GitHub tạm thời không phản hồi, ứng dụng vẫn giám sát bình thường.
 
 Trong updater GUI, bấm **Kiểm tra bản mới** để chỉ kiểm tra. Khi có bản mới, bấm **Cập nhật ngay**, xác nhận hộp thoại, rồi chờ đến trạng thái **Cập nhật thành công**. Có thể bỏ chọn **Mở ứng dụng sau khi cập nhật** nếu cần.
 

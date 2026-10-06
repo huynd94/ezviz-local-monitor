@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
+using Avalonia.Threading;
 
 namespace EzvizLocalMonitor;
 
@@ -19,10 +20,13 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var window = new MainWindow();
-            desktop.MainWindow = window;
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            // A MainWindow assigned here is automatically shown by the desktop lifetime.
+            window.Opened += (_, _) => desktop.MainWindow = window;
             SetupTray(window);
             window.TrayStatusChanged += UpdateTrayStatus;
             desktop.Exit += (_, _) => DisposeTray();
+            Dispatcher.UIThread.Post(() => _ = window.InitializeBackgroundAsync());
         }
         base.OnFrameworkInitializationCompleted();
     }

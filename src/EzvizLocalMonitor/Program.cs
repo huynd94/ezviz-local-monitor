@@ -5,8 +5,6 @@ namespace EzvizLocalMonitor;
 
 internal static class Program
 {
-    internal static bool LaunchInTray { get; private set; }
-
     [STAThread]
     public static void Main(string[] args)
     {
@@ -17,7 +15,7 @@ internal static class Program
             return;
         }
 
-        LaunchInTray = args.Any(x => string.Equals(x, "--background", StringComparison.OrdinalIgnoreCase));
+        // All normal launches start in the tray; --background remains accepted.
         StartupDiagnostics.Install();
         try
         {
@@ -26,8 +24,7 @@ internal static class Program
         catch (Exception ex)
         {
             StartupDiagnostics.Write("Program.Main", ex);
-            StartupDiagnostics.ShowWindowsError(ex);
-            throw;
+            Environment.ExitCode = 1;
         }
     }
 

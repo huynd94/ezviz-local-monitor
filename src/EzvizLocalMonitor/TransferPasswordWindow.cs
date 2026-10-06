@@ -63,6 +63,7 @@ public sealed class TransferPasswordWindow : Window
         var status = new TextBlock { Foreground = new SolidColorBrush(Color.Parse("#B42318")), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
         var cancel = CreateButton("Hủy", "#475569", "#334155");
         var accept = CreateButton(confirmPassword ? "Tạo backup" : "Khôi phục", "#2563EB", "#1D4ED8");
+        accept.IsDefault = true;
         cancel.Click += (_, _) => Close(null);
         accept.Click += (_, _) =>
         {
@@ -93,6 +94,7 @@ public sealed class TransferPasswordWindow : Window
         rows.Children.Add(status);
         rows.Children.Add(buttons);
         Content = new Border { Padding = new Thickness(22), Child = rows };
+        Opened += (_, _) => _passwordBox.Focus();
     }
 
     private static Button CreateButton(string text, string background, string hover)
