@@ -24,7 +24,7 @@ public sealed record AppUpdateInfo(
 /// </summary>
 public sealed class AppUpdateService
 {
-    public const string Repository = "huyavm/ezviz-local-monitor-releases";
+    public const string Repository = "huynd94/ezviz-local-monitor";
     private const string LatestReleaseUrl = "https://api.github.com/repos/" + Repository + "/releases/latest";
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(4);
 

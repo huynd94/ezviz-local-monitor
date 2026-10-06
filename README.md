@@ -1,14 +1,16 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.8.4**
+**Phiên bản phát hành hiện tại: v1.8.5**
 
-## Thay đổi chưa phát hành — khởi động trong tray và xác nhận bằng Enter
+## Bản vá v1.8.5 — khởi động trong tray và xác nhận bằng Enter
 
 Mọi lần mở ứng dụng (executable, shortcut, khởi động cùng Windows hoặc watchdog khởi động lại) đều chạy trực tiếp trong System Tray. Ứng dụng không tự mở cửa sổ chính, hỏi mật khẩu/PIN, hiện onboarding hoặc popup cập nhật khi khởi động. Giám sát theo lịch và cảnh báo camera vẫn hoạt động nền; live view chỉ bật khi người dùng mở giao diện.
 
 Để mở giao diện, bấm biểu tượng tray hoặc chọn **Mở EZVIZ Local Monitor**. Nếu bật khóa, nhập mật khẩu/PIN rồi nhấn **Enter** hoặc bấm nút xác nhận. Hủy hoặc sai hết ba lần sẽ giữ ứng dụng trong tray. Hướng dẫn lần đầu và kiểm tra cập nhật tự động được thực hiện khi mở giao diện thành công lần đầu trong phiên chạy. Tự khóa khi không thao tác vẫn hoạt động sau khi mở từ tray.
 
 Các hộp thoại dùng chung cho đặt/đổi khóa và backup chuyển máy cũng hỗ trợ Enter, tự focus ô nhập đầu tiên và giữ nguyên kiểm tra đầu vào. Lỗi khởi động được ghi vào `startup-crash.log` thay vì tự bật hộp thoại Windows.
+
+Kênh phát hành và updater mặc định chuyển sang [huynd94/ezviz-local-monitor](https://github.com/huynd94/ezviz-local-monitor/releases). Người dùng v1.8.4 trở xuống cần tải/cài v1.8.5 thủ công một lần, hoặc đổi trường Repository trong updater thành `huynd94/ezviz-local-monitor`, vì các bản cũ vẫn trỏ tới kênh phát hành trước đây.
 
 ## Bản vá v1.8.4 — sửa parser và quyền Task Scheduler
 
@@ -315,7 +317,7 @@ Bản v0.8.5 sửa lỗi ứng dụng bị đứng khi chọn **Thoát hoàn to�
 
 Gói hiện tại có updater dạng cửa sổ tại `scripts\Update-EzvizLocalMonitor.ps1` và file chạy nhanh `scripts\Update-EzvizLocalMonitor.cmd`. Double-click file `.cmd` để mở giao diện. Cửa sổ hiển thị phiên bản hiện tại, phiên bản mới nhất, trạng thái kết nối GitHub, tiến trình tải, xác minh SHA-256, giải nén và cài đặt.
 
-Mã nguồn vẫn nằm trong repository private. Các gói phát hành được phân phối qua repository public `huyavm/ezviz-local-monitor-releases`, vì vậy updater mặc định không cần GitHub token. Trường Repository chỉ cần thay đổi nếu bạn có kênh phát hành riêng.
+Mã nguồn và các gói phát hành từ v1.8.5 được phân phối qua repository public `huynd94/ezviz-local-monitor`, vì vậy updater mặc định không cần GitHub token. Trường Repository chỉ cần thay đổi nếu bạn có kênh phát hành riêng. Các phiên bản trước v1.8.5 sử dụng kênh `huyavm/ezviz-local-monitor-releases`.
 
 Khi người dùng mở giao diện thành công lần đầu từ tray, Auto-updater sẽ kiểm tra release public nếu đã bật kiểm tra tự động, với thời gian chờ ngắn để không làm chậm giao diện. Nếu có bản mới và cửa sổ vẫn đang hiển thị, ứng dụng hiển thị lựa chọn **Cập nhật ngay**, **Để sau** hoặc **Mở trang release**. Chọn cập nhật sẽ mở updater GUI riêng, dừng giám sát an toàn, tải gói, xác minh SHA-256 và tự mở lại ứng dụng trong tray sau khi hoàn tất. Nếu không có mạng hoặc GitHub tạm thời không phản hồi, ứng dụng vẫn giám sát bình thường.
 

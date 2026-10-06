@@ -1,4 +1,20 @@
-# Báo cáo kiểm thử phát hành v0.1.0
+# Báo cáo kiểm thử phát hành
+
+## v1.8.5 — tray mặc định, Enter và kênh phát hành mới
+
+| Hạng mục | Kết quả | Ghi chú |
+|---|---|---|
+| Publish Windows x64 self-contained | Đạt | `dotnet publish -c Release -r win-x64 --self-contained true --no-restore`; còn cảnh báo CA1416 về Windows DPAPI. |
+| Mật khẩu/PIN và xác nhận bằng Enter | Đạt | Hộp thoại Avalonia thực: focus ô nhập, từ chối dữ liệu sai định dạng/độ dài, từ chối nhập lại không khớp và nhận kết quả khi Enter. |
+| ONNX Runtime / YOLO / OpenCV | Đạt | Nạp model YOLO và tạo Mat OpenCV thành công trên Windows. |
+| Installer và updater | Đạt ở mức parser/gói | Parser PowerShell 5.1 không có lỗi; updater giữ UTF-8 BOM và dùng `huynd94/ezviz-local-monitor`. |
+| ZIP và SHA-256 | Đạt ở mức đóng gói | Kiểm tra CRC, danh sách thành phần bắt buộc và hash model; file `.sha256` được tạo cho ZIP cuối cùng. |
+| Bộ test Release | 15/16 đạt | Test backup file bị khóa chờ `IOException` nhưng Windows trả `UnauthorizedAccessException`. |
+| Tray, Windows logon, watchdog và camera thật | Chưa kiểm thử end-to-end | Đã rà soát luồng lifetime/khởi tạo nền; cần xác minh hành vi trên máy sử dụng thực tế. |
+
+Repository mới đã chuyển sang public theo quyết định của chủ repository. Quét 376 Git blobs lịch sử, gồm nội dung ZIP, không phát hiện mẫu credential đã kiểm tra. Chi tiết thay đổi và hướng dẫn chuyển kênh cập nhật nằm trong `docs/RELEASE_v1.8.5.md`.
+
+## Lịch sử v0.1.0
 
 ## Phạm vi đã kiểm tra
 
