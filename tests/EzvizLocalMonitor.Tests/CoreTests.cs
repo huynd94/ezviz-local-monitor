@@ -119,12 +119,17 @@ public sealed class AppLockPolicyTests
     }
 }
 
-public sealed class TransferBackupTests
+public sealed class TransferBackupTests : IDisposable
 {
+    private const string TestPassword = "TEST_PASSWORD_ONLY";
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), $"ezviz-transfer-tests-{Guid.NewGuid():N}");
+
+    public TransferBackupTests() => Directory.CreateDirectory(_directory);
+
     [Fact]
     public void TransferBackup_RoundTripWorks_AndWrongPasswordFails()
     {
-        var path = Path.Combine(Path.GetTempPath(), $"ezviz-transfer-{Guid.NewGuid():N}.ezviztransfer");
+        var path = Path.Combine(_directory, "settings.ezviztransfer");
         try
         {
             var store = new SettingsStore();
@@ -151,17 +156,94 @@ public sealed class TransferBackupTests
             Assert.True(restored.StartWithWindows);
             Assert.False(restored.AutoUpdateEnabled);
             Assert.Throws<InvalidOperationException>(() => store.ImportTransferBackup(path, "wrong-password"));
-            if (OperatingSystem.IsWindows())
-            {
-                using var locked = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
-                Assert.Throws<IOException>(() => store.ExportTransferBackup(settings, path, "correct-horse-battery"));
-            }
         }
         finally
         {
             try { if (File.Exists(path)) File.Delete(path); } catch { }
         }
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TransferBackup_FailedReplacementPreservesBackup_AndAllowsRetry(bool readOnly)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var path = Path.Combine(_directory, "settings.ezviztransfer");
+        var store = new SettingsStore();
+        var original = new AppSettings { ThemeName = "Ocean" };
+        var updated = new AppSettings { ThemeName = "Midnight", Ai = new AiSettings { ApiKey = "YOUR_API_KEY_HERE" } };
+        store.ExportTransferBackup(original, path, TestPassword);
+        var originalBytes = File.ReadAllBytes(path);
+        FileStream? locked = null;
+        try
+        {
+            if (readOnly)
+                File.SetAttributes(path, FileAttributes.ReadOnly);
+            else
+                locked = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+
+            var error = Assert.Throws<IOException>(() => store.ExportTransferBackup(updated, path, TestPassword));
+            AssertExportError(error);
+            Assert.DoesNotContain("YOUR_API_KEY_HERE", error.Message);
+            Assert.Empty(Directory.GetFiles(_directory, "*.tmp"));
+        }
+        finally
+        {
+            locked?.Dispose();
+            File.SetAttributes(path, FileAttributes.Normal);
+        }
+
+        Assert.Equal(originalBytes, File.ReadAllBytes(path));
+        Assert.Equal("Ocean", store.ImportTransferBackup(path, TestPassword).ThemeName);
+        store.ExportTransferBackup(updated, path, TestPassword);
+        Assert.Equal("Midnight", store.ImportTransferBackup(path, TestPassword).ThemeName);
+        Assert.Empty(Directory.GetFiles(_directory, "*.tmp"));
+    }
+
+    [Fact]
+    public void TransferBackup_DirectoryCreationFailureReturnsHelpfulError_AndPreservesBlockingFile()
+    {
+        var blocker = Path.Combine(_directory, "not-a-directory");
+        File.WriteAllText(blocker, "existing content");
+        var path = Path.Combine(blocker, "settings.ezviztransfer");
+        var error = Assert.Throws<IOException>(() => new SettingsStore().ExportTransferBackup(new AppSettings(), path, TestPassword));
+
+        AssertExportError(error);
+        Assert.Equal("existing content", File.ReadAllText(blocker));
+        Assert.Single(Directory.GetFiles(_directory));
+    }
+
+    [Fact]
+    public void TransferBackup_CreatesMissingDirectory_AndRestoresConfiguration()
+    {
+        var path = Path.Combine(_directory, "new", "nested", "settings.ezviztransfer");
+        var store = new SettingsStore();
+        store.ExportTransferBackup(new AppSettings { ThemeName = "Ocean" }, path, TestPassword);
+
+        Assert.Equal("Ocean", store.ImportTransferBackup(path, TestPassword).ThemeName);
+        Assert.Empty(Directory.GetFiles(_directory, "*.tmp", SearchOption.AllDirectories));
+    }
+
+    [Theory]
+    [InlineData("", TestPassword)]
+    [InlineData("settings.ezviztransfer", "short")]
+    public void TransferBackup_InvalidInputRemainsArgumentError(string fileName, string password)
+    {
+        var path = fileName.Length == 0 ? string.Empty : Path.Combine(_directory, fileName);
+        Assert.Throws<ArgumentException>(() => new SettingsStore().ExportTransferBackup(new AppSettings(), path, password));
+        Assert.Empty(Directory.GetFiles(_directory));
+    }
+
+    private static void AssertExportError(IOException error)
+    {
+        Assert.Contains("chọn tên file mới", error.Message);
+        Assert.Contains("quyền ghi", error.Message);
+        Assert.True(error.InnerException is IOException or UnauthorizedAccessException);
+        Assert.DoesNotContain(TestPassword, error.Message);
+    }
+
+    public void Dispose() => Directory.Delete(_directory, recursive: true);
 }
 
 public sealed class EventStoreTests : IDisposable

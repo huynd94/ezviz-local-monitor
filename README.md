@@ -1,6 +1,12 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.8.5**
+**Phiên bản phát hành hiện tại: v1.8.6**
+
+## Bản vá v1.8.6 — xử lý lỗi xuất backup chuyển máy
+
+Xuất backup `.ezviztransfer` hiện xử lý thống nhất cả lỗi I/O và `UnauthorizedAccessException` khi tạo thư mục, ghi file tạm hoặc thay thế file đích. Nếu file đang mở/bị khóa, chỉ đọc hoặc không ghi được, ứng dụng hướng dẫn đóng file, chọn tên mới hoặc kiểm tra quyền ghi. Lỗi gốc được giữ cho chẩn đoán; mật khẩu và cấu hình không được đưa vào thông báo lỗi.
+
+Test hồi quy trên Windows xác nhận backup cũ không thay đổi và vẫn giải mã được sau lần xuất thất bại, không còn file tạm, và xuất lại thành công sau khi bỏ khóa/thuộc tính chỉ đọc. Bộ test Release hiện đạt **22/22**, gồm **7/7** test backup chuyển máy.
 
 ## Bản vá v1.8.5 — khởi động trong tray và xác nhận bằng Enter
 

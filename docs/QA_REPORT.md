@@ -1,5 +1,22 @@
 # Báo cáo kiểm thử phát hành
 
+## v1.8.6 — lỗi xuất backup chuyển máy
+
+Đã tái hiện ba lỗi trước khi sửa: ghi đè file bị khóa và file chỉ đọc trả `UnauthorizedAccessException`, còn lỗi tạo thư mục đích chưa có thông báo hướng dẫn. Bản sửa đưa việc tạo thư mục vào cùng khối xử lý ghi file, bắt riêng lỗi I/O/quyền ghi và trả `IOException` có thông báo tiếng Việt cùng exception gốc.
+
+| Hạng mục | Kết quả | Ghi chú |
+|---|---|---|
+| File đích bị khóa/chỉ đọc trên Windows | Đạt | Bắt lỗi, giữ nguyên byte backup cũ, nhập lại được cấu hình cũ và không để lại file tạm. |
+| Xuất lại sau khi bỏ khóa/chỉ đọc | Đạt | Ghi đè thành công, nhập lại được cấu hình mới. |
+| Lỗi tạo thư mục đích | Đạt | Thông báo hướng dẫn xử lý; file chắn đường dẫn vẫn nguyên vẹn. |
+| Tạo thư mục còn thiếu | Đạt | Tạo thư mục lồng nhau và xuất/nhập backup thành công. |
+| Đường dẫn trống / mật khẩu quá ngắn | Đạt | Giữ `ArgumentException`, không tạo file. |
+| Xuất/nhập và mật khẩu sai | Đạt | Round-trip đúng cấu hình; sai mật khẩu bị từ chối. |
+| Thông báo lỗi | Đạt ở mức service | Có hướng dẫn chọn file mới/kiểm tra quyền ghi, có InnerException, không chứa mật khẩu/API key thử nghiệm. Giao diện hiện sử dụng `ex.Message`; chưa thao tác end-to-end qua file picker. |
+| Bộ test Release | Đạt | `TransferBackupTests`: 7/7; toàn bộ: 22/22, không có test bị bỏ qua trên máy Windows kiểm thử. |
+| Publish Windows x64 self-contained | Đạt | `dotnet publish -c Release -r win-x64 --self-contained true --no-restore`; còn cảnh báo CA1416 về Windows DPAPI khi biên dịch lại. |
+| Bộ cài ZIP | Đạt ở mức đóng gói | Đủ runtime, model YOLO, installer, VC++ Runtime và updater; kiểm tra CRC, hash model, UTF-8 BOM của updater và tạo SHA-256 cho gói cuối cùng. |
+
 ## v1.8.5 — tray mặc định, Enter và kênh phát hành mới
 
 | Hạng mục | Kết quả | Ghi chú |

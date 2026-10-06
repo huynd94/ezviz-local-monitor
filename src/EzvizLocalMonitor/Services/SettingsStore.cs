@@ -100,7 +100,6 @@ public sealed class SettingsStore
         ValidateTransferPassword(password);
         if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("Đường dẫn file backup không được trống.", nameof(filePath));
         var directory = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
 
         var salt = RandomNumberGenerator.GetBytes(TransferSaltBytes);
         var nonce = RandomNumberGenerator.GetBytes(TransferNonceBytes);
@@ -114,6 +113,7 @@ public sealed class SettingsStore
         var temporary = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
+            if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
             using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 stream.Write(TransferHeader);
@@ -126,7 +126,7 @@ public sealed class SettingsStore
             // Stream phải được đóng hoàn toàn trước khi thay thế file đích trên Windows.
             File.Move(temporary, filePath, true);
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             throw new IOException("Không thể ghi file backup. Hãy đóng file backup đang mở, chọn tên file mới hoặc kiểm tra quyền ghi thư mục đích.", ex);
         }
