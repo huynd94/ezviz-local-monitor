@@ -1,13 +1,17 @@
 # Linux headless acceptance record
 
-Source baseline v1.8.6 (`37bed9b`), uncommitted worktree `feature/linux-headless`. Candidate versions are local test artifacts, not published tags/releases.
+Source baseline v1.8.6 (`37bed9b`); Linux headless implementation was merged at `e6906bc` and published as v1.9.0-preview.5. This record now includes user acceptance for stable v1.9.0; earlier WSL evidence remains historical.
+
+## User acceptance for v1.9.0
+
+The user confirmed successful testing and application operation on **Ubuntu 24.04**, and requested a stable release. This operator report authorizes stable v1.9.0. Camera inventory, detailed channel-delivery results, reboot and a specific24-hour soak were not separately described, so this record does not fabricate those measurements.
 
 ## Environment observed
 
 - WSL2 Ubuntu24.04.5 x86_64, user ubuntu UID1000, systemd255.4.
 - Linux SDK8.0.131/runtime8.0.31; Windows SDK8.0.424.
 - Native OpenCvSharp5 managed/native5.0.0.20261003, ONNX1.20.1, pinned YOLO hash.
-- No real cameras or channel credentials supplied; configured camera count0 for root service acceptance.
+- During agent-run WSL service acceptance no real camera/channel credentials were supplied and configured camera count was0. The later Ubuntu24.04 operator-success report is recorded separately above.
 
 Final regression: Windows Core120 passed/2 Linux-only skips; Desktop39 passed; Ubuntu Core128 passed; Headless124 passed. Archive-security5 tests, installer21 checks and transaction12 cases passed. No failures in the final verification runs; remaining warnings are Windows DPAPI platform analysis and unused events in test fixtures.
 
@@ -15,6 +19,7 @@ Final regression: Windows Core120 passed/2 Linux-only skips; Desktop39 passed; U
 
 | Gate | Evidence / result |
 |---|---|
+| Ubuntu24.04 operator acceptance | PASS — user reported successful testing and application operation, and approved stable v1.9.0. |
 | Native Linux/Windows | PASS, documented native-gate-linux-x64.md. |
 | Core/storage/runtime/CLI process | PASS in checkpoint reports; new full regression run recorded by completion report. |
 | Release asset selector | PASS:31 selector cases +11 Windows API/checksum cases; reversed order, missing/duplicate/unsafe asset/tag, wrong platform, draft/prerelease and checksum failures. |
@@ -28,10 +33,10 @@ Final regression: Windows Core120 passed/2 Linux-only skips; Desktop39 passed; U
 | Idempotent reinstall | PASS: same content/version leaves key/config/service state unchanged. |
 | Real active/enabled upgrade + rollback | PASS: preview1→preview2→preview1, previous releases retained, key/config/database hashes unchanged; enabled/active restored. |
 | Real failed health rollback | PASS after fixing reset-failed for garbage-collected disabled/inactive units: invalid model in isolated preview4 fixture makes doctor fail and automatically restores previous current + active/enabled state. |
-| CI | Workflow authored and locally parsed; NOT RUN on GitHub because no commit/push requested. |
+| CI | Workflow authored/locally parsed and triggered after prerelease push; jobs did not start because GitHub reported account locked due to a billing issue. Remote code tests were not executed. |
 | Reboot/logon/logout host acceptance | NOT RUN; systemd tests crossed independent WSL commands but no distro/machine reboot performed. |
-| Real ONVIF/RTSP cameras and Telegram/Zalo delivery | BLOCKED: no local camera/channel credentials supplied. Native synthetic H.264, silent RTSP peer and HTTP loopback do not replace camera/channel acceptance. |
-| 24-hour/two-camera soak + CPU/RAM/disk/reconnect report | BLOCKED: no camera fixtures/24-hour observation; no invented performance numbers. |
+| Detailed real ONVIF/RTSP and Telegram/Zalo results | Not separately recorded: user confirmed Ubuntu24.04 application success without camera/channel-specific detail. Agent tests used synthetic H.264, silent RTSP peer and HTTP loopback. |
+| 24-hour/two-camera soak + CPU/RAM/disk/reconnect report | Not separately recorded; no invented duration, hardware metrics or camera counts. |
 
 ## Environment changes retained from approved root tests
 
@@ -48,6 +53,6 @@ Final regression: Windows Core120 passed/2 Linux-only skips; Desktop39 passed; U
 
 ## Stable release decision
 
-Implementation/build artifacts can be reviewed as prerelease candidates. Do not publish stable v1.9.0 until real-camera, reboot and 24-hour gates are recorded. No tag, remote release or production deployment is authorized by this evidence file alone.
+Stable v1.9.0 is approved by the user's Ubuntu24.04 success report and direct release request. Automated and agent-run WSL results support that decision; unreported detailed soak/reboot measurements remain unreported. The prerelease stays available as historical testing evidence.
 
-Final candidate files at `artifacts/dist/`: `EZVIZ-Local-Monitor-Windows-x64-v1.9.0-preview.5.zip` + `.sha256` and `EZVIZ-Local-Monitor-Linux-Headless-x64-v1.9.0-preview.5.tar.gz` + `.sha256sum`. Older local preview artifacts and negative installed release fixtures are acceptance history, not additional official releases.
+Stable files at `artifacts/dist/`: `EZVIZ-Local-Monitor-Windows-x64-v1.9.0.zip` + `.sha256` and `EZVIZ-Local-Monitor-Linux-Headless-x64-v1.9.0.tar.gz` + `.sha256sum`. Preview artifacts and negative installed release fixtures remain historical acceptance data.

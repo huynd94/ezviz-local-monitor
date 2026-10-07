@@ -1,13 +1,15 @@
 # Ubuntu 24.04 x64 headless
 
-Linux support on this branch is a prerelease candidate. Camera/soak/reboot acceptance is required before a stable release. Windows desktop remains available.
+**Stable release: v1.9.0**, supporting Ubuntu 24.04 x64 headless. The user confirmed successful testing and application operation on Ubuntu 24.04 and approved the stable release. Windows desktop remains available. Detailed automated/operator evidence is recorded in `docs/qa/linux-headless-acceptance.md`.
 
 ## Package and install
 
 Download the Linux `.tar.gz` and matching `.tar.gz.sha256sum` from the same trusted release. The Linux checksum suffix differs from Windows `.zip.sha256` so older Windows updaters cannot select it accidentally.
 
+[Download v1.9.0](https://github.com/huynd94/ezviz-local-monitor/releases/tag/v1.9.0): `EZVIZ-Local-Monitor-Linux-Headless-x64-v1.9.0.tar.gz` and its `.sha256sum`.
+
 ```bash
-python3 scripts/linux/Verify-Package.py PACKAGE.tar.gz PACKAGE.tar.gz.sha256sum --extract /tmp/ezviz-package
+python3 scripts/linux/Verify-Package.py EZVIZ-Local-Monitor-Linux-Headless-x64-v1.9.0.tar.gz EZVIZ-Local-Monitor-Linux-Headless-x64-v1.9.0.tar.gz.sha256sum --extract /tmp/ezviz-package
 sudo bash /tmp/ezviz-package/installer/linux/install.sh --package-root /tmp/ezviz-package
 ```
 
@@ -86,8 +88,8 @@ bash scripts/linux/Run-NativeProbe.sh headless5 true
 dotnet test tests/EzvizLocalMonitor.Tests -c Release
 bash scripts/linux/Test-Headless.sh
 python3 tests/linux/Package-Security.py
-bash scripts/linux/Package-Headless.sh 1.9.0-preview.5
-bash tests/linux/Package-Smoke.sh artifacts/dist/EZVIZ-Local-Monitor-Linux-Headless-x64-v1.9.0-preview.5.tar.gz
+bash scripts/linux/Package-Headless.sh 1.9.0
+bash tests/linux/Package-Smoke.sh artifacts/dist/EZVIZ-Local-Monitor-Linux-Headless-x64-v1.9.0.tar.gz
 ```
 
-Root/live service tests are opt-in and require approval on a dedicated test host. CI publishes build artifacts only, not GitHub releases. WSL idle acceptance does not prove real camera performance, reboot behavior, or 24-hour soak.
+Root/live service tests are opt-in and require approval on a dedicated test host. CI publishes build artifacts only, not GitHub releases. Automated WSL acceptance and the user's Ubuntu 24.04 success report are recorded separately; a specific 24-hour soak or reboot result is not inferred from the user's general confirmation.

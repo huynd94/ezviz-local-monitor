@@ -1,10 +1,18 @@
 # Báo cáo kiểm thử phát hành
 
-## Candidate Linux/Windows chưa phát hành — 1.9.0-preview.5
+## v1.9.0 — nghiệm thu Ubuntu 24.04 và phát hành stable
+
+Người dùng xác nhận đã kiểm thử thành công và ứng dụng hoạt động trên Ubuntu 24.04, đồng thời yêu cầu phát hành stable v1.9.0. Đây là kết quả nghiệm thu do người dùng cung cấp; không suy diễn thành các thông số camera, thời gian soak hoặc kết quả reboot chưa được mô tả.
+
+V1.9.0 giữ cùng chức năng Core/runtime/CLI/systemd của prerelease, cập nhật phiên bản và hướng dẫn sử dụng/phát hành cho Windows x64 và Ubuntu 24.04 x64. Các kết quả tự động trước đó: Windows Core **120 đạt/2 Linux-only skip**, Desktop **39/39**; Ubuntu Core **128/128**, Headless **124/124**; installer **21 checks**, transaction/rollback **12 cases**, archive security **5 tests**. Kiểm thử lại cho stable được ghi trong báo cáo phát hành.
+
+Evidence chi tiết: `docs/qa/linux-headless-acceptance.md`. GitHub Actions lần push prerelease không khởi chạy do tài khoản bị khóa vì billing; đó không phải kết quả test code. Không ghi remote CI là đã đạt khi chưa có kết quả mới.
+
+## Lịch sử v1.9.0-preview.5
 
 Core/platform, runtime/lifecycle, CLI/foreground daemon, systemd installer/update/rollback và đóng gói hai platform đã được triển khai trong worktree. Kết quả cuối: Windows Core **120 đạt/2 Linux-only skip**, Desktop **39/39**; Ubuntu24.04 Core **128/128**, Headless **124/124**. Installer fixture **21 checks**, transaction **12 cases**, archive security **5 tests** đạt. Cài mới/nâng cấp/rollback/fault rollback với systemd thật đã xác minh bằng idle config; key/config/database giữ nguyên.
 
-Tài liệu sử dụng: `docs/LINUX_HEADLESS.md`. Evidence và gate chưa nghiệm thu: `docs/qa/linux-headless-acceptance.md`. Gói candidate local nằm ở `artifacts/dist/`; chưa tag/push/release. Camera thực, reboot và soak24h chưa thực hiện, GitHub Actions mới được soạn/parse local và chưa chạy remote; chưa coi candidate này là bản stable.
+Tại checkpoint ban đầu, camera thực, reboot và soak24h chưa có bằng chứng, nên bản này được phát hành prerelease. Prerelease đã được tag/push/release ở commit `e6906bc`; v1.9.0 thay thế sau xác nhận nghiệm thu Ubuntu 24.04 của người dùng. Hướng dẫn hiện tại: `docs/LINUX_HEADLESS.md`.
 
 ## v1.8.6 — lỗi xuất backup chuyển máy
 

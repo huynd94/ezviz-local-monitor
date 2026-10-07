@@ -1,14 +1,28 @@
 # EZVIZ Local Monitor
 
-**Phiên bản phát hành hiện tại: v1.8.6**
+Ứng dụng giám sát camera EZVIZ qua ONVIF/RTSP, nhận diện người bằng YOLO và gửi cảnh báo Telegram/Zalo. Hỗ trợ **Windows x64 desktop** và **Ubuntu 24.04 x64 headless** qua CLI/systemd.
 
-**Bản thử nghiệm Linux/Windows mới: v1.9.0-preview.5**
+**Phiên bản stable hiện tại: v1.9.0** · [Tải bộ cài](https://github.com/huynd94/ezviz-local-monitor/releases/tag/v1.9.0)
 
-## v1.9.0-preview.5 — Linux headless (prerelease)
+## v1.9.0 — Windows desktop và Ubuntu 24.04 headless
 
-Nhánh triển khai Linux bổ sung `ezviz-headless` cho Ubuntu24.04 x64, quản trị CLI qua SSH, lưu cấu hình AES-GCM và chạy foreground/systemd. Installer giữ state/key, hỗ trợ nâng cấp/rollback theo release directory; Windows desktop tiếp tục dùng DPAPI.
+`ezviz-headless` chạy trên Ubuntu 24.04 x64, quản trị CLI qua SSH, lưu cấu hình AES-GCM và chạy foreground/systemd. Installer giữ state/key, hỗ trợ nâng cấp/rollback theo release directory; Windows desktop tiếp tục dùng DPAPI. Người dùng đã kiểm thử thành công và xác nhận ứng dụng hoạt động trên Ubuntu 24.04; v1.9.0 được phát hành stable theo nghiệm thu này.
 
-Hướng dẫn: [docs/LINUX_HEADLESS.md](docs/LINUX_HEADLESS.md). [Tải prerelease v1.9.0-preview.5](https://github.com/huynd94/ezviz-local-monitor/releases/tag/v1.9.0-preview.5). Gói gồm Windows ZIP + `.zip.sha256` và Linux tar.gz + `.tar.gz.sha256sum`; bộ chọn updater ghép đúng tên/platform. Bản này chưa được coi là stable: camera thực, reboot và soak24h còn cần nghiệm thu. Phiên bản stable hiện có trên GitHub vẫn là v1.8.6; updater tự động không chọn prerelease.
+Hướng dẫn: [docs/LINUX_HEADLESS.md](docs/LINUX_HEADLESS.md). Gói gồm Windows ZIP + `.zip.sha256` và Linux tar.gz + `.tar.gz.sha256sum`; bộ chọn updater ghép đúng tên/platform. Windows v1.8.5 trở lên dùng updater để nhận bản stable; Linux tải/kiểm tra gói rồi dùng script update có chủ đích. v1.9.0-preview.5 được giữ lại như bản thử nghiệm trước đó.
+
+| Nền tảng | Bộ cài v1.9.0 | Cách chạy |
+|---|---|---|
+| Windows x64 | [ZIP](https://github.com/huynd94/ezviz-local-monitor/releases/download/v1.9.0/EZVIZ-Local-Monitor-Windows-x64-v1.9.0.zip) · [SHA-256](https://github.com/huynd94/ezviz-local-monitor/releases/download/v1.9.0/EZVIZ-Local-Monitor-Windows-x64-v1.9.0.zip.sha256) | Giải nén toàn bộ, chạy `installer\Setup.cmd`; mở giao diện từ System Tray. |
+| Ubuntu 24.04 x64 | [tar.gz](https://github.com/huynd94/ezviz-local-monitor/releases/download/v1.9.0/EZVIZ-Local-Monitor-Linux-Headless-x64-v1.9.0.tar.gz) · [SHA-256](https://github.com/huynd94/ezviz-local-monitor/releases/download/v1.9.0/EZVIZ-Local-Monitor-Linux-Headless-x64-v1.9.0.tar.gz.sha256sum) | Kiểm tra/extract archive, chạy installer Linux, configure dưới user `ezviz-monitor` rồi enable service. |
+
+```bash
+APP=/opt/ezviz-local-monitor/current/app/ezviz-headless
+sudo -u ezviz-monitor "$APP" configure
+sudo -u ezviz-monitor "$APP" config validate
+sudo -u ezviz-monitor "$APP" doctor
+sudo systemctl enable --now ezviz-local-monitor
+sudo -u ezviz-monitor "$APP" status --json
+```
 
 ## Bản vá v1.8.6 — xử lý lỗi xuất backup chuyển máy
 
