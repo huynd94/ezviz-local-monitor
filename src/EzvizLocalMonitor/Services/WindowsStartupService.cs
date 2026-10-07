@@ -3,11 +3,11 @@ using System.Text;
 
 namespace EzvizLocalMonitor.Services;
 
-public static class WindowsStartupService
+public sealed class WindowsStartupService(IAppLogger logger)
 {
     private const string TaskName = "EZVIZ Local Monitor";
 
-    public static bool Apply(bool enabled)
+    public bool Apply(bool enabled)
     {
         if (!OperatingSystem.IsWindows()) return false;
         try
@@ -15,14 +15,14 @@ public static class WindowsStartupService
             if (!enabled)
             {
                 var deleted = RunSchtasks("/Delete", "/TN", TaskName, "/F");
-                AppLogger.Info(LogChannel.App, $"startup task disabled; success={deleted}");
+                logger.Info(LogChannel.App, $"startup task disabled; success={deleted}");
                 return deleted;
             }
 
             var executable = Environment.ProcessPath;
             if (string.IsNullOrWhiteSpace(executable) || !File.Exists(executable))
             {
-                AppLogger.Error(LogChannel.App, $"startup task skipped; executable missing; path={executable}");
+                logger.Error(LogChannel.App, $"startup task skipped; executable missing; path={executable}");
                 return false;
             }
 
@@ -37,17 +37,17 @@ public static class WindowsStartupService
                 "/RL", "LIMITED",
                 "/IT",
                 "/F");
-            AppLogger.Info(LogChannel.App, $"startup task configured; success={created}; taskName={TaskName}; executable={executable}; trigger=ONLOGON+10s; interactive=true");
+            logger.Info(LogChannel.App, $"startup task configured; success={created}; taskName={TaskName}; executable={executable}; trigger=ONLOGON+10s; interactive=true");
             return created;
         }
         catch (Exception ex)
         {
-            AppLogger.Error(LogChannel.App, "startup task configuration failed", ex);
+            logger.Error(LogChannel.App, "startup task configuration failed", ex);
             return false;
         }
     }
 
-    private static bool RunSchtasks(params string[] arguments)
+    private bool RunSchtasks(params string[] arguments)
     {
         var info = new ProcessStartInfo
         {
@@ -68,7 +68,7 @@ public static class WindowsStartupService
         process.WaitForExit(5000);
         if (process.ExitCode != 0)
         {
-            AppLogger.Error(LogChannel.App, $"schtasks failed; exitCode={process.ExitCode}; output={output.Trim()}; error={error.Trim()}");
+            logger.Error(LogChannel.App, $"schtasks failed; exitCode={process.ExitCode}; output={output.Trim()}; error={error.Trim()}");
             return false;
         }
         return true;
@@ -77,13 +77,16 @@ public static class WindowsStartupService
 
 public sealed class WatchdogService : IDisposable
 {
-    private readonly string _stopMarker = Path.Combine(DataPaths.Root, "watchdog.stop");
+    private readonly string _stopMarker;
+    private readonly AppPaths _paths;
+    private readonly IAppLogger _logger;
+    public WatchdogService(AppPaths paths, IAppLogger logger) { _paths = paths; _logger = logger; _stopMarker = Path.Combine(paths.Root, "watchdog.stop"); }
     private Process? _watchdogProcess;
 
     public void Start(bool restartInTray = false)
     {
         if (!OperatingSystem.IsWindows() || _watchdogProcess is { HasExited: false }) return;
-        DataPaths.EnsureCreated();
+        _paths.EnsureDirectories();
         try { File.Delete(_stopMarker); } catch { }
         var executable = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(executable)) return;
@@ -103,13 +106,13 @@ public sealed class WatchdogService : IDisposable
         if (process.Start())
         {
             _watchdogProcess = process;
-            AppLogger.Info(LogChannel.App, "external watchdog started");
+            _logger.Info(LogChannel.App, "external watchdog started");
         }
     }
 
     public void Stop()
     {
-        DataPaths.EnsureCreated();
+        _paths.EnsureDirectories();
         try { File.WriteAllText(_stopMarker, DateTimeOffset.Now.ToString("O")); } catch { }
         try
         {
@@ -120,10 +123,10 @@ public sealed class WatchdogService : IDisposable
         _watchdogProcess = null;
     }
 
-    public static void RunExternal(int parentPid, bool restartInTray)
+    public static void RunExternal(int parentPid, bool restartInTray, AppPaths paths, IAppLogger logger)
     {
-        DataPaths.EnsureCreated();
-        var marker = Path.Combine(DataPaths.Root, "watchdog.stop");
+        paths.EnsureDirectories();
+        var marker = Path.Combine(paths.Root, "watchdog.stop");
         try
         {
             while (true)
@@ -145,12 +148,12 @@ public sealed class WatchdogService : IDisposable
                 var restart = new ProcessStartInfo { FileName = executable, UseShellExecute = false, WorkingDirectory = AppContext.BaseDirectory };
                 if (restartInTray) restart.ArgumentList.Add("--background");
                 Process.Start(restart);
-                AppLogger.Info(LogChannel.App, "external watchdog restarted parent after unexpected exit");
+                logger.Info(LogChannel.App, "external watchdog restarted parent after unexpected exit");
             }
         }
         catch (Exception ex)
         {
-            AppLogger.Error(LogChannel.App, "external watchdog failed", ex);
+            logger.Error(LogChannel.App, "external watchdog failed", ex);
         }
     }
 

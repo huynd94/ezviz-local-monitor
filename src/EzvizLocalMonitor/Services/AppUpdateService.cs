@@ -41,7 +41,12 @@ public sealed class AppUpdateService
         client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("EZVIZ-Local-Monitor", CurrentVersion.ToString(3)));
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
 
-        using var response = await client.GetAsync(LatestReleaseUrl, cancellationToken).ConfigureAwait(false);
+        return await CheckReleaseAsync(client, LatestReleaseUrl, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<AppUpdateInfo?> CheckReleaseAsync(HttpClient client, string releaseUrl, CancellationToken cancellationToken)
+    {
+        using var response = await client.GetAsync(releaseUrl, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode) return null;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -51,9 +56,12 @@ public sealed class AppUpdateService
         var latest = ParseVersion(release.TagName);
         if (latest is null) return null;
 
-        var package = release.Assets?.FirstOrDefault(x => x.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
-        var checksum = release.Assets?.FirstOrDefault(x => x.Name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase));
-        return new AppUpdateInfo(CurrentVersion, latest, release.TagName, release.HtmlUrl ?? string.Empty, package?.BrowserDownloadUrl, checksum?.BrowserDownloadUrl);
+        var assets = release.Assets?.Select(x => new ReleaseAsset(x.Name, x.BrowserDownloadUrl)).ToArray()
+            ?? Array.Empty<ReleaseAsset>();
+        var pair = ReleaseAssetSelector.Select(assets, release.TagName, ReleaseTarget.WindowsX64);
+        if (pair is null) return null;
+        return new AppUpdateInfo(CurrentVersion, latest, release.TagName, release.HtmlUrl ?? string.Empty,
+            pair.Package.DownloadUrl, pair.Checksum.DownloadUrl);
     }
 
     public async Task<string?> PrepareUpdaterAsync(AppUpdateInfo update, CancellationToken cancellationToken = default)

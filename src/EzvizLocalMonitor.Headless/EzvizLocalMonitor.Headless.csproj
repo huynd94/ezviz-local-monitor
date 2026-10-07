@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../build/NativeRuntime.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ezviz-headless</AssemblyName><RootNamespace>EzvizLocalMonitor.Headless</RootNamespace><Version>1.9.0-preview.5</Version>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier><SelfContained>true</SelfContained>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../EzvizLocalMonitor.Core/EzvizLocalMonitor.Core.csproj" /></ItemGroup>
+  <ItemGroup><PackageReference Include="$(OpenCvLinuxNativePackage)" Version="$(OpenCvVersion)" /></ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <Content Include="../../assets/Models/yolov8n.onnx" Link="Models/yolov8n.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../../assets/Models/yolov8n.onnx')" />
+  </ItemGroup>
+  <Target Name="ValidateHeadlessModel" BeforeTargets="Publish"><Error Condition="!Exists('../../assets/Models/yolov8n.onnx')" Text="Missing assets/Models/yolov8n.onnx. Run scripts/linux/Get-YoloModel.sh before publishing." /></Target>
+</Project>

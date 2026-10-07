@@ -11,7 +11,8 @@ internal static class Program
         if (args.Length >= 2 && string.Equals(args[0], "--watchdog", StringComparison.OrdinalIgnoreCase) && int.TryParse(args[1], out var parentPid))
         {
             var restartInTray = args.Any(x => string.Equals(x, "--restart-in-tray", StringComparison.OrdinalIgnoreCase));
-            WatchdogService.RunExternal(parentPid, restartInTray);
+            var paths = WindowsAppPaths.Create(AppContext.BaseDirectory);
+            WatchdogService.RunExternal(parentPid, restartInTray, paths, new AppLogger(paths));
             return;
         }
 

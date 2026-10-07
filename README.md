@@ -2,6 +2,14 @@
 
 **Phiên bản phát hành hiện tại: v1.8.6**
 
+**Bản thử nghiệm Linux/Windows mới: v1.9.0-preview.5**
+
+## v1.9.0-preview.5 — Linux headless (prerelease)
+
+Nhánh triển khai Linux bổ sung `ezviz-headless` cho Ubuntu24.04 x64, quản trị CLI qua SSH, lưu cấu hình AES-GCM và chạy foreground/systemd. Installer giữ state/key, hỗ trợ nâng cấp/rollback theo release directory; Windows desktop tiếp tục dùng DPAPI.
+
+Hướng dẫn: [docs/LINUX_HEADLESS.md](docs/LINUX_HEADLESS.md). [Tải prerelease v1.9.0-preview.5](https://github.com/huynd94/ezviz-local-monitor/releases/tag/v1.9.0-preview.5). Gói gồm Windows ZIP + `.zip.sha256` và Linux tar.gz + `.tar.gz.sha256sum`; bộ chọn updater ghép đúng tên/platform. Bản này chưa được coi là stable: camera thực, reboot và soak24h còn cần nghiệm thu. Phiên bản stable hiện có trên GitHub vẫn là v1.8.6; updater tự động không chọn prerelease.
+
 ## Bản vá v1.8.6 — xử lý lỗi xuất backup chuyển máy
 
 Xuất backup `.ezviztransfer` hiện xử lý thống nhất cả lỗi I/O và `UnauthorizedAccessException` khi tạo thư mục, ghi file tạm hoặc thay thế file đích. Nếu file đang mở/bị khóa, chỉ đọc hoặc không ghi được, ứng dụng hướng dẫn đóng file, chọn tên mới hoặc kiểm tra quyền ghi. Lỗi gốc được giữ cho chẩn đoán; mật khẩu và cấu hình không được đưa vào thông báo lỗi.

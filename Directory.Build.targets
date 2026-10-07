@@ -1,0 +1,9 @@
+<Project>
+  <!-- The optional OpenCvSharp analyzer requires Roslyn 5.9, newer than our .NET 8 SDK.
+       Remove that analyzer explicitly; do not suppress runtime/compiler diagnostics. -->
+  <Target Name="ExcludeOpenCvAnalyzerForNet8Sdk" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Analyzer.Filename)' == 'OpenCvSharp.Analyzers'" />
+    </ItemGroup>
+  </Target>
+</Project>

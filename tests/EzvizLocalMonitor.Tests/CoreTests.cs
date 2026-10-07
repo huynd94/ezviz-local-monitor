@@ -106,16 +106,16 @@ public sealed class AppLockPolicyTests
     [Fact]
     public void PasswordRequiresEightCharacters()
     {
-        AppLockService.Validate(AppLockMode.Password, "safe-pass");
-        Assert.Throws<ArgumentException>(() => AppLockService.Validate(AppLockMode.Password, "short"));
+        AppLockPolicy.Validate(AppLockMode.Password, "safe-pass");
+        Assert.Throws<ArgumentException>(() => AppLockPolicy.Validate(AppLockMode.Password, "short"));
     }
 
     [Fact]
     public void PinRequiresDigitsAndFourToTwelveCharacters()
     {
-        AppLockService.Validate(AppLockMode.Pin, "1234");
-        Assert.Throws<ArgumentException>(() => AppLockService.Validate(AppLockMode.Pin, "12ab"));
-        Assert.Throws<ArgumentException>(() => AppLockService.Validate(AppLockMode.Pin, "123"));
+        AppLockPolicy.Validate(AppLockMode.Pin, "1234");
+        Assert.Throws<ArgumentException>(() => AppLockPolicy.Validate(AppLockMode.Pin, "12ab"));
+        Assert.Throws<ArgumentException>(() => AppLockPolicy.Validate(AppLockMode.Pin, "123"));
     }
 }
 
@@ -125,6 +125,12 @@ public sealed class TransferBackupTests : IDisposable
     private readonly string _directory = Path.Combine(Path.GetTempPath(), $"ezviz-transfer-tests-{Guid.NewGuid():N}");
 
     public TransferBackupTests() => Directory.CreateDirectory(_directory);
+    private SettingsStore CreateStore() => new(new AppPaths(_directory, Path.Combine(_directory, "model.onnx")), new RejectingProtector());
+    private sealed class RejectingProtector : ISettingsProtector
+    {
+        public byte[] Protect(byte[] plain) => throw new InvalidOperationException("Transfer backup must not use settings protection.");
+        public byte[] Unprotect(byte[] bytes) => throw new InvalidOperationException("Transfer backup must not use settings protection.");
+    }
 
     [Fact]
     public void TransferBackup_RoundTripWorks_AndWrongPasswordFails()
@@ -132,7 +138,7 @@ public sealed class TransferBackupTests : IDisposable
         var path = Path.Combine(_directory, "settings.ezviztransfer");
         try
         {
-            var store = new SettingsStore();
+            var store = CreateStore();
             var settings = new AppSettings
             {
                 Cameras = new List<CameraDefinition> { new() { Name = "Camera chuyển máy", RtspUrl = "rtsp://local/stream" } },
@@ -170,7 +176,7 @@ public sealed class TransferBackupTests : IDisposable
     {
         if (!OperatingSystem.IsWindows()) return;
         var path = Path.Combine(_directory, "settings.ezviztransfer");
-        var store = new SettingsStore();
+        var store = CreateStore();
         var original = new AppSettings { ThemeName = "Ocean" };
         var updated = new AppSettings { ThemeName = "Midnight", Ai = new AiSettings { ApiKey = "YOUR_API_KEY_HERE" } };
         store.ExportTransferBackup(original, path, TestPassword);
@@ -207,7 +213,7 @@ public sealed class TransferBackupTests : IDisposable
         var blocker = Path.Combine(_directory, "not-a-directory");
         File.WriteAllText(blocker, "existing content");
         var path = Path.Combine(blocker, "settings.ezviztransfer");
-        var error = Assert.Throws<IOException>(() => new SettingsStore().ExportTransferBackup(new AppSettings(), path, TestPassword));
+        var error = Assert.Throws<IOException>(() => CreateStore().ExportTransferBackup(new AppSettings(), path, TestPassword));
 
         AssertExportError(error);
         Assert.Equal("existing content", File.ReadAllText(blocker));
@@ -218,7 +224,7 @@ public sealed class TransferBackupTests : IDisposable
     public void TransferBackup_CreatesMissingDirectory_AndRestoresConfiguration()
     {
         var path = Path.Combine(_directory, "new", "nested", "settings.ezviztransfer");
-        var store = new SettingsStore();
+        var store = CreateStore();
         store.ExportTransferBackup(new AppSettings { ThemeName = "Ocean" }, path, TestPassword);
 
         Assert.Equal("Ocean", store.ImportTransferBackup(path, TestPassword).ThemeName);
@@ -231,7 +237,7 @@ public sealed class TransferBackupTests : IDisposable
     public void TransferBackup_InvalidInputRemainsArgumentError(string fileName, string password)
     {
         var path = fileName.Length == 0 ? string.Empty : Path.Combine(_directory, fileName);
-        Assert.Throws<ArgumentException>(() => new SettingsStore().ExportTransferBackup(new AppSettings(), path, password));
+        Assert.Throws<ArgumentException>(() => CreateStore().ExportTransferBackup(new AppSettings(), path, password));
         Assert.Empty(Directory.GetFiles(_directory));
     }
 
@@ -249,11 +255,12 @@ public sealed class TransferBackupTests : IDisposable
 public sealed class EventStoreTests : IDisposable
 {
     private readonly string _database = Path.Combine(Path.GetTempPath(), $"ezviz-test-{Guid.NewGuid():N}.db");
+    private AppPaths Paths => new(_database + ".state", _database + ".model.onnx");
 
     [Fact]
     public void EventStore_CrudAndAnalysisUpdate_Works()
     {
-        var store = new EventStore(_database);
+        var store = new EventStore(Paths, _database);
         store.Initialize();
         var item = new DetectionEvent
         {
@@ -278,7 +285,7 @@ public sealed class EventStoreTests : IDisposable
     [Fact]
     public void EventStore_QueryAndPurgeBefore_RemovesOldEventAndImageOnly()
     {
-        var store = new EventStore(_database);
+        var store = new EventStore(Paths, _database);
         store.Initialize();
         var root = Path.Combine(Path.GetTempPath(), $"ezviz-event-images-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
@@ -310,6 +317,7 @@ public sealed class EventStoreTests : IDisposable
         try { File.Delete(_database); } catch { }
         try { File.Delete(_database + "-wal"); } catch { }
         try { File.Delete(_database + "-shm"); } catch { }
+        if (Directory.Exists(Paths.Root)) Directory.Delete(Paths.Root, true);
     }
 }
 

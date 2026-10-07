@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <OpenCvManagedPackage>OpenCvSharp5</OpenCvManagedPackage>
+    <OpenCvVersion>5.0.0.20261003</OpenCvVersion>
+    <OpenCvWindowsNativePackage>OpenCvSharp5.runtime.win</OpenCvWindowsNativePackage>
+    <OpenCvLinuxNativePackage>OpenCvSharp5.official.runtime.linux-x64.headless</OpenCvLinuxNativePackage>
+  </PropertyGroup>
+</Project>

@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../build/NativeRuntime.props" />
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -7,21 +8,21 @@
     <AssemblyName>EzvizLocalMonitor</AssemblyName>
     <RootNamespace>EzvizLocalMonitor</RootNamespace>
     <ApplicationIcon>Assets\ezviz-local-monitor.ico</ApplicationIcon>
-    <Version>1.8.6</Version>
+    <Version>1.9.0-preview.5</Version>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../EzvizLocalMonitor.Core/EzvizLocalMonitor.Core.csproj" />
     <PackageReference Include="Avalonia" Version="11.2.3" />
     <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.3" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.12" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.1" />
-    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
-    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
+    <PackageReference Include="$(OpenCvWindowsNativePackage)" Version="$(OpenCvVersion)" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
   </ItemGroup>
 

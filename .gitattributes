@@ -1,0 +1,6 @@
+# Linux entry points must survive checkout on a Windows worktree without CRLF.
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.service text eol=lf

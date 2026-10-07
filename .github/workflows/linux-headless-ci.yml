@@ -1,0 +1,114 @@
+name: Windows and Ubuntu headless verification
+
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Local candidate artifact version (does not create a release)
+        default: 1.9.0-preview.1
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  ARTIFACT_VERSION: ${{ inputs.version || '1.9.0-preview.1' }}
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Native video fixture prerequisite
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Native Ubuntu gate
+        run: bash scripts/linux/Run-NativeProbe.sh headless5 true
+      - name: Shared tests
+        run: dotnet test tests/EzvizLocalMonitor.Tests/EzvizLocalMonitor.Tests.csproj -c Release -p:NuGetAudit=false
+      - name: Headless process, storage, lock and native tests
+        run: bash scripts/linux/Test-Headless.sh
+      - name: Package archive security
+        run: python3 tests/linux/Package-Security.py
+      - name: Installer syntax and transaction fixtures
+        run: |
+          sudo bash tests/linux/Installer-Smoke.sh
+          sudo bash tests/linux/Installer-Transaction-Smoke.sh
+          sudo bash tests/linux/Installer-Unit-Verify.sh
+      - name: Package Linux candidate
+        run: bash scripts/linux/Package-Headless.sh "$ARTIFACT_VERSION"
+      - name: Extracted package smoke
+        run: bash tests/linux/Package-Smoke.sh "artifacts/dist/EZVIZ-Local-Monitor-Linux-Headless-x64-v$ARTIFACT_VERSION.tar.gz"
+      - name: Real systemd idle service smoke
+        run: |
+          PACKAGE=$(mktemp -d)
+          python3 scripts/linux/Verify-Package.py "artifacts/dist/EZVIZ-Local-Monitor-Linux-Headless-x64-v$ARTIFACT_VERSION.tar.gz" "artifacts/dist/EZVIZ-Local-Monitor-Linux-Headless-x64-v$ARTIFACT_VERSION.tar.gz.sha256sum" --extract "$PACKAGE"
+          sudo bash "$PACKAGE/installer/linux/install.sh" --package-root "$PACKAGE"
+          printf '{"Cameras":[]}' | sudo -u ezviz-monitor /opt/ezviz-local-monitor/current/app/ezviz-headless configure --stdin
+          sudo bash tests/linux/Systemd-Smoke.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-headless-candidate
+          path: |
+            artifacts/dist/*.tar.gz
+            artifacts/dist/*.sha256sum
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Model prerequisite
+        run: ./scripts/Get-YoloModel.ps1 -Destination "$PWD/assets/Models/yolov8n.onnx"
+      - name: Windows and shared regression tests
+        run: |
+          dotnet test tests/EzvizLocalMonitor.Tests/EzvizLocalMonitor.Tests.csproj -c Release -p:NuGetAudit=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet test tests/EzvizLocalMonitor.Desktop.Tests/EzvizLocalMonitor.Desktop.Tests.csproj -c Release -p:NuGetAudit=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Native Windows gate
+        run: |
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg --yes --no-progress --limit-output }
+          $fixture = Join-Path $PWD 'artifacts/native-fixtures'
+          [IO.Directory]::CreateDirectory($fixture) | Out-Null
+          $env:EZVIZ_TEST_VIDEO = Join-Path $fixture 'native-smoke.mp4'
+          $env:EZVIZ_TEST_MODEL = Join-Path $PWD 'assets/Models/yolov8n.onnx'
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i testsrc2=size=640x480:rate=5 -t 3 -c:v libx264 -pix_fmt yuv420p $env:EZVIZ_TEST_VIDEO
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet test tests/EzvizLocalMonitor.NativeProbe.Tests/EzvizLocalMonitor.NativeProbe.Tests.csproj -c Release -p:NativeCandidate=headless5 -p:EnableNativeRuntime=true -p:NuGetAudit=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: PowerShell 5.1 installer and updater syntax
+        run: |
+          $files = @('installer/Install-EzvizLocalMonitor.ps1', 'scripts/Update-EzvizLocalMonitor.ps1', 'scripts/Update-EzvizLocalMonitor-Worker.ps1', 'scripts/Package-Windows.ps1')
+          foreach ($file in $files) {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PWD $file), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -ne 0) { throw "Parser error: $file" }
+          }
+      - name: VC runtime prerequisite
+        run: |
+          if (-not (Test-Path installer/vc_redist.x64.exe)) {
+            Invoke-WebRequest https://aka.ms/vs/17/release/vc_redist.x64.exe -OutFile installer/vc_redist.x64.exe
+          }
+      - name: Package Windows candidate
+        run: ./scripts/Package-Windows.ps1 -Version $env:ARTIFACT_VERSION
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-candidate
+          path: |
+            artifacts/dist/*.zip
+            artifacts/dist/*.sha256

@@ -4,19 +4,15 @@ using System.Text.Json;
 
 namespace EzvizLocalMonitor.Services;
 
-public enum AppLockMode
-{
-    Password = 0,
-    Pin = 1
-}
-
 public sealed class AppLockService
 {
     private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("EZVIZ-Local-Monitor-app-lock-v1");
     private const int SaltBytes = 16;
     private const int HashBytes = 32;
     private const int Iterations = 180_000;
-    private readonly string _filePath = Path.Combine(DataPaths.Root, "app-lock.protected");
+    private readonly AppPaths _paths;
+    private readonly string _filePath;
+    public AppLockService(AppPaths paths) { _paths = paths; _filePath = Path.Combine(paths.Root, "app-lock.protected"); }
 
     public bool IsEnabled => File.Exists(_filePath);
 
@@ -36,7 +32,7 @@ public sealed class AppLockService
     public void Set(AppLockMode mode, string secret)
     {
         Validate(mode, secret);
-        DataPaths.EnsureCreated();
+        _paths.EnsureDirectories();
         var salt = RandomNumberGenerator.GetBytes(SaltBytes);
         var hash = Rfc2898DeriveBytes.Pbkdf2(secret, salt, Iterations, HashAlgorithmName.SHA256, HashBytes);
         var data = new StoredLock((int)mode, Convert.ToBase64String(salt), Convert.ToBase64String(hash));
@@ -83,15 +79,7 @@ public sealed class AppLockService
 
     public static void Validate(AppLockMode mode, string secret)
     {
-        if (mode == AppLockMode.Pin)
-        {
-            if (secret.Length < 4 || secret.Length > 12 || secret.Any(c => c < '0' || c > '9'))
-                throw new ArgumentException("PIN phải gồm từ 4 đến 12 chữ số.", nameof(secret));
-        }
-        else if (secret.Length < 8)
-        {
-            throw new ArgumentException("Mật khẩu phải có ít nhất 8 ký tự.", nameof(secret));
-        }
+        AppLockPolicy.Validate(mode, secret);
     }
 
     private StoredLock Read()

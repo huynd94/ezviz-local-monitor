@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <NativeCandidate Condition="'$(NativeCandidate)' == ''">baseline</NativeCandidate>
+    <EnableNativeRuntime Condition="'$(EnableNativeRuntime)' == ''">false</EnableNativeRuntime>
+    <BaseIntermediateOutputPath>obj/$(OS)/$(NativeCandidate)/$(EnableNativeRuntime)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin/$(OS)/$(NativeCandidate)/$(EnableNativeRuntime)/</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

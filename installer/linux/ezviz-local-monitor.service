@@ -1,0 +1,22 @@
+[Unit]
+Description=EZVIZ Local Monitor headless
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=ezviz-monitor
+UMask=0077
+WorkingDirectory=/opt/ezviz-local-monitor/current
+ExecStart=/opt/ezviz-local-monitor/current/app/ezviz-headless run --data-dir /var/lib/ezviz-local-monitor
+Restart=on-failure
+RestartSec=5
+RestartPreventExitStatus=2 3
+TimeoutStopSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

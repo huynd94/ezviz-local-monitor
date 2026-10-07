@@ -30,3 +30,7 @@ assets/Models/*.onnx
 # OS and editor noise
 .DS_Store
 Thumbs.db
+
+# Python packaging helper cache
+__pycache__/
+*.pyc
